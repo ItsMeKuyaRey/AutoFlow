@@ -1,0 +1,16 @@
+.DS_Store
+
+# Visual Studio Code
+.vscode/
+
+# .NET build output
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.suo
+
+# macOS
+.AppleDouble
+.LSOverride
