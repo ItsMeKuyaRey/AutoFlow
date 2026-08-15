@@ -54,14 +54,18 @@ namespace AutoFlow.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CustomerId,FirstName,LastName,Phone,Email,Address,CreatedAt,UpdatedAt")] Customer customer)
+        public async Task<IActionResult> Create([Bind("FirstName,LastName,Phone,Email,Address")] Customer customer)
         {
             if (ModelState.IsValid)
             {
+                customer.CreatedAt = DateTime.UtcNow;
+                customer.UpdatedAt = DateTime.UtcNow;
+                
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(customer);
         }
 
@@ -86,7 +90,7 @@ namespace AutoFlow.Web.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("CustomerId,FirstName,LastName,Phone,Email,Address,CreatedAt,UpdatedAt")] Customer customer)
+        public async Task<IActionResult> Edit(int id, [Bind("CustomerId,FirstName,LastName,Phone,Email,Address")] Customer customer)
         {
             if (id != customer.CustomerId)
             {
@@ -97,7 +101,20 @@ namespace AutoFlow.Web.Controllers
             {
                 try
                 {
-                    _context.Update(customer);
+                    var existingCustomer = await _context.Customers.FindAsync(id);
+
+                    if (existingCustomer == null)
+                    {
+                        return NotFound();
+                    }
+
+                    existingCustomer.FirstName = customer.FirstName;
+                    existingCustomer.LastName = customer.LastName;
+                    existingCustomer.Phone = customer.Phone;
+                    existingCustomer.Email = customer.Email;
+                    existingCustomer.Address = customer.Address;
+                    existingCustomer.UpdatedAt = DateTime.UtcNow;
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -106,16 +123,15 @@ namespace AutoFlow.Web.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    throw;
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             return View(customer);
         }
-
         // GET: Customers/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
