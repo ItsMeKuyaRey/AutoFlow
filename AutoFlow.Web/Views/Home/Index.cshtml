@@ -1,8 +1,593 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="dashboard-page">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+
+        <div>
+            <h1>Good morning, Administrator</h1>
+
+            <p>
+                Here's what's happening with your automotive service business today.
+            </p>
+        </div>
+
+        <div class="page-header-actions">
+
+            <button class="af-button af-button-secondary">
+                Export Report
+            </button>
+
+            <button class="af-button af-button-primary">
+                + New Appointment
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- KPI CARDS -->
+    <div class="dashboard-grid dashboard-grid-4">
+
+        <div class="af-card metric-card">
+
+            <div class="metric-icon metric-blue">
+                $
+            </div>
+
+            <div class="metric-label">
+                Total Revenue
+            </div>
+
+            <div class="metric-value">
+                $142,850
+            </div>
+
+            <div class="metric-change positive">
+                ↑ 12.4% <span>vs last month</span>
+            </div>
+
+        </div>
+
+
+        <div class="af-card metric-card">
+
+            <div class="metric-icon metric-purple">
+                🔧
+            </div>
+
+            <div class="metric-label">
+                Active Repair Jobs
+            </div>
+
+            <div class="metric-value">
+                34
+            </div>
+
+            <div class="metric-change positive">
+                ↑ 5 <span>today</span>
+            </div>
+
+        </div>
+
+
+        <div class="af-card metric-card">
+
+            <div class="metric-icon metric-orange">
+                📅
+            </div>
+
+            <div class="metric-label">
+                Pending Appointments
+            </div>
+
+            <div class="metric-value">
+                18
+            </div>
+
+            <div class="metric-change negative">
+                ↓ 2 <span>rescheduled</span>
+            </div>
+
+        </div>
+
+
+        <div class="af-card metric-card">
+
+            <div class="metric-icon metric-red">
+                !
+            </div>
+
+            <div class="metric-label">
+                Low Stock Alerts
+            </div>
+
+            <div class="metric-value">
+                3
+            </div>
+
+            <div class="metric-change negative">
+                Critical parts
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- MIDDLE SECTION -->
+    <div class="dashboard-grid dashboard-grid-main">
+
+        <!-- JOB STATUS -->
+        <div class="af-card dashboard-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>Distribution of Job Statuses</h2>
+
+                    <p>
+                        Current repair workload
+                    </p>
+                </div>
+
+                <select class="af-select">
+                    <option>This week</option>
+                    <option>This month</option>
+                    <option>This year</option>
+                </select>
+
+            </div>
+
+
+            <div class="job-status-chart">
+
+                <div class="status-ring">
+
+                    <div class="status-ring-inner">
+
+                        <strong>58</strong>
+
+                        <span>Total Jobs</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE FOLLOW UPS -->
+        <div class="af-card dashboard-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>Active Follow-ups</h2>
+
+                    <p>
+                        Customers requiring attention
+                    </p>
+                </div>
+
+                <span class="af-badge badge-blue">
+                    5 due
+                </span>
+
+            </div>
+
+
+            <div class="follow-up-list">
+
+                <div class="follow-up-item">
+
+                    <div class="avatar avatar-blue">
+                        DR
+                    </div>
+
+                    <div class="follow-up-info">
+
+                        <strong>Daniel Reyes</strong>
+
+                        <span>
+                            Toyota Camry · 2022
+                        </span>
+
+                    </div>
+
+                    <span class="af-badge badge-orange">
+                        Quote pending
+                    </span>
+
+                </div>
+
+
+                <div class="follow-up-item">
+
+                    <div class="avatar avatar-purple">
+                        PN
+                    </div>
+
+                    <div class="follow-up-info">
+
+                        <strong>Priya Nair</strong>
+
+                        <span>
+                            Honda CR-V · 2023
+                        </span>
+
+                    </div>
+
+                    <span class="af-badge badge-blue">
+                        Call back
+                    </span>
+
+                </div>
+
+
+                <div class="follow-up-item">
+
+                    <div class="avatar avatar-green">
+                        MB
+                    </div>
+
+                    <div class="follow-up-info">
+
+                        <strong>Marcus Bell</strong>
+
+                        <span>
+                            Ford F-150 · 2021
+                        </span>
+
+                    </div>
+
+                    <span class="af-badge badge-green">
+                        Ready
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="capacity-section">
+
+                <div class="capacity-circle">
+                    82%
+                </div>
+
+                <div>
+                    <strong>82% Bay Capacity Utilized</strong>
+
+                    <span>
+                        3 of 4 bays occupied right now
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RECENT JOBS -->
+    <div class="af-card dashboard-card recent-jobs">
+
+        <div class="card-header">
+
+            <div>
+                <h2>Recent Repair Jobs</h2>
+
+                <p>
+                    Latest service activity across the shop
+                </p>
+            </div>
+
+            <div class="table-actions">
+
+                <input
+                    type="text"
+                    class="af-input"
+                    placeholder="Search jobs..." />
+
+                <button class="af-button af-button-secondary">
+                    Filter
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="af-table-wrapper">
+
+            <table class="af-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Vehicle</th>
+                        <th>Customer</th>
+                        <th>Service</th>
+                        <th>Bay</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <tr>
+
+                        <td>
+                            <strong>Ford F-150</strong>
+                            <small>Plate · 4FRT-221</small>
+                        </td>
+
+                        <td>
+                            Liam Carter
+                        </td>
+
+                        <td>
+                            Transmission rebuild
+                        </td>
+
+                        <td>
+                            Bay 2
+                        </td>
+
+                        <td>
+                            <strong>$1,240</strong>
+                        </td>
+
+                        <td>
+                            <span class="af-badge badge-blue">
+                                In Progress
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="progress-wrapper">
+                                <div
+                                    class="progress-bar progress-blue"
+                                    style="width:65%">
+                                </div>
+                            </div>
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <strong>Toyota Camry</strong>
+                            <small>Plate · 7KLM-903</small>
+                        </td>
+
+                        <td>
+                            Noah Brooks
+                        </td>
+
+                        <td>
+                            Brake pad replacement
+                        </td>
+
+                        <td>
+                            Bay 4
+                        </td>
+
+                        <td>
+                            <strong>$320</strong>
+                        </td>
+
+                        <td>
+                            <span class="af-badge badge-orange">
+                                Pending
+                            </span>
+                        </td>
+
+                        <td>
+
+                            <div class="progress-wrapper">
+                                <div
+                                    class="progress-bar progress-orange"
+                                    style="width:20%">
+                                </div>
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <strong>BMW 3 Series</strong>
+                            <small>Plate · 1BNX-554</small>
+                        </td>
+
+                        <td>
+                            Elena Ruiz
+                        </td>
+
+                        <td>
+                            Full diagnostics
+                        </td>
+
+                        <td>
+                            Bay 1
+                        </td>
+
+                        <td>
+                            <strong>$580</strong>
+                        </td>
+
+                        <td>
+                            <span class="af-badge badge-green">
+                                Completed
+                            </span>
+                        </td>
+
+                        <td>
+
+                            <div class="progress-wrapper">
+
+                                <div
+                                    class="progress-bar progress-green"
+                                    style="width:100%">
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <strong>Honda CR-V</strong>
+                            <small>Plate · 9HND-018</small>
+                        </td>
+
+                        <td>
+                            Marcus Vance
+                        </td>
+
+                        <td>
+                            Oil & filter change
+                        </td>
+
+                        <td>
+                            Bay 3
+                        </td>
+
+                        <td>
+                            <strong>$145</strong>
+                        </td>
+
+                        <td>
+                            <span class="af-badge badge-blue">
+                                In Progress
+                            </span>
+                        </td>
+
+                        <td>
+
+                            <div class="progress-wrapper">
+
+                                <div
+                                    class="progress-bar progress-blue"
+                                    style="width:40%">
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- BOTTOM METRICS -->
+    <div class="dashboard-grid dashboard-grid-3">
+
+        <div class="af-card mini-chart-card">
+
+            <div class="mini-card-header">
+
+                <span>
+                    Brake Inspections
+                </span>
+
+                <strong class="positive">
+                    ↑ 4%
+                </strong>
+
+            </div>
+
+            <div class="mini-value">
+                88%
+            </div>
+
+            <span class="mini-description">
+                pass rate
+            </span>
+
+        </div>
+
+
+        <div class="af-card mini-chart-card">
+
+            <div class="mini-card-header">
+
+                <span>
+                    Oil Changes
+                </span>
+
+                <strong class="negative">
+                    ↓ 6%
+                </strong>
+
+            </div>
+
+            <div class="mini-value">
+                12m
+            </div>
+
+            <span class="mini-description">
+                average service time
+            </span>
+
+        </div>
+
+
+        <div class="af-card mini-chart-card">
+
+            <div class="mini-card-header">
+
+                <span>
+                    AC Diagnostics
+                </span>
+
+                <strong class="positive">
+                    ↑ 9%
+                </strong>
+
+            </div>
+
+            <div class="mini-value">
+                +14
+            </div>
+
+            <span class="mini-description">
+                units this month
+            </span>
+
+        </div>
+
+    </div>
+
 </div>
