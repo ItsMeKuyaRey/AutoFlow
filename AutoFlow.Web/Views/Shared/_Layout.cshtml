@@ -9,15 +9,14 @@
     <script type="importmap"></script>
 
     <link rel="stylesheet"
-          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+      href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
     <link rel="stylesheet"
-          href="~/css/site.css"
-          asp-append-version="true" />
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 
     <link rel="stylesheet"
-          href="~/AutoFlow.Web.styles.css"
-          asp-append-version="true" />
+        href="~/css/site.css"
+        asp-append-version="true" />
 </head>
 
 <body>
@@ -52,46 +51,57 @@
                 </a>
 
                 <a class="sidebar-link"
-                   href="#">
-                    <span class="sidebar-icon">👥</span>
-                    <span>Customers</span>
+                    asp-controller="Customers"
+                    asp-action="Index">
+                        <span class="sidebar-icon">👥</span>
+                        <span>Customers</span>
                 </a>
-
                 <a class="sidebar-link"
-                   href="#">
-                    <span class="sidebar-icon">🚗</span>
-                    <span>Vehicles</span>
+                    asp-controller="Vehicles"
+                    asp-action="Index">
+                        <span class="sidebar-icon">🚗</span>
+                        <span>Vehicles</span>
                 </a>
 
                 <div class="nav-section-title">
                     OPERATIONS
                 </div>
 
-                <a class="sidebar-link" href="#">
-                    <span class="sidebar-icon">📅</span>
-                    <span>Appointments</span>
+                <a class="sidebar-link"
+                    asp-controller="Appointments"
+                    asp-action="Index">
+                        <span class="sidebar-icon">📅</span>
+                        <span>Appointments</span>
                 </a>
 
-                <a class="sidebar-link" href="#">
-                    <span class="sidebar-icon">🔧</span>
-                    <span>Repair Jobs</span>
+                <a class="sidebar-link"
+                    asp-controller="JobOrders"
+                    asp-action="Index">
+                        <span class="sidebar-icon">🔧</span>
+                        <span>Repair Jobs</span>
                 </a>
 
-                <a class="sidebar-link" href="#">
-                    <span class="sidebar-icon">📦</span>
-                    <span>Parts Inventory</span>
+                <a class="sidebar-link"
+                    asp-controller="Parts"
+                    asp-action="Index">
+                        <span class="sidebar-icon">📦</span>
+                        <span>Parts Inventory</span>
                 </a>
 
-                <a class="sidebar-link" href="#">
-                    <span class="sidebar-icon">🏭</span>
-                    <span>Suppliers</span>
+                <a class="sidebar-link"
+                    asp-controller="Suppliers"
+                    asp-action="Index">
+                        <span class="sidebar-icon">🏭</span>
+                        <span>Suppliers</span>
                 </a>
 
                 <div class="nav-section-title">
                     BUSINESS
                 </div>
 
-                <a class="sidebar-link" href="#">
+                <a class="sidebar-link"
+                asp-controller="Billings"
+                asp-action="Index">
                     <span class="sidebar-icon">💳</span>
                     <span>Billing & Payments</span>
                 </a>
@@ -101,9 +111,11 @@
                     <span>Customer CRM</span>
                 </a>
 
-                <a class="sidebar-link" href="#">
-                    <span class="sidebar-icon">📋</span>
-                    <span>Service History</span>
+                <a class="sidebar-link"
+                    asp-controller="ServiceRecords"
+                    asp-action="Index">
+                        <span class="sidebar-icon">📋</span>
+                        <span>Service History</span>
                 </a>
 
                 <a class="sidebar-link" href="#">

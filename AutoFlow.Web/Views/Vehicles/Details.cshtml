@@ -1,87 +1,63 @@
 @model AutoFlow.Web.Models.Vehicle
 
 @{
-    Layout = null;
+    ViewData["Title"] = "Vehicle Details";
 }
 
-<!DOCTYPE html>
-
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Details</title>
-</head>
-<body>
-
-<div>
-    <h4>Vehicle</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PlateNumber)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PlateNumber)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.VIN)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.VIN)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Make)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Make)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Model)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Model)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Year)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Year)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Color)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Color)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Mileage)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Mileage)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ImageUrl)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ImageUrl)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.UpdatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Customer)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Customer.FirstName)
-        </dd>
-    </dl>
+<div class="page-header">
+    <div>
+        <h1>Vehicle Details</h1>
+        <p>View vehicle specifications and owner information.</p>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Edit" asp-route-id="@Model.VehicleId" class="af-button af-button-primary">Edit</a>
+        <a asp-action="Index" class="af-button af-button-secondary">Back to List</a>
+    </div>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.VehicleId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+
+<div class="af-card" style="max-width: 780px; padding: 28px;">
+    <div class="mb-4">
+        <h2 class="mb-1" style="font-size: 22px;">@Model.Make @Model.Model</h2>
+        <small class="text-muted">@(Model.Year.HasValue ? Model.Year.ToString() : "Year unknown") · @Model.PlateNumber</small>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Owner</label>
+            <div class="fw-semibold">
+                @if (Model.Customer != null)
+                {
+                    @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">VIN</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.VIN) ? "—" : Model.VIN)</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-muted small">Color</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Color) ? "—" : Model.Color)</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-muted small">Mileage</label>
+            <div class="fw-semibold">@(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "—")</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-muted small">Year</label>
+            <div class="fw-semibold">@(Model.Year.HasValue ? Model.Year.ToString() : "—")</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Created</label>
+            <div class="fw-semibold">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Last Updated</label>
+            <div class="fw-semibold">@Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+        </div>
+    </div>
 </div>
-</body>
-</html>

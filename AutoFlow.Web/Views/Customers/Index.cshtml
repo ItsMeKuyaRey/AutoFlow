@@ -1,79 +1,106 @@
 @model IEnumerable<AutoFlow.Web.Models.Customer>
 
 @{
-    Layout = "_Layout";
+    ViewData["Title"] = "Customers";
 }
 
-<!DOCTYPE html>
+<div class="page-header">
+    <div>
+        <h1>Customers</h1>
+        <p>Manage customer profiles, contact info, and service history.</p>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Create" class="af-button af-button-primary">
+            + Add Customer
+        </a>
+    </div>
+</div>
 
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Index</title>
-</head>
-<body>
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.FirstName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LastName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Phone)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Address)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UpdatedAt)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.FirstName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Phone)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Address)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UpdatedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.CustomerId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.CustomerId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.CustomerId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
-</body>
-</html>
+<div class="af-card" style="padding: 20px;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <input type="text" class="af-input" placeholder="Search by name, phone or email..." style="width: 260px;" />
+            <button class="af-button af-button-secondary">Filters</button>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="af-button af-button-secondary">Export</button>
+        </div>
+    </div>
+
+    <div class="af-table-wrapper">
+        <table class="af-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Contact Info</th>
+                    <th>Address</th>
+                    <th>Created</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var initials = $"{(item.FirstName?.FirstOrDefault().ToString() ?? "")}{(item.LastName?.FirstOrDefault().ToString() ?? "")}".ToUpper();
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar avatar-blue">@initials</div>
+                                <div>
+                                    <strong>@item.FirstName @item.LastName</strong>
+                                    <small>ID: AF-@item.CustomerId.ToString("D5")</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                @if (!string.IsNullOrEmpty(item.Phone))
+                                {
+                                    <strong>@item.Phone</strong>
+                                }
+                                else
+                                {
+                                    <strong class="text-muted">—</strong>
+                                }
+                                @if (!string.IsNullOrEmpty(item.Email))
+                                {
+                                    <small>@item.Email</small>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            @(string.IsNullOrEmpty(item.Address) ? "—" : item.Address)
+                        </td>
+                        <td>
+                            @item.CreatedAt.ToString("MMM dd, yyyy")
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Details" asp-route-id="@item.CustomerId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="View">
+                                    👁
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.CustomerId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="Edit">
+                                    ✎
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.CustomerId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px; color: #dc2626;" title="Delete">
+                                    🗑
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <p class="mb-2">No customers yet.</p>
+            <a asp-action="Create" class="af-button af-button-primary">Add your first customer</a>
+        </div>
+    }
+</div>

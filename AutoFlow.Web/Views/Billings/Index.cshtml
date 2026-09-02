@@ -1,0 +1,145 @@
+@model IEnumerable<AutoFlow.Web.Models.Billing>
+
+@{
+    ViewData["Title"] = "Billing & Payments";
+}
+
+<div class="dashboard-page">
+
+    <div class="page-header">
+        <div>
+            <h1>Billing & Payments</h1>
+            <p>Invoices generated automatically from completed job orders.</p>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="af-card" style="text-align:center; padding:3rem;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">💳</div>
+            <h3 style="margin-bottom:0.5rem;">No Invoices Yet</h3>
+            <p style="color:var(--af-text-secondary); margin-bottom:1.5rem;">
+                Invoices are generated automatically when a job order is marked as Completed.
+            </p>
+            <a asp-controller="JobOrders" asp-action="Index" class="af-button af-button-primary">
+                View Repair Jobs
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="af-card">
+            <div class="af-table-wrapper">
+                <table class="af-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice</th>
+                            <th>Job Order</th>
+                            <th>Vehicle</th>
+                            <th>Customer</th>
+                            <th>Issued</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var balance = item.TotalAmount - item.AmountPaid;
+                            var badgeClass = item.Status switch
+                            {
+                                "Paid" => "badge-green",
+                                "Partial" => "badge-orange",
+                                _ => "badge-red"
+                            };
+
+                            <tr>
+                                <td>
+                                    <strong>@item.InvoiceNumber</strong>
+                                </td>
+                                <td>
+                                    @if (item.JobOrder != null)
+                                    {
+                                        <a asp-controller="JobOrders" asp-action="Details"
+                                           asp-route-id="@item.JobOrder.JobOrderId"
+                                           style="color:var(--af-primary); text-decoration:none;">
+                                            #@item.JobOrder.JobOrderId
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-text-muted);">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.JobOrder?.Vehicle != null)
+                                    {
+                                        <strong>@item.JobOrder.Vehicle.PlateNumber</strong>
+                                        <small style="display:block; color:var(--af-text-muted); font-size:0.85rem;">
+                                            @item.JobOrder.Vehicle.Make @item.JobOrder.Vehicle.Model
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-text-muted);">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.JobOrder?.Vehicle?.Customer != null)
+                                    {
+                                        <span>@item.JobOrder.Vehicle.Customer.FirstName @item.JobOrder.Vehicle.Customer.LastName</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-text-muted);">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @item.IssuedAt.ToString("MMM dd, yyyy")
+                                </td>
+                                <td>
+                                    <strong>@item.TotalAmount.ToString("C")</strong>
+                                </td>
+                                <td>
+                                    @item.AmountPaid.ToString("C")
+                                </td>
+                                <td>
+                                    @if (balance > 0)
+                                    {
+                                        <span style="color:var(--af-danger); font-weight:600;">@balance.ToString("C")</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-success);">$0.00</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="af-badge @badgeClass">@item.Status</span>
+                                </td>
+                                <td>
+                                    <div style="display:flex; gap:8px;">
+                                        <a asp-action="Details" asp-route-id="@item.BillingId"
+                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+                                            View
+                                        </a>
+                                        @if (item.Status != "Paid")
+                                        {
+                                            <a asp-action="RecordPayment" asp-route-id="@item.BillingId"
+                                               class="af-button af-button-primary" style="padding:6px 12px; font-size:12px;">
+                                                Pay
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>

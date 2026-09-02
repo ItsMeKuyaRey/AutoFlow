@@ -1,0 +1,60 @@
+@model AutoFlow.Web.Models.Part
+@{
+    ViewData["Title"] = "Add Part";
+}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h1 class="fw-bold mb-1">Add Part</h1>
+        <p class="text-muted mb-0">Add a new part to inventory.</p>
+    </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label fw-semibold">Name</label>
+                        <input asp-for="Name" class="form-control" placeholder="e.g. Brake Pads" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PartNumber" class="form-label fw-semibold">Part Number</label>
+                        <input asp-for="PartNumber" class="form-control" placeholder="Optional" />
+                        <span asp-validation-for="PartNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="UnitPrice" class="form-label fw-semibold">Unit Price</label>
+                        <input asp-for="UnitPrice" type="number" step="0.01" class="form-control" />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="StockQuantity" class="form-label fw-semibold">Stock Quantity</label>
+                        <input asp-for="StockQuantity" type="number" class="form-control" />
+                        <span asp-validation-for="StockQuantity" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="SupplierId" class="form-label fw-semibold">Supplier</label>
+                        <select asp-for="SupplierId" class="form-select" asp-items="ViewBag.SupplierId">
+                            <option value="">— No Supplier —</option>
+                        </select>
+                    </div>
+                </div>
+                <hr class="my-4" />
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Add Part
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

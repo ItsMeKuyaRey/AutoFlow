@@ -1,0 +1,101 @@
+@{
+    ViewData["Title"] = "Record Payment";
+}
+
+<div class="dashboard-page">
+
+    <div class="page-header">
+        <div>
+            <h1>Record Payment</h1>
+            <p>Process a payment for invoice @ViewBag.InvoiceNumber.</p>
+        </div>
+        <div class="page-header-actions">
+            <a asp-action="Details" asp-route-id="@ViewBag.BillingId"
+               class="af-button af-button-secondary">
+                Back to Invoice
+            </a>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start;">
+
+        <!-- LEFT: PAYMENT FORM -->
+        <div class="af-card" style="padding:28px;">
+            <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Payment Details</h2>
+
+            <form asp-action="RecordPayment" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="billingId" value="@ViewBag.BillingId" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                <div style="margin-bottom:24px;">
+                    <label class="form-label fw-semibold">Amount to Pay</label>
+                    <input type="number" name="amountPaid" step="0.01" min="0.01"
+                           max="@ViewBag.Remaining" class="form-control" required
+                           placeholder="0.00" />
+                </div>
+
+                <div style="margin-bottom:24px;">
+                    <label class="form-label fw-semibold">Payment Method</label>
+                    <select name="paymentMethod" class="form-select">
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="GCash">GCash</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:28px;">
+                    <label class="form-label fw-semibold">Notes (optional)</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Add any notes about this payment..."></textarea>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:12px; padding-top:20px; border-top:1px solid var(--af-border);">
+                    <a asp-action="Details" asp-route-id="@ViewBag.BillingId"
+                       class="af-button af-button-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="af-button af-button-primary">
+                        Save Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- RIGHT: INVOICE SUMMARY -->
+        <div>
+            <div class="af-card" style="padding:28px; margin-bottom:24px;">
+                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Invoice Summary</h2>
+                <div style="display:grid; gap:16px;">
+                    <div>
+                        <small style="color:var(--af-text-muted); display:block;">Invoice</small>
+                        <strong>@ViewBag.InvoiceNumber</strong>
+                    </div>
+                    <div>
+                        <small style="color:var(--af-text-muted); display:block;">Total Amount</small>
+                        <strong style="font-size:1.25rem;">@(((decimal)ViewBag.TotalAmount).ToString("C"))</strong>
+                    </div>
+                    <div>
+                        <small style="color:var(--af-text-muted); display:block;">Already Paid</small>
+                        <strong style="color:var(--af-success);">@(((decimal)ViewBag.AmountPaid).ToString("C"))</strong>
+                    </div>
+                    <div style="padding-top:12px; border-top:1px solid var(--af-border);">
+                        <small style="color:var(--af-text-muted); display:block;">Remaining Balance</small>
+                        <strong style="color:var(--af-danger); font-size:1.25rem;">@(((decimal)ViewBag.Remaining).ToString("C"))</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="af-card" style="padding:20px; background:var(--af-bg);">
+                <p style="color:var(--af-text-secondary); margin:0; font-size:0.9rem;">
+                    The payment amount cannot exceed the remaining balance.
+                    Once saved, the invoice status will update automatically.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</div>

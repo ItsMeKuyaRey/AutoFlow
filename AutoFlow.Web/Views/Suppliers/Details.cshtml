@@ -1,0 +1,94 @@
+@model AutoFlow.Web.Models.Supplier
+@{
+    ViewData["Title"] = "Supplier Details";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">@Model.Name</h1>
+        <p class="text-muted mb-0">Supplier details and linked parts.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.SupplierId" class="btn btn-outline-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Contact Information</h5>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Contact</dt>
+                    <dd class="col-sm-8">@(Model.ContactPerson ?? "—")</dd>
+
+                    <dt class="col-sm-4">Phone</dt>
+                    <dd class="col-sm-8">@(Model.Phone ?? "—")</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">@(Model.Email ?? "—")</dd>
+
+                    <dt class="col-sm-4">Address</dt>
+                    <dd class="col-sm-8">@(Model.Address ?? "—")</dd>
+
+                    <dt class="col-sm-4">City</dt>
+                    <dd class="col-sm-8">@(Model.City ?? "—")</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Status == "Active")
+                        {
+                            <span class="badge bg-success-subtle text-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary">@Model.Status</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Notes</dt>
+                    <dd class="col-sm-8">@(Model.Notes ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Parts from this Supplier (@Model.Parts.Count)</h5>
+                @if (Model.Parts.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Part #</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var part in Model.Parts)
+                            {
+                                <tr>
+                                    <td>@part.Name</td>
+                                    <td>@(part.PartNumber ?? "—")</td>
+                                    <td>@part.UnitPrice.ToString("C")</td>
+                                    <td>@part.StockQuantity</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No parts linked to this supplier yet.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

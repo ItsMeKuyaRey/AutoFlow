@@ -1,0 +1,63 @@
+@model AutoFlow.Web.Models.Appointment
+
+@{
+    ViewData["Title"] = "New Appointment";
+}
+
+<div class="page-header">
+    <div>
+        <h1>New Appointment</h1>
+        <p>Schedule a service appointment for a vehicle.</p>
+    </div>
+</div>
+
+<div class="af-card" style="max-width: 720px; padding: 28px;">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="VehicleId" class="form-label fw-semibold">Vehicle</label>
+                <select asp-for="VehicleId" class="form-select" asp-items="ViewBag.VehicleId">
+                    <option value="">-- Select Vehicle --</option>
+                </select>
+                <span asp-validation-for="VehicleId" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="AppointmentDate" class="form-label fw-semibold">Date & Time</label>
+                <input asp-for="AppointmentDate" type="datetime-local" class="form-control" />
+                <span asp-validation-for="AppointmentDate" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Status" class="form-label fw-semibold">Status</label>
+                <select asp-for="Status" class="form-select">
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="CustomerConcern" class="form-label fw-semibold">Customer Concern</label>
+                <textarea asp-for="CustomerConcern" class="form-control" rows="3" placeholder="What does the customer need?"></textarea>
+                <span asp-validation-for="CustomerConcern" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label fw-semibold">Internal Notes</label>
+                <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Notes" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="af-button af-button-primary">Create Appointment</button>
+            <a asp-action="Index" class="af-button af-button-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

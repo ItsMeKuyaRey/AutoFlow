@@ -36,7 +36,9 @@ namespace AutoFlow.Web.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsArchived { get; set; } = false;
 
         public Customer? Customer { get; set; }
+        public ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
     }
 }

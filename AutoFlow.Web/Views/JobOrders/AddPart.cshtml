@@ -1,0 +1,66 @@
+@{
+    ViewData["Title"] = "Add Part";
+}
+
+<div class="dashboard-page">
+
+    <div class="page-header">
+        <div>
+            <h1>Add Part</h1>
+            <p>Add a part or material used for Job Order #@ViewBag.JobOrderId.</p>
+        </div>
+        <div class="page-header-actions">
+            <a asp-action="Details" asp-route-id="@ViewBag.JobOrderId"
+               class="af-button af-button-secondary">
+                Back to Job Order
+            </a>
+        </div>
+    </div>
+
+    <div class="af-card" style="max-width:900px; padding:28px;">
+        <form asp-action="AddPart" asp-route-id="@ViewBag.JobOrderId" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+            <div style="margin-bottom:28px;">
+                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:6px;">Part Information</h2>
+                <p style="color:var(--af-text-secondary); margin-bottom:20px;">
+                    Select the part used for this repair and specify the quantity.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="partId" class="form-label fw-semibold">Part</label>
+                        <select id="partId" name="partId" class="form-select" asp-items="ViewBag.PartId">
+                            <option value="">-- Select Part --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="quantity" class="form-label fw-semibold">Quantity</label>
+                        <input id="quantity" name="quantity" class="form-control"
+                               type="number" min="1" step="1" value="1" required />
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:var(--af-bg); border:1px solid var(--af-border); border-radius:8px; padding:20px; margin-bottom:28px;">
+                <h3 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">Job Order</h3>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:var(--af-text-secondary);">Job Order ID</span>
+                    <strong>#@ViewBag.JobOrderId</strong>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px; padding-top:20px; border-top:1px solid var(--af-border);">
+                <a asp-action="Details" asp-route-id="@ViewBag.JobOrderId"
+                   class="af-button af-button-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="af-button af-button-primary">Add Part</button>
+            </div>
+        </form>
+    </div>
+
+</div>

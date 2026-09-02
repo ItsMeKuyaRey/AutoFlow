@@ -1,0 +1,159 @@
+@model AutoFlow.Web.Models.ServiceRecord
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Create Service Record - AutoFlow</title>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Create Service Record</h2>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+
+            <form asp-action="Create">
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <!-- Vehicle -->
+                <div class="form-group">
+                    <label asp-for="VehicleId" class="control-label">
+                        Vehicle
+                    </label>
+
+                    <select asp-for="VehicleId"
+                            class="form-control"
+                            asp-items="ViewBag.VehicleId">
+                        <option value="">-- Select Vehicle --</option>
+                    </select>
+
+                    <span asp-validation-for="VehicleId"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Service Date -->
+                <div class="form-group">
+                    <label asp-for="ServiceDate" class="control-label">
+                        Service Date
+                    </label>
+
+                    <input asp-for="ServiceDate"
+                           type="datetime-local"
+                           class="form-control" />
+
+                    <span asp-validation-for="ServiceDate"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Mileage -->
+                <div class="form-group">
+                    <label asp-for="Mileage" class="control-label">
+                        Mileage
+                    </label>
+
+                    <input asp-for="Mileage"
+                           type="number"
+                           class="form-control"
+                           placeholder="e.g. 25000" />
+
+                    <span asp-validation-for="Mileage"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Complaint -->
+                <div class="form-group">
+                    <label asp-for="Complaint" class="control-label">
+                        Customer Complaint
+                    </label>
+
+                    <textarea asp-for="Complaint"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Describe the customer's complaint..."></textarea>
+
+                    <span asp-validation-for="Complaint"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Diagnosis -->
+                <div class="form-group">
+                    <label asp-for="Diagnosis" class="control-label">
+                        Diagnosis
+                    </label>
+
+                    <textarea asp-for="Diagnosis"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Enter the mechanic's diagnosis..."></textarea>
+
+                    <span asp-validation-for="Diagnosis"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Status -->
+                <div class="form-group">
+                    <label asp-for="Status" class="control-label">
+                        Status
+                    </label>
+
+                    <select asp-for="Status" class="form-control">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+
+                    <span asp-validation-for="Status"
+                          class="text-danger"></span>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-group">
+                    <label asp-for="Notes" class="control-label">
+                        Notes
+                    </label>
+
+                    <textarea asp-for="Notes"
+                              class="form-control"
+                              rows="4"
+                              placeholder="Additional notes..."></textarea>
+
+                    <span asp-validation-for="Notes"
+                          class="text-danger"></span>
+                </div>
+
+                <br />
+
+                <div class="form-group">
+                    <input type="submit"
+                           value="Create Service Record"
+                           class="btn btn-primary" />
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <br />
+
+    <div>
+        <a asp-action="Index">Back to Service Records</a>
+    </div>
+
+</div>
+
+</body>
+</html>

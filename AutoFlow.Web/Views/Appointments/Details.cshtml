@@ -1,0 +1,50 @@
+@model AutoFlow.Web.Models.Appointment
+
+@{
+    ViewData["Title"] = "Appointment Details";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Appointment Details</h1>
+        <p>View appointment information.</p>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Edit" asp-route-id="@Model.AppointmentId" class="af-button af-button-primary">Edit</a>
+        <a asp-action="Index" class="af-button af-button-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="af-card" style="max-width: 720px; padding: 28px;">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Date & Time</label>
+            <div class="fw-semibold">@Model.AppointmentDate.ToString("MMM dd, yyyy hh:mm tt")</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Status</label>
+            <div class="fw-semibold">@Model.Status</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Vehicle</label>
+            <div class="fw-semibold">
+                @if (Model.Vehicle != null)
+                {
+                    @($"{Model.Vehicle.PlateNumber} — {Model.Vehicle.Make} {Model.Vehicle.Model}")
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </div>
+        </div>
+        <div class="col-12">
+            <label class="form-label text-muted small">Customer Concern</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.CustomerConcern) ? "—" : Model.CustomerConcern)</div>
+        </div>
+        <div class="col-12">
+            <label class="form-label text-muted small">Notes</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Notes) ? "—" : Model.Notes)</div>
+        </div>
+    </div>
+</div>

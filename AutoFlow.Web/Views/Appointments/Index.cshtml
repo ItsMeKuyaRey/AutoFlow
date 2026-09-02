@@ -1,0 +1,92 @@
+@model IEnumerable<AutoFlow.Web.Models.Appointment>
+
+@{
+    ViewData["Title"] = "Appointments";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Appointments</h1>
+        <p>Schedule and manage customer service appointments.</p>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Create" class="af-button af-button-primary">
+            + New Appointment
+        </a>
+    </div>
+</div>
+
+<div class="af-card" style="padding: 20px;">
+    <div class="af-table-wrapper">
+        <table class="af-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Vehicle</th>
+                    <th>Customer Concern</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var statusClass = item.Status switch
+                    {
+                        "Scheduled" => "badge-blue",
+                        "Confirmed" => "badge-green",
+                        "Completed" => "badge-green",
+                        "Cancelled" => "badge-red",
+                        _ => "badge-orange"
+                    };
+
+                    <tr>
+                        <td>
+                            <strong>@item.AppointmentDate.ToString("MMM dd, yyyy")</strong>
+                            <small>@item.AppointmentDate.ToString("hh:mm tt")</small>
+                        </td>
+                        <td>
+                            @if (item.Vehicle != null)
+                            {
+                                <strong>@item.Vehicle.PlateNumber</strong>
+                                <small>@item.Vehicle.Make @item.Vehicle.Model</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @(string.IsNullOrEmpty(item.CustomerConcern) ? "—" : item.CustomerConcern)
+                        </td>
+                        <td>
+                            <span class="af-badge @statusClass">@item.Status</span>
+                        </td>
+                        <td>
+                            @(string.IsNullOrEmpty(item.Notes) ? "—" : item.Notes)
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Details" asp-route-id="@item.AppointmentId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="View">👁</a>
+                                <a asp-action="Edit" asp-route-id="@item.AppointmentId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="Edit">✎</a>
+                                <a asp-action="Delete" asp-route-id="@item.AppointmentId"
+                                   class="af-button af-button-secondary" style="padding: 6px 10px; color:#dc2626;" title="Delete">🗑</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <p class="mb-2">No appointments yet.</p>
+            <a asp-action="Create" class="af-button af-button-primary">Schedule first appointment</a>
+        </div>
+    }
+</div>

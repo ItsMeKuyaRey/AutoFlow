@@ -1,0 +1,119 @@
+@model IEnumerable<AutoFlow.Web.Models.JobOrder>
+
+@{
+    ViewData["Title"] = "Repair Jobs";
+}
+
+<div class="dashboard-page">
+
+    <div class="page-header">
+        <div>
+            <h1>Repair Jobs</h1>
+            <p>Manage repair jobs and track vehicle service progress.</p>
+        </div>
+        <div class="page-header-actions">
+            <a asp-action="Create" class="af-button af-button-primary">
+                + New Job Order
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="af-card" style="text-align:center; padding:3rem;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🔧</div>
+            <h3 style="margin-bottom:0.5rem;">No Job Orders Found</h3>
+            <p style="color:var(--af-text-secondary); margin-bottom:1.5rem;">
+                There are currently no repair job orders in the system.
+            </p>
+            <a asp-action="Create" class="af-button af-button-primary">
+                Create Your First Job Order
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="af-card">
+            <div class="af-table-wrapper">
+                <table class="af-table">
+                    <thead>
+                        <tr>
+                            <th>Job Order</th>
+                            <th>Vehicle</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Cost</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var badgeClass = item.Status switch
+                            {
+                                "Open" => "badge-blue",
+                                "In Progress" => "badge-orange",
+                                "Completed" => "badge-green",
+                                "Cancelled" => "badge-red",
+                                _ => "badge-blue"
+                            };
+
+                            <tr>
+                                <td>
+                                    <strong>#@item.JobOrderId</strong>
+                                </td>
+                                <td>
+                                    @if (item.Vehicle != null)
+                                    {
+                                        <strong>@item.Vehicle.Make @item.Vehicle.Model</strong>
+                                        <small style="display:block; color:var(--af-text-muted); font-size:0.85rem;">
+                                            @item.Vehicle.PlateNumber
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-text-muted);">No vehicle</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Vehicle?.Customer != null)
+                                    {
+                                        <span>@item.Vehicle.Customer.FirstName @item.Vehicle.Customer.LastName</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--af-text-muted);">No customer</span>
+                                    }
+                                </td>
+                                <td>
+                                    @item.JobOrderDate.ToString("MMM dd, yyyy")
+                                    <small style="display:block; color:var(--af-text-muted);">@item.JobOrderDate.ToString("hh:mm tt")</small>
+                                </td>
+                                <td>
+                                    <span class="af-badge @badgeClass">@item.Status</span>
+                                </td>
+                                <td>
+                                    <strong>@item.TotalCost.ToString("C")</strong>
+                                </td>
+                                <td>
+                                    <div style="display:flex; gap:8px;">
+                                        <a asp-action="Details" asp-route-id="@item.JobOrderId"
+                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+                                            View
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.JobOrderId"
+                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+                                            Edit
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>

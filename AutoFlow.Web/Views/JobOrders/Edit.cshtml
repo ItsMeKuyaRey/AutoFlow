@@ -1,0 +1,121 @@
+@model AutoFlow.Web.Models.JobOrder
+
+@{
+    ViewData["Title"] = "Edit Job Order";
+}
+
+<div class="dashboard-page">
+
+    <div class="page-header">
+        <div>
+            <h1>Edit Job Order</h1>
+            <p>Update repair job information and service status.</p>
+        </div>
+        <div class="page-header-actions">
+            <a asp-action="Details" asp-route-id="@Model.JobOrderId"
+               class="af-button af-button-secondary">
+                View Details
+            </a>
+            <a asp-action="Index" class="af-button af-button-secondary">
+                Back to Repair Jobs
+            </a>
+        </div>
+    </div>
+
+    <div class="af-card" style="max-width:900px; padding:28px;">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="JobOrderId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+            <div style="margin-bottom:28px;">
+                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:6px;">Job Information</h2>
+                <p style="color:var(--af-text-secondary); margin-bottom:20px;">
+                    Update the vehicle, appointment, and job date.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="VehicleId" class="form-label fw-semibold">Vehicle</label>
+                        <select asp-for="VehicleId" class="form-select" asp-items="ViewBag.VehicleId">
+                            <option value="">-- Select Vehicle --</option>
+                        </select>
+                        <span asp-validation-for="VehicleId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AppointmentId" class="form-label fw-semibold">Appointment</label>
+                        <select asp-for="AppointmentId" class="form-select" asp-items="ViewBag.AppointmentId">
+                            <option value="">-- No Appointment --</option>
+                        </select>
+                        <span asp-validation-for="AppointmentId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="JobOrderDate" class="form-label fw-semibold">Job Order Date</label>
+                        <input asp-for="JobOrderDate" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="JobOrderDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Status" class="form-label fw-semibold">Status</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="LaborCost" class="form-label fw-semibold">Labor Cost</label>
+                        <input asp-for="LaborCost" type="number" step="0.01" class="form-control" />
+                        <span asp-validation-for="LaborCost" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:28px;">
+                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:6px;">Repair Details</h2>
+                <p style="color:var(--af-text-secondary); margin-bottom:20px;">
+                    Update the repair description and additional notes.
+                </p>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-semibold">Repair Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="4"
+                              placeholder="Describe the repair or requested service..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Diagnosis" class="form-label fw-semibold">Diagnosis</label>
+                    <textarea asp-for="Diagnosis" class="form-control" rows="4"
+                              placeholder="Enter the mechanic's diagnosis..."></textarea>
+                    <span asp-validation-for="Diagnosis" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Notes" class="form-label fw-semibold">Additional Notes</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"
+                              placeholder="Add additional notes or instructions..."></textarea>
+                    <span asp-validation-for="Notes" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px; padding-top:20px; border-top:1px solid var(--af-border);">
+                <a asp-action="Details" asp-route-id="@Model.JobOrderId"
+                   class="af-button af-button-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="af-button af-button-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,69 +1,50 @@
 @model AutoFlow.Web.Models.Customer
 
 @{
-    Layout = "_Layout";
+    ViewData["Title"] = "Customer Details";
+    var initials = $"{(Model.FirstName?.FirstOrDefault().ToString() ?? "")}{(Model.LastName?.FirstOrDefault().ToString() ?? "")}".ToUpper();
 }
 
-<!DOCTYPE html>
-
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Details</title>
-</head>
-<body>
-
-<div>
-    <h4>Customer</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.FirstName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.FirstName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.LastName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.LastName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Phone)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Phone)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Address)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Address)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.UpdatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedAt)
-        </dd>
-    </dl>
+<div class="page-header">
+    <div>
+        <h1>Customer Details</h1>
+        <p>View customer profile and information.</p>
+    </div>
+    <div class="page-header-actions">
+        <a asp-action="Edit" asp-route-id="@Model.CustomerId" class="af-button af-button-primary">Edit</a>
+        <a asp-action="Index" class="af-button af-button-secondary">Back to List</a>
+    </div>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.CustomerId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+
+<div class="af-card" style="max-width: 720px; padding: 28px;">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="avatar avatar-blue" style="width: 48px; height: 48px; font-size: 16px;">@initials</div>
+        <div>
+            <h2 class="mb-0" style="font-size: 20px;">@Model.FirstName @Model.LastName</h2>
+            <small class="text-muted">ID: AF-@Model.CustomerId.ToString("D5")</small>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Phone</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Email</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</div>
+        </div>
+        <div class="col-12">
+            <label class="form-label text-muted small">Address</label>
+            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Created</label>
+            <div class="fw-semibold">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label text-muted small">Last Updated</label>
+            <div class="fw-semibold">@Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+        </div>
+    </div>
 </div>
-</body>
-</html>

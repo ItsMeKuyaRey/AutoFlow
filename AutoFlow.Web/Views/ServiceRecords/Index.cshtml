@@ -1,0 +1,210 @@
+
+@model IEnumerable<AutoFlow.Web.Models.ServiceRecord>
+
+@{
+    ViewData["Title"] = "Service Records";
+}
+
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">Service Records</h1>
+            <p class="text-muted mb-0">
+                View and manage vehicle service history.
+            </p>
+        </div>
+
+        <a asp-action="Create" class="btn btn-primary">
+            + New Service Record
+        </a>
+    </div>
+
+    <!-- Service Records Table -->
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body">
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+
+                    <h5 class="fw-semibold">No Service Records Found</h5>
+
+                    <p class="text-muted mb-3">
+                        There are currently no service records in the system.
+                    </p>
+
+                    <a asp-action="Create" class="btn btn-primary">
+                        Create First Service Record
+                    </a>
+
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+                            <tr>
+
+                                <th>Vehicle</th>
+
+                                <th>Service Date</th>
+
+                                <th>Mileage</th>
+
+                                <th>Complaint</th>
+
+                                <th>Diagnosis</th>
+
+                                <th>Status</th>
+
+                                <th class="text-end">Actions</th>
+
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+
+                                <!-- Vehicle -->
+                                <td>
+                                    @if (item.Vehicle != null)
+                                    {
+                                        <div class="fw-semibold">
+                                            @item.Vehicle.Make @item.Vehicle.Model
+                                        </div>
+
+                                        <small class="text-muted">
+                                            @item.Vehicle.PlateNumber
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Vehicle unavailable
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Service Date -->
+                                <td>
+                                    @item.ServiceDate.ToLocalTime().ToString("MMM dd, yyyy")
+                                </td>
+
+                                <!-- Mileage -->
+                                <td>
+                                    @if (item.Mileage.HasValue)
+                                    {
+                                        @item.Mileage.Value.ToString("N0")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <!-- Complaint -->
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.Complaint))
+                                    {
+                                        @item.Complaint
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <!-- Diagnosis -->
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.Diagnosis))
+                                    {
+                                        @item.Diagnosis
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+
+                                <!-- Status -->
+                                <td>
+                                    @switch (item.Status)
+                                    {
+                                        case "Completed":
+                                            <span class="badge bg-success">
+                                                Completed
+                                            </span>
+                                            break;
+
+                                        case "In Progress":
+                                            <span class="badge bg-warning text-dark">
+                                                In Progress
+                                            </span>
+                                            break;
+
+                                        case "Cancelled":
+                                            <span class="badge bg-danger">
+                                                Cancelled
+                                            </span>
+                                            break;
+
+                                        default:
+                                            <span class="badge bg-secondary">
+                                                @item.Status
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="text-end">
+
+                                    <div class="btn-group" role="group">
+
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.ServiceRecordId"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            Details
+                                        </a>
+
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.ServiceRecordId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Edit
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.ServiceRecordId"
+                                           class="btn btn-sm btn-outline-danger">
+                                            Delete
+                                        </a>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
