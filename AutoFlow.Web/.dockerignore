@@ -1,0 +1,15 @@
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+**/bin/
+**/obj/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+appsettings.Development.json
