@@ -1,0 +1,253 @@
+@{
+    ViewData["Title"] = "System Settings";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-eyebrow">SYSTEM SETTINGS</div>
+
+        <h1>System Settings</h1>
+
+        <p class="page-description">
+            Manage AutoFlow system configuration and administrative settings.
+        </p>
+    </div>
+</div>
+
+<div class="settings-grid">
+
+    <div class="settings-card">
+        <div class="settings-icon">
+            ⚙
+        </div>
+
+        <div class="settings-content">
+            <h2>Application Configuration</h2>
+
+            <p>
+                Review the core configuration of the AutoFlow
+                automotive repair shop management system.
+            </p>
+
+            <span class="settings-status">
+                Configuration Active
+            </span>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <div class="settings-icon">
+            🛡
+        </div>
+
+        <div class="settings-content">
+            <h2>Security & Access</h2>
+
+            <p>
+                AutoFlow uses role-based access control to protect
+                system modules and administrative functions.
+            </p>
+
+            <span class="settings-status">
+                RBAC Enabled
+            </span>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <div class="settings-icon">
+            ◉
+        </div>
+
+        <div class="settings-content">
+            <h2>System Status</h2>
+
+            <p>
+                The AutoFlow application and its core services
+                are currently available.
+            </p>
+
+            <span class="settings-status">
+                System Online
+            </span>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <div class="settings-icon">
+            ◫
+        </div>
+
+        <div class="settings-content">
+            <h2>Database</h2>
+
+            <p>
+                AutoFlow uses the configured PostgreSQL database
+                for operational and ERP/CRM data.
+            </p>
+
+            <span class="settings-status">
+                Database Configured
+            </span>
+        </div>
+    </div>
+
+</div>
+
+<div class="admin-notice">
+    <div class="admin-notice-icon">
+        🛡
+    </div>
+
+    <div>
+        <h3>Administrator Access</h3>
+
+        <p>
+            These settings are available only to authorized
+            AutoFlow Administrators. Changes to authentication,
+            role permissions, and database configuration should
+            be performed carefully.
+        </p>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-eyebrow {
+        margin-bottom: 7px;
+        color: #7c3aed;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        color: #172033;
+        font-size: 30px;
+        font-weight: 700;
+    }
+
+    .page-description {
+        margin: 8px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .settings-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 23px;
+        background: #ffffff;
+        border: 1px solid #e7e9ef;
+        border-radius: 16px;
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.04);
+        transition:
+            transform 0.18s ease,
+            box-shadow 0.18s ease;
+    }
+
+    .settings-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 9px 25px rgba(15, 23, 42, 0.07);
+    }
+
+    .settings-icon {
+        width: 46px;
+        height: 46px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: #eee8ff;
+        color: #6d3fe5;
+        font-size: 20px;
+    }
+
+    .settings-content {
+        min-width: 0;
+    }
+
+    .settings-content h2 {
+        margin: 0 0 7px;
+        color: #172033;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .settings-content p {
+        margin: 0 0 13px;
+        color: #707889;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .settings-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .admin-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-top: 20px;
+        padding: 18px 20px;
+        background: #f8f7ff;
+        border: 1px solid #e9e4ff;
+        border-radius: 14px;
+    }
+
+    .admin-notice-icon {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .admin-notice h3 {
+        margin: 0 0 5px;
+        color: #312e81;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .admin-notice p {
+        margin: 0;
+        color: #636b7a;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+   @@media (max-width: 800px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>

@@ -1,0 +1,323 @@
+@model AutoFlow.Web.Models.Part
+
+@{
+    ViewData["Title"] = "Delete Part";
+
+    var stockStatus = Model.StockQuantity <= 0
+        ? "Out of Stock"
+        : Model.StockQuantity <= 5
+            ? "Low Stock"
+            : "In Stock";
+}
+
+<style>
+    .parts-delete-page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 35px 28px 55px;
+    }
+
+    .delete-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #7b8190;
+        font-size: 13px;
+        margin-bottom: 24px;
+    }
+
+    .delete-breadcrumb a {
+        color: #6f42c1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .delete-card {
+        background: #fff;
+        border: 1px solid #ececf1;
+        border-radius: 18px;
+        box-shadow: 0 8px 28px rgba(30, 25, 50, 0.06);
+        overflow: hidden;
+    }
+
+    .delete-header {
+        padding: 30px;
+        text-align: center;
+        border-bottom: 1px solid #eeeeF2;
+    }
+
+    .delete-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 17px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff1f3;
+        color: #c03952;
+        font-size: 28px;
+    }
+
+    .delete-header h1 {
+        font-size: 27px;
+        font-weight: 800;
+        color: #252936;
+        margin-bottom: 8px;
+    }
+
+    .delete-header p {
+        color: #7b8190;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .delete-body {
+        padding: 28px;
+    }
+
+    .part-summary {
+        border: 1px solid #ececf1;
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .part-summary-header {
+        padding: 17px 20px;
+        background: #fafafd;
+        border-bottom: 1px solid #ececf1;
+        font-size: 13px;
+        font-weight: 750;
+        color: #303542;
+    }
+
+    .part-summary-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .part-summary-item {
+        padding: 19px 20px;
+        border-right: 1px solid #ececf1;
+    }
+
+    .part-summary-item:last-child {
+        border-right: 0;
+    }
+
+    .part-summary-label {
+        font-size: 11px;
+        color: #858b98;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+    .part-summary-value {
+        font-size: 15px;
+        font-weight: 750;
+        color: #292e39;
+    }
+
+    .warning-box {
+        display: flex;
+        gap: 13px;
+        padding: 15px 17px;
+        border-radius: 12px;
+        background: #fff8e9;
+        border: 1px solid #f2dfaf;
+        color: #765b20;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 25px;
+    }
+
+    .warning-box i {
+        font-size: 19px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 22px;
+        border-top: 1px solid #eeeeF2;
+    }
+
+    .delete-btn {
+        min-height: 44px;
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .delete-confirm {
+        background: #c03952;
+        border-color: #c03952;
+        color: #fff;
+    }
+
+    .delete-confirm:hover {
+        background: #a92f45;
+        border-color: #a92f45;
+        color: #fff;
+    }
+
+    @@media (max-width: 700px) {
+        .parts-delete-page {
+            padding: 25px 16px 40px;
+        }
+
+        .part-summary-row {
+            grid-template-columns: 1fr;
+        }
+
+        .part-summary-item {
+            border-right: 0;
+            border-bottom: 1px solid #ececf1;
+        }
+
+        .part-summary-item:last-child {
+            border-bottom: 0;
+        }
+
+        .delete-actions {
+            flex-direction: column-reverse;
+        }
+
+        .delete-actions a,
+        .delete-actions button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="parts-delete-page">
+
+    <div class="delete-breadcrumb">
+        <a asp-action="Index">
+            <i class="bi bi-box-seam"></i> Parts Inventory
+        </a>
+        <i class="bi bi-chevron-right"></i>
+        <span>Delete Part</span>
+    </div>
+
+    <div class="delete-card">
+
+        <div class="delete-header">
+
+            <div class="delete-icon">
+                <i class="bi bi-trash3"></i>
+            </div>
+
+            <h1>Delete Part?</h1>
+
+            <p>
+                You are about to permanently remove this inventory record.
+            </p>
+
+        </div>
+
+        <div class="delete-body">
+
+            <div class="part-summary">
+
+                <div class="part-summary-header">
+                    <i class="bi bi-box-seam me-2"></i>
+                    Part Information
+                </div>
+
+                <div class="part-summary-row">
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Part Name</div>
+                        <div class="part-summary-value">
+                            @Model.Name
+                        </div>
+                    </div>
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Part Number</div>
+                        <div class="part-summary-value">
+                            @(string.IsNullOrWhiteSpace(Model.PartNumber)
+                                ? "—"
+                                : Model.PartNumber)
+                        </div>
+                    </div>
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Supplier</div>
+                        <div class="part-summary-value">
+                            @(Model.Supplier?.Name ?? "No Supplier")
+                        </div>
+                    </div>
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Unit Price</div>
+                        <div class="part-summary-value">
+                            ₱@Model.UnitPrice.ToString("N2")
+                        </div>
+                    </div>
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Stock</div>
+                        <div class="part-summary-value">
+                            @Model.StockQuantity
+                        </div>
+                    </div>
+
+                    <div class="part-summary-item">
+                        <div class="part-summary-label">Status</div>
+                        <div class="part-summary-value">
+                            @stockStatus
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="warning-box">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+
+                <div>
+                    <strong>This action cannot be undone.</strong>
+                    Deleting this part will permanently remove its inventory
+                    record from AutoFlow.
+                </div>
+            </div>
+
+            <form asp-action="Delete" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="PartId" />
+
+                <div class="delete-actions">
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary delete-btn">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn delete-btn delete-confirm">
+                        <i class="bi bi-trash3 me-1"></i>
+                        Delete Part
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>

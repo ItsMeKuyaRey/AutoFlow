@@ -2,15 +2,195 @@
 
 @{
     ViewData["Title"] = "Repair Jobs";
+
+    var jobs = Model.ToList();
+
+    var totalJobs = jobs.Count;
+    var openJobs = jobs.Count(x => x.Status == "Open");
+    var inProgressJobs = jobs.Count(x => x.Status == "In Progress");
+    var completedJobs = jobs.Count(x => x.Status == "Completed");
+    var cancelledJobs = jobs.Count(x => x.Status == "Cancelled");
+    var totalValue = jobs.Sum(x => x.TotalCost);
 }
 
-<div class="dashboard-page">
+<style>
+    .job-page {
+        padding-bottom: 40px;
+    }
+
+    .job-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .job-stat-card {
+        background: var(--af-surface);
+        border: 1px solid var(--af-border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--af-shadow);
+    }
+
+    .job-stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .job-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--af-bg);
+        font-size: 19px;
+    }
+
+    .job-stat-label {
+        color: var(--af-text-secondary);
+        font-size: 0.82rem;
+        margin-bottom: 5px;
+    }
+
+    .job-stat-value {
+        font-size: 1.55rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .job-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--af-border);
+    }
+
+    .job-toolbar-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .job-toolbar-title h2 {
+        font-size: 1rem;
+        font-weight: 650;
+        margin: 0;
+    }
+
+    .job-count {
+        background: var(--af-bg);
+        color: var(--af-text-secondary);
+        border: 1px solid var(--af-border);
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .job-empty {
+        text-align: center;
+        padding: 64px 24px;
+    }
+
+    .job-empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--af-bg);
+        font-size: 28px;
+    }
+
+    .job-empty h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    .job-empty p {
+        color: var(--af-text-secondary);
+        max-width: 480px;
+        margin: 0 auto 22px;
+    }
+
+    .job-table-title {
+        font-weight: 650;
+    }
+
+    .job-table-sub {
+        display: block;
+        color: var(--af-text-muted);
+        font-size: 0.78rem;
+        margin-top: 3px;
+    }
+
+    .job-action-group {
+        display: flex;
+        gap: 7px;
+        white-space: nowrap;
+    }
+
+    .job-action {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .job-status-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 5px;
+        background: currentColor;
+    }
+
+    .job-revenue {
+        font-weight: 700;
+    }
+
+    @@media (max-width: 1100px) {
+        .job-stat-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .job-stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .job-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .job-toolbar .af-button {
+            width: 100%;
+        }
+
+        .job-action-group {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="dashboard-page job-page">
 
     <div class="page-header">
         <div>
-            <h1>Repair Jobs</h1>
-            <p>Manage repair jobs and track vehicle service progress.</p>
+            <h1>Repair Job Orders</h1>
+            <p>Manage repair work, track service progress, parts usage, and job costs.</p>
         </div>
+
         <div class="page-header-actions">
             <a asp-action="Create" class="af-button af-button-primary">
                 + New Job Order
@@ -18,22 +198,74 @@
         </div>
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="af-card" style="text-align:center; padding:3rem;">
-            <div style="font-size:2rem; margin-bottom:0.5rem;">🔧</div>
-            <h3 style="margin-bottom:0.5rem;">No Job Orders Found</h3>
-            <p style="color:var(--af-text-secondary); margin-bottom:1.5rem;">
-                There are currently no repair job orders in the system.
-            </p>
-            <a asp-action="Create" class="af-button af-button-primary">
-                Create Your First Job Order
-            </a>
+    <div class="job-stat-grid">
+
+        <div class="job-stat-card">
+            <div class="job-stat-top">
+                <div class="job-stat-icon">🔧</div>
+            </div>
+            <div class="job-stat-label">Total Job Orders</div>
+            <div class="job-stat-value">@totalJobs</div>
         </div>
-    }
-    else
-    {
-        <div class="af-card">
+
+        <div class="job-stat-card">
+            <div class="job-stat-top">
+                <div class="job-stat-icon">⚙️</div>
+            </div>
+            <div class="job-stat-label">Open / In Progress</div>
+            <div class="job-stat-value">@(openJobs + inProgressJobs)</div>
+        </div>
+
+        <div class="job-stat-card">
+            <div class="job-stat-top">
+                <div class="job-stat-icon">✓</div>
+            </div>
+            <div class="job-stat-label">Completed Jobs</div>
+            <div class="job-stat-value">@completedJobs</div>
+        </div>
+
+        <div class="job-stat-card">
+            <div class="job-stat-top">
+                <div class="job-stat-icon">₱</div>
+            </div>
+            <div class="job-stat-label">Total Job Value</div>
+            <div class="job-stat-value">@totalValue.ToString("C")</div>
+        </div>
+
+    </div>
+
+    <div class="af-card">
+
+        <div class="job-toolbar">
+            <div class="job-toolbar-title">
+                <h2>Repair Job Orders</h2>
+                <span class="job-count">@totalJobs total</span>
+            </div>
+
+            <div style="font-size:0.82rem; color:var(--af-text-secondary);">
+                @openJobs open · @inProgressJobs in progress · @completedJobs completed · @cancelledJobs cancelled
+            </div>
+        </div>
+
+        @if (!jobs.Any())
+        {
+            <div class="job-empty">
+                <div class="job-empty-icon">🔧</div>
+
+                <h3>No Job Orders Found</h3>
+
+                <p>
+                    Create a repair job order to begin tracking a customer's vehicle service,
+                    labor, parts, and repair progress.
+                </p>
+
+                <a asp-action="Create" class="af-button af-button-primary">
+                    + Create First Job Order
+                </a>
+            </div>
+        }
+        else
+        {
             <div class="af-table-wrapper">
                 <table class="af-table">
                     <thead>
@@ -43,12 +275,13 @@
                             <th>Customer</th>
                             <th>Date</th>
                             <th>Status</th>
-                            <th>Cost</th>
+                            <th>Job Value</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        @foreach (var item in Model)
+                        @foreach (var item in jobs)
                         {
                             var badgeClass = item.Status switch
                             {
@@ -61,49 +294,85 @@
 
                             <tr>
                                 <td>
-                                    <strong>#@item.JobOrderId</strong>
+                                    <span class="job-table-title">#@item.JobOrderId</span>
+                                    <span class="job-table-sub">
+                                        @item.JobOrderDate.ToString("MMM dd, yyyy")
+                                    </span>
                                 </td>
+
                                 <td>
                                     @if (item.Vehicle != null)
                                     {
-                                        <strong>@item.Vehicle.Make @item.Vehicle.Model</strong>
-                                        <small style="display:block; color:var(--af-text-muted); font-size:0.85rem;">
+                                        <span class="job-table-title">
+                                            @item.Vehicle.Make @item.Vehicle.Model
+                                        </span>
+
+                                        <span class="job-table-sub">
                                             @item.Vehicle.PlateNumber
-                                        </small>
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-text-muted);">No vehicle</span>
+                                        <span style="color:var(--af-text-muted);">
+                                            No vehicle
+                                        </span>
                                     }
                                 </td>
+
                                 <td>
                                     @if (item.Vehicle?.Customer != null)
                                     {
-                                        <span>@item.Vehicle.Customer.FirstName @item.Vehicle.Customer.LastName</span>
+                                        <span class="job-table-title">
+                                            @item.Vehicle.Customer.FirstName
+                                            @item.Vehicle.Customer.LastName
+                                        </span>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Vehicle.Customer.Phone))
+                                        {
+                                            <span class="job-table-sub">
+                                                @item.Vehicle.Customer.Phone
+                                            </span>
+                                        }
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-text-muted);">No customer</span>
+                                        <span style="color:var(--af-text-muted);">
+                                            No customer
+                                        </span>
                                     }
                                 </td>
+
                                 <td>
-                                    @item.JobOrderDate.ToString("MMM dd, yyyy")
-                                    <small style="display:block; color:var(--af-text-muted);">@item.JobOrderDate.ToString("hh:mm tt")</small>
+                                    <span>@item.JobOrderDate.ToString("MMM dd, yyyy")</span>
+                                    <span class="job-table-sub">
+                                        @item.JobOrderDate.ToString("hh:mm tt")
+                                    </span>
                                 </td>
+
                                 <td>
-                                    <span class="af-badge @badgeClass">@item.Status</span>
+                                    <span class="af-badge @badgeClass">
+                                        <span class="job-status-dot"></span>
+                                        @item.Status
+                                    </span>
                                 </td>
+
                                 <td>
-                                    <strong>@item.TotalCost.ToString("C")</strong>
+                                    <span class="job-revenue">
+                                        @item.TotalCost.ToString("C")
+                                    </span>
                                 </td>
+
                                 <td>
-                                    <div style="display:flex; gap:8px;">
-                                        <a asp-action="Details" asp-route-id="@item.JobOrderId"
-                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+                                    <div class="job-action-group">
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.JobOrderId"
+                                           class="af-button af-button-secondary job-action">
                                             View
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@item.JobOrderId"
-                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.JobOrderId"
+                                           class="af-button af-button-secondary job-action">
                                             Edit
                                         </a>
                                     </div>
@@ -113,7 +382,8 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    }
+        }
+
+    </div>
 
 </div>

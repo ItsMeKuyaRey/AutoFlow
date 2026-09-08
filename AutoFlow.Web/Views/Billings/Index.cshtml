@@ -2,33 +2,309 @@
 
 @{
     ViewData["Title"] = "Billing & Payments";
+
+    var billingList = Model.ToList();
+
+    var totalInvoices = billingList.Count;
+    var paidInvoices = billingList.Count(x => x.Status == "Paid");
+    var partialInvoices = billingList.Count(x => x.Status == "Partial");
+    var outstandingInvoices = billingList.Count(x => x.Status != "Paid");
+
+    var totalBilled = billingList.Sum(x => x.TotalAmount);
+    var totalCollected = billingList.Sum(x => x.AmountPaid);
+    var totalOutstanding = billingList.Sum(x => x.TotalAmount - x.AmountPaid);
 }
 
-<div class="dashboard-page">
+<style>
+    .billing-page {
+        max-width: 1500px;
+        margin: 0 auto;
+    }
+
+    .billing-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .billing-stat-card {
+        background: var(--af-card-bg, #fff);
+        border: 1px solid var(--af-border);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-width: 0;
+    }
+
+    .billing-stat-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 15px;
+        background: rgba(124, 58, 237, 0.10);
+        color: var(--af-primary);
+    }
+
+    .billing-stat-label {
+        color: var(--af-text-muted);
+        font-size: 0.78rem;
+        margin-bottom: 4px;
+    }
+
+    .billing-stat-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--af-text-primary);
+    }
+
+    .billing-stat-meta {
+        margin-top: 5px;
+        font-size: 0.75rem;
+        color: var(--af-text-muted);
+    }
+
+    .billing-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .billing-toolbar-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 650;
+    }
+
+    .billing-toolbar-subtitle {
+        margin: 4px 0 0;
+        color: var(--af-text-muted);
+        font-size: 0.82rem;
+    }
+
+    .billing-table-card {
+        overflow: hidden;
+    }
+
+    .billing-invoice-cell {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+    }
+
+    .billing-invoice-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(124, 58, 237, 0.10);
+        color: var(--af-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .billing-invoice-number {
+        font-weight: 650;
+    }
+
+    .billing-muted {
+        color: var(--af-text-muted);
+    }
+
+    .billing-customer {
+        font-weight: 550;
+    }
+
+    .billing-vehicle {
+        font-weight: 600;
+    }
+
+    .billing-vehicle-meta {
+        display: block;
+        margin-top: 3px;
+        color: var(--af-text-muted);
+        font-size: 0.78rem;
+    }
+
+    .billing-money {
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .billing-balance {
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .billing-balance.is-due {
+        color: var(--af-danger);
+    }
+
+    .billing-balance.is-paid {
+        color: var(--af-success);
+    }
+
+    .billing-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .billing-actions .af-button {
+        padding: 7px 12px;
+        font-size: 12px;
+    }
+
+    .billing-empty {
+        padding: 64px 24px;
+        text-align: center;
+    }
+
+    .billing-empty-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(124, 58, 237, 0.10);
+        color: var(--af-primary);
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .billing-empty h3 {
+        margin-bottom: 7px;
+        font-size: 1.1rem;
+    }
+
+    .billing-empty p {
+        max-width: 500px;
+        margin: 0 auto 22px;
+        color: var(--af-text-secondary);
+    }
+
+    @@media (max-width: 1100px) {
+        .billing-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .billing-table-card {
+            overflow-x: auto;
+        }
+
+        .billing-table-card .af-table {
+            min-width: 1050px;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .billing-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .billing-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="dashboard-page billing-page">
 
     <div class="page-header">
         <div>
             <h1>Billing & Payments</h1>
-            <p>Invoices generated automatically from completed job orders.</p>
+            <p>Manage invoices, balances, and customer payments from completed repair jobs.</p>
         </div>
     </div>
 
-    @if (!Model.Any())
+    @if (!billingList.Any())
     {
-        <div class="af-card" style="text-align:center; padding:3rem;">
-            <div style="font-size:2rem; margin-bottom:0.5rem;">💳</div>
-            <h3 style="margin-bottom:0.5rem;">No Invoices Yet</h3>
-            <p style="color:var(--af-text-secondary); margin-bottom:1.5rem;">
-                Invoices are generated automatically when a job order is marked as Completed.
+        <div class="af-card billing-empty">
+            <div class="billing-empty-icon">₱</div>
+            <h3>No Invoices Yet</h3>
+            <p>
+                Invoices are generated automatically when a job order is marked as completed.
+                Complete a repair job to begin the billing workflow.
             </p>
-            <a asp-controller="JobOrders" asp-action="Index" class="af-button af-button-primary">
+            <a asp-controller="JobOrders"
+               asp-action="Index"
+               class="af-button af-button-primary">
                 View Repair Jobs
             </a>
         </div>
     }
     else
     {
-        <div class="af-card">
+        <div class="billing-summary-grid">
+
+            <div class="billing-stat-card">
+                <div class="billing-stat-icon">INV</div>
+                <div>
+                    <div class="billing-stat-label">Total Invoices</div>
+                    <div class="billing-stat-value">@totalInvoices</div>
+                    <div class="billing-stat-meta">@paidInvoices paid</div>
+                </div>
+            </div>
+
+            <div class="billing-stat-card">
+                <div class="billing-stat-icon">₱</div>
+                <div>
+                    <div class="billing-stat-label">Total Billed</div>
+                    <div class="billing-stat-value">₱@totalBilled.ToString("N2")</div>
+                    <div class="billing-stat-meta">All issued invoices</div>
+                </div>
+            </div>
+
+            <div class="billing-stat-card">
+                <div class="billing-stat-icon">COL</div>
+                <div>
+                    <div class="billing-stat-label">Collected</div>
+                    <div class="billing-stat-value">₱@totalCollected.ToString("N2")</div>
+                    <div class="billing-stat-meta">@paidInvoices fully paid</div>
+                </div>
+            </div>
+
+            <div class="billing-stat-card">
+                <div class="billing-stat-icon">DUE</div>
+                <div>
+                    <div class="billing-stat-label">Outstanding</div>
+                    <div class="billing-stat-value">₱@totalOutstanding.ToString("N2")</div>
+                    <div class="billing-stat-meta">@outstandingInvoices invoice(s) with balance</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="af-card billing-table-card">
+
+            <div style="padding:22px 24px; border-bottom:1px solid var(--af-border);">
+                <div class="billing-toolbar" style="margin-bottom:0;">
+                    <div>
+                        <h2 class="billing-toolbar-title">Invoice Register</h2>
+                        <p class="billing-toolbar-subtitle">
+                            @totalInvoices invoice(s) recorded in the system
+                            · @partialInvoices partial payment(s)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="af-table-wrapper">
                 <table class="af-table">
                     <thead>
@@ -45,10 +321,12 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        @foreach (var item in Model)
+                        @foreach (var item in billingList)
                         {
                             var balance = item.TotalAmount - item.AmountPaid;
+
                             var badgeClass = item.Status switch
                             {
                                 "Paid" => "badge-green",
@@ -57,88 +335,130 @@
                             };
 
                             <tr>
+
                                 <td>
-                                    <strong>@item.InvoiceNumber</strong>
+                                    <div class="billing-invoice-cell">
+                                        <div class="billing-invoice-icon">INV</div>
+                                        <div class="billing-invoice-number">
+                                            @item.InvoiceNumber
+                                        </div>
+                                    </div>
                                 </td>
+
                                 <td>
                                     @if (item.JobOrder != null)
                                     {
-                                        <a asp-controller="JobOrders" asp-action="Details"
+                                        <a asp-controller="JobOrders"
+                                           asp-action="Details"
                                            asp-route-id="@item.JobOrder.JobOrderId"
-                                           style="color:var(--af-primary); text-decoration:none;">
+                                           style="color:var(--af-primary); text-decoration:none; font-weight:650;">
                                             #@item.JobOrder.JobOrderId
                                         </a>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-text-muted);">—</span>
+                                        <span class="billing-muted">—</span>
                                     }
                                 </td>
+
                                 <td>
                                     @if (item.JobOrder?.Vehicle != null)
                                     {
-                                        <strong>@item.JobOrder.Vehicle.PlateNumber</strong>
-                                        <small style="display:block; color:var(--af-text-muted); font-size:0.85rem;">
+                                        <span class="billing-vehicle">
+                                            @item.JobOrder.Vehicle.PlateNumber
+                                        </span>
+
+                                        <span class="billing-vehicle-meta">
                                             @item.JobOrder.Vehicle.Make @item.JobOrder.Vehicle.Model
-                                        </small>
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-text-muted);">—</span>
+                                        <span class="billing-muted">—</span>
                                     }
                                 </td>
+
                                 <td>
                                     @if (item.JobOrder?.Vehicle?.Customer != null)
                                     {
-                                        <span>@item.JobOrder.Vehicle.Customer.FirstName @item.JobOrder.Vehicle.Customer.LastName</span>
+                                        <span class="billing-customer">
+                                            @item.JobOrder.Vehicle.Customer.FirstName
+                                            @item.JobOrder.Vehicle.Customer.LastName
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-text-muted);">—</span>
+                                        <span class="billing-muted">—</span>
                                     }
                                 </td>
+
                                 <td>
-                                    @item.IssuedAt.ToString("MMM dd, yyyy")
+                                    <span>@item.IssuedAt.ToString("MMM dd, yyyy")</span>
+                                    <small style="display:block; color:var(--af-text-muted); font-size:0.75rem;">
+                                        @item.IssuedAt.ToString("hh:mm tt")
+                                    </small>
                                 </td>
+
                                 <td>
-                                    <strong>@item.TotalAmount.ToString("C")</strong>
+                                    <span class="billing-money">
+                                        ₱@item.TotalAmount.ToString("N2")
+                                    </span>
                                 </td>
+
                                 <td>
-                                    @item.AmountPaid.ToString("C")
+                                    <span class="billing-money">
+                                        ₱@item.AmountPaid.ToString("N2")
+                                    </span>
                                 </td>
+
                                 <td>
                                     @if (balance > 0)
                                     {
-                                        <span style="color:var(--af-danger); font-weight:600;">@balance.ToString("C")</span>
+                                        <span class="billing-balance is-due">
+                                            ₱@balance.ToString("N2")
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--af-success);">$0.00</span>
+                                        <span class="billing-balance is-paid">
+                                            ₱0.00
+                                        </span>
                                     }
                                 </td>
+
                                 <td>
-                                    <span class="af-badge @badgeClass">@item.Status</span>
+                                    <span class="af-badge @badgeClass">
+                                        @item.Status
+                                    </span>
                                 </td>
+
                                 <td>
-                                    <div style="display:flex; gap:8px;">
-                                        <a asp-action="Details" asp-route-id="@item.BillingId"
-                                           class="af-button af-button-secondary" style="padding:6px 12px; font-size:12px;">
+                                    <div class="billing-actions">
+
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.BillingId"
+                                           class="af-button af-button-secondary">
                                             View
                                         </a>
+
                                         @if (item.Status != "Paid")
                                         {
-                                            <a asp-action="RecordPayment" asp-route-id="@item.BillingId"
-                                               class="af-button af-button-primary" style="padding:6px 12px; font-size:12px;">
-                                                Pay
+                                            <a asp-action="RecordPayment"
+                                               asp-route-id="@item.BillingId"
+                                               class="af-button af-button-primary">
+                                                Record Payment
                                             </a>
                                         }
+
                                     </div>
                                 </td>
+
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+
         </div>
     }
 

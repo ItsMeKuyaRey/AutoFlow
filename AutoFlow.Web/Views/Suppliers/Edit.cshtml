@@ -1,66 +1,347 @@
 @model AutoFlow.Web.Models.Supplier
+
 @{
     ViewData["Title"] = "Edit Supplier";
 }
 
-<div class="page-header mb-4">
-    <h1 class="h3 mb-1">Edit Supplier</h1>
-    <p class="text-muted">Update supplier information.</p>
-</div>
+<style>
+    .af-page {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <form asp-action="Edit" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-            <input type="hidden" asp-for="SupplierId" />
+    .af-breadcrumb {
+        font-size: 13px;
+        color: #8a94a6;
+        margin-bottom: 8px;
+    }
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
+    .af-breadcrumb a {
+        color: #6f42c1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .af-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 26px;
+    }
+
+    .af-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #182235;
+        margin: 0;
+    }
+
+    .af-subtitle {
+        margin: 7px 0 0;
+        color: #7c8798;
+        font-size: 14px;
+    }
+
+    .af-card {
+        background: #fff;
+        border: 1px solid #e9edf3;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(31, 41, 55, 0.06);
+        overflow: hidden;
+    }
+
+    .af-card-header {
+        padding: 22px 26px;
+        border-bottom: 1px solid #edf0f4;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .af-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #f1eafe;
+        color: #6f42c1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+    }
+
+    .af-card-title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 750;
+        color: #202b3c;
+    }
+
+    .af-card-description {
+        margin: 3px 0 0;
+        color: #8a94a6;
+        font-size: 13px;
+    }
+
+    .af-card-body {
+        padding: 28px 26px;
+    }
+
+    .form-label {
+        color: #394458;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 45px;
+        border-color: #dfe4eb;
+        border-radius: 9px;
+        font-size: 14px;
+        box-shadow: none;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.10);
+    }
+
+    textarea.form-control {
+        min-height: 115px;
+        resize: vertical;
+    }
+
+    .af-actions {
+        border-top: 1px solid #edf0f4;
+        padding: 20px 26px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .af-btn {
+        border-radius: 9px;
+        padding: 10px 17px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+
+    .af-btn-secondary {
+        background: #fff;
+        border-color: #dfe4eb;
+        color: #596579;
+    }
+
+    .af-btn-secondary:hover {
+        background: #f7f8fa;
+        color: #394458;
+    }
+
+    .af-btn-primary {
+        background: #6f42c1;
+        color: #fff;
+    }
+
+    .af-btn-primary:hover {
+        background: #5f35ad;
+        color: #fff;
+    }
+
+    .af-section-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        color: #9aa3b2;
+        text-transform: uppercase;
+        margin: 8px 0 16px;
+    }
+
+    .af-id {
+        background: #f6f7f9;
+        border: 1px solid #e8ebf0;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        color: #687386;
+        display: inline-block;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="af-page">
+
+        <div class="af-breadcrumb">
+            <a asp-action="Index">Supplier Management</a>
+            <span> / Edit Supplier</span>
+        </div>
+
+        <div class="af-header">
+            <div>
+                <h1 class="af-title">Edit Supplier</h1>
+                <p class="af-subtitle">
+                    Update supplier information and contact details.
+                </p>
+            </div>
+
+            <div class="af-id">
+                <i class="bi bi-hash me-1"></i>
+                Supplier ID: @Model.SupplierId
+            </div>
+        </div>
+
+        <div class="af-card">
+
+            <div class="af-card-header">
+                <div class="af-icon">
+                    <i class="bi bi-pencil-square"></i>
                 </div>
-                <div class="col-md-6">
-                    <label asp-for="ContactPerson" class="form-label">Contact Person</label>
-                    <input asp-for="ContactPerson" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Phone" class="form-label"></label>
-                    <input asp-for="Phone" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Email" class="form-label"></label>
-                    <input asp-for="Email" class="form-control" />
-                </div>
-                <div class="col-md-8">
-                    <label asp-for="Address" class="form-label"></label>
-                    <input asp-for="Address" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="City" class="form-label"></label>
-                    <input asp-for="City" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Status" class="form-label"></label>
-                    <select asp-for="Status" class="form-select">
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label asp-for="Notes" class="form-label"></label>
-                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                <div>
+                    <h2 class="af-card-title">Supplier Information</h2>
+                    <p class="af-card-description">
+                        Modify the existing supplier record.
+                    </p>
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
-            </div>
-        </form>
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="SupplierId" />
+
+                <div class="af-card-body">
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-4"></div>
+
+                    <div class="af-section-label">Basic Information</div>
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label">
+                                Supplier Name
+                            </label>
+                            <input asp-for="Name"
+                                   class="form-control" />
+                            <span asp-validation-for="Name"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="ContactPerson" class="form-label">
+                                Contact Person
+                            </label>
+                            <input asp-for="ContactPerson"
+                                   class="form-control" />
+                            <span asp-validation-for="ContactPerson"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label">
+                                Phone
+                            </label>
+                            <input asp-for="Phone"
+                                   class="form-control" />
+                            <span asp-validation-for="Phone"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label">
+                                Email
+                            </label>
+                            <input asp-for="Email"
+                                   type="email"
+                                   class="form-control" />
+                            <span asp-validation-for="Email"
+                                  class="text-danger small"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="af-section-label mt-5">Location & Status</div>
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+                            <label asp-for="City" class="form-label">
+                                City
+                            </label>
+                            <input asp-for="City"
+                                   class="form-control" />
+                            <span asp-validation-for="City"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label">
+                                Status
+                            </label>
+                            <select asp-for="Status"
+                                    class="form-select">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                            <span asp-validation-for="Status"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label">
+                                Address
+                            </label>
+                            <input asp-for="Address"
+                                   class="form-control" />
+                            <span asp-validation-for="Address"
+                                  class="text-danger small"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="af-section-label mt-5">Additional Notes</div>
+
+                    <div>
+                        <label asp-for="Notes" class="form-label">
+                            Notes
+                        </label>
+                        <textarea asp-for="Notes"
+                                  class="form-control"></textarea>
+                        <span asp-validation-for="Notes"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <div class="af-actions">
+                    <a asp-action="Index"
+                       class="af-btn af-btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back
+                    </a>
+
+                    <button type="submit"
+                            class="af-btn af-btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
     </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

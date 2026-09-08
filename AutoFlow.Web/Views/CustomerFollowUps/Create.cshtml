@@ -1,0 +1,659 @@
+@model AutoFlow.Web.Models.CustomerFollowUp
+
+@{
+    ViewData["Title"] = "New Customer Follow-up";
+}
+
+<div class="crm-form-page">
+
+    <div class="form-header">
+        <div>
+            <div class="breadcrumb-text">
+                CRM <span>/</span> Customer Follow-ups <span>/</span> New Follow-up
+            </div>
+
+            <h1>New Customer Follow-up</h1>
+
+            <p class="page-description">
+                Create a customer follow-up activity and schedule the next contact.
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn-back">
+            <i class="bi bi-arrow-left"></i>
+            Back to Follow-ups
+        </a>
+    </div>
+
+    <form asp-action="Create"
+          method="post"
+          class="followup-form">
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="validation-summary">
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-card">
+
+                <div class="form-card-header">
+                    <div class="header-icon">
+                        <i class="bi bi-person"></i>
+                    </div>
+
+                    <div>
+                        <h2>Customer & Vehicle</h2>
+                        <p>Select the customer and vehicle related to this follow-up.</p>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+
+                    <div class="form-group">
+                        <label asp-for="CustomerId" class="form-label">
+                            Customer
+                            <span class="required">*</span>
+                        </label>
+
+                        <select asp-for="CustomerId"
+                                asp-items="ViewBag.CustomerId"
+                                class="form-control">
+                            <option value="">Select customer</option>
+                        </select>
+
+                        <span asp-validation-for="CustomerId"
+                              class="field-validation">
+                        </span>
+
+                        <small class="field-help">
+                            Select the customer who will receive the follow-up.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="VehicleId" class="form-label">
+                            Vehicle
+                            <span class="required">*</span>
+                        </label>
+
+                        <select asp-for="VehicleId"
+                                asp-items="ViewBag.VehicleId"
+                                class="form-control">
+                            <option value="">Select vehicle</option>
+                        </select>
+
+                        <span asp-validation-for="VehicleId"
+                              class="field-validation">
+                        </span>
+
+                        <small class="field-help">
+                            Only active vehicles should be used for customer follow-ups.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ServiceRecordId" class="form-label">
+                            Service Record
+                            <span class="optional">Optional</span>
+                        </label>
+
+                        <select asp-for="ServiceRecordId"
+                                asp-items="ViewBag.ServiceRecordId"
+                                class="form-control">
+                            <option value="">No service record</option>
+                        </select>
+
+                        <span asp-validation-for="ServiceRecordId"
+                              class="field-validation">
+                        </span>
+
+                        <small class="field-help">
+                            Link this follow-up to a previous service record when applicable.
+                        </small>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="form-card">
+
+                <div class="form-card-header">
+                    <div class="header-icon">
+                        <i class="bi bi-chat-left-text"></i>
+                    </div>
+
+                    <div>
+                        <h2>Follow-up Information</h2>
+                        <p>Define the purpose and status of the customer contact.</p>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+
+                    <div class="two-column">
+
+                        <div class="form-group">
+                            <label asp-for="FollowUpType" class="form-label">
+                                Follow-up Type
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="FollowUpType"
+                                    asp-items="ViewBag.FollowUpTypes"
+                                    class="form-control">
+                            </select>
+
+                            <span asp-validation-for="FollowUpType"
+                                  class="field-validation">
+                            </span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Status" class="form-label">
+                                Status
+                                <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="Status"
+                                    asp-items="ViewBag.Statuses"
+                                    class="form-control">
+                            </select>
+
+                            <span asp-validation-for="Status"
+                                  class="field-validation">
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Subject" class="form-label">
+                            Subject
+                            <span class="required">*</span>
+                        </label>
+
+                        <input asp-for="Subject"
+                               class="form-control"
+                               maxlength="150"
+                               placeholder="Example: Follow up after brake service" />
+
+                        <span asp-validation-for="Subject"
+                              class="field-validation">
+                        </span>
+
+                        <small class="field-help">
+                            Use a short, clear description of the reason for contact.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Notes" class="form-label">
+                            Notes
+                            <span class="optional">Optional</span>
+                        </label>
+
+                        <textarea asp-for="Notes"
+                                  class="form-control textarea"
+                                  maxlength="1000"
+                                  rows="5"
+                                  placeholder="Record customer feedback, communication details, concerns, or other relevant notes..."></textarea>
+
+                        <span asp-validation-for="Notes"
+                              class="field-validation">
+                        </span>
+
+                        <small class="field-help">
+                            Keep useful communication details for future customer interactions.
+                        </small>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="form-card">
+
+                <div class="form-card-header">
+                    <div class="header-icon">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+
+                    <div>
+                        <h2>Follow-up Schedule</h2>
+                        <p>Set when the current and next customer contact should occur.</p>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+
+                    <div class="two-column">
+
+                        <div class="form-group">
+                            <label asp-for="FollowUpDate" class="form-label">
+                                Follow-up Date
+                                <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="FollowUpDate"
+                                type="datetime-local"
+                                step="60"
+                                class="form-control" />
+
+                            <span asp-validation-for="FollowUpDate"
+                                class="field-validation">
+                            </span>
+
+                            <small class="field-help">
+                                Date and time for the customer follow-up activity.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="NextFollowUpDate" class="form-label">
+                                Next Follow-up
+                                <span class="optional">Optional</span>
+                            </label>
+
+                            <input asp-for="NextFollowUpDate"
+                                type="datetime-local"
+                                step="60"
+                                class="form-control" />
+
+                            <span asp-validation-for="NextFollowUpDate"
+                                class="field-validation">
+                            </span>
+
+                            <small class="field-help">
+                                Schedule another contact if additional follow-up is required.
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="schedule-note">
+                        <div class="schedule-note-icon">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+
+                        <div>
+                            <strong>CRM reminder</strong>
+                            <p>
+                                Use the next follow-up date to maintain continuous
+                                customer communication after service completion.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <a asp-action="Index" class="btn-cancel">
+                Cancel
+            </a>
+
+            <button type="submit" class="btn-save">
+                <i class="bi bi-check-lg"></i>
+                Create Follow-up
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+<style>
+    .crm-form-page {
+        padding: 8px 4px 32px;
+        color: #1f2937;
+    }
+
+    .form-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+    }
+
+    .breadcrumb-text {
+        color: #8b5cf6;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .breadcrumb-text span {
+        color: #9ca3af;
+        margin: 0 5px;
+    }
+
+    .form-header h1 {
+        margin: 0;
+        color: #111827;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -.6px;
+    }
+
+    .page-description {
+        margin: 8px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 41px;
+        padding: 0 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 9px;
+        background: #fff;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: all .2s ease;
+    }
+
+    .btn-back:hover {
+        border-color: #c4b5fd;
+        background: #f5f3ff;
+        color: #7c3aed;
+    }
+
+    .validation-summary {
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border: 1px solid #fecaca;
+        border-radius: 9px;
+        background: #fef2f2;
+        color: #b91c1c;
+        font-size: 12px;
+    }
+
+    .validation-summary:empty {
+        display: none;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+        gap: 18px;
+    }
+
+    .form-card {
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .035);
+    }
+
+    .form-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .form-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .header-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: #f5f3ff;
+        color: #7c3aed;
+        font-size: 16px;
+    }
+
+    .form-card-header h2 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .form-card-header p {
+        margin: 3px 0 0;
+        color: #9ca3af;
+        font-size: 11px;
+        line-height: 1.45;
+    }
+
+    .form-card-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .two-column {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #374151;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .required {
+        color: #dc2626;
+        margin-left: 2px;
+    }
+
+    .optional {
+        margin-left: 5px;
+        color: #9ca3af;
+        font-size: 10px;
+        font-weight: 400;
+    }
+
+    .form-control {
+        width: 100%;
+        min-height: 40px;
+        padding: 8px 11px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        outline: none;
+        background: #fff;
+        color: #374151;
+        font-family: inherit;
+        font-size: 12px;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .form-control:focus {
+        border-color: #a78bfa;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, .08);
+    }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    .textarea {
+        resize: vertical;
+        min-height: 115px;
+        line-height: 1.55;
+    }
+
+    .field-help {
+        display: block;
+        margin-top: 5px;
+        color: #9ca3af;
+        font-size: 10px;
+        line-height: 1.45;
+    }
+
+    .field-validation {
+        display: block;
+        margin-top: 5px;
+        color: #dc2626;
+        font-size: 10px;
+    }
+
+    .input-validation-error {
+        border-color: #fca5a5;
+        background: #fffafa;
+    }
+
+    .schedule-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 20px;
+        padding: 13px 14px;
+        border: 1px solid #ddd6fe;
+        border-radius: 9px;
+        background: #faf5ff;
+    }
+
+    .schedule-note-icon {
+        color: #7c3aed;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .schedule-note strong {
+        display: block;
+        color: #5b21b6;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .schedule-note p {
+        margin: 3px 0 0;
+        color: #7c3aed;
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    .form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-cancel,
+    .btn-save {
+        min-height: 41px;
+        padding: 0 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all .2s ease;
+    }
+
+    .btn-cancel {
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #6b7280;
+    }
+
+    .btn-cancel:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    .btn-save {
+        border: 1px solid #7c3aed;
+        background: #7c3aed;
+        color: #fff;
+    }
+
+    .btn-save:hover {
+        border-color: #6d28d9;
+        background: #6d28d9;
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(124, 58, 237, .18);
+        transform: translateY(-1px);
+    }
+
+    @@media (max-width: 900px) {
+        .form-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-card:last-child {
+            grid-column: auto;
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .crm-form-page {
+            padding: 4px 0 24px;
+        }
+
+        .form-header h1 {
+            font-size: 24px;
+        }
+
+        .two-column {
+            grid-template-columns: 1fr;
+        }
+
+        .form-card-body {
+            padding: 16px;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .btn-cancel,
+        .btn-save {
+            width: 100%;
+        }
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

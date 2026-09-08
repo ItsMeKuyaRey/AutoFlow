@@ -319,36 +319,90 @@ public class JobOrdersController : Controller
 
                 if (justCompleted)
                 {
-                    var partsCost =
-                        await _context.JobOrderParts
-                            .Where(jp =>
-                                jp.JobOrderId ==
-                                existingJobOrder.JobOrderId)
-                            .SumAsync(jp =>
-                                jp.Quantity *
-                                jp.UnitPriceAtTimeOfUse);
+                    var existingBilling =
+                        await _context.Billings
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(
+                                b => b.JobOrderId == existingJobOrder.JobOrderId);
 
-                    var invoiceNumber =
-                        await GenerateInvoiceNumberAsync();
-
-                    var billing = new Billing
+                    if (existingBilling == null)
                     {
-                        JobOrderId = existingJobOrder.JobOrderId,
-                        InvoiceNumber = invoiceNumber,
-                        LaborCost = existingJobOrder.LaborCost,
-                        PartsCost = partsCost,
-                        DiscountAmount = 0,
-                        TaxAmount = 0,
-                        TotalAmount =
-                            existingJobOrder.LaborCost +
-                            partsCost,
-                        AmountPaid = 0,
-                        Status = "Unpaid",
-                        IssuedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
+                        var partsCost =
+                            await _context.JobOrderParts
+                                .Where(jp =>
+                                    jp.JobOrderId ==
+                                    existingJobOrder.JobOrderId)
+                                .SumAsync(jp =>
+                                    jp.Quantity *
+                                    jp.UnitPriceAtTimeOfUse);
 
-                    _context.Billings.Add(billing);
+                        var invoiceNumber =
+                            await GenerateInvoiceNumberAsync();
+
+                        var billing = new Billing
+                        {
+                            JobOrderId = existingJobOrder.JobOrderId,
+                            InvoiceNumber = invoiceNumber,
+                            LaborCost = existingJobOrder.LaborCost,
+                            PartsCost = partsCost,
+                            DiscountAmount = 0,
+                            TaxAmount = 0,
+                            TotalAmount =
+                                existingJobOrder.LaborCost +
+                                partsCost,
+                            AmountPaid = 0,
+                            Status = "Unpaid",
+                            IssuedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        _context.Billings.Add(billing);
+                    }
+
+                    var serviceRecordMarker =
+                        $"Generated from Job Order #{existingJobOrder.JobOrderId}.";
+
+                    var serviceRecordExists =
+                        await _context.ServiceRecords
+                            .AnyAsync(sr =>
+                                sr.Notes != null &&
+                                sr.Notes.StartsWith(serviceRecordMarker));
+
+                    if (!serviceRecordExists)
+                    {
+                        var vehicle =
+                            await _context.Vehicles
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(
+                                    v => v.VehicleId == existingJobOrder.VehicleId);
+
+                        if (vehicle == null)
+                        {
+                            return NotFound();
+                        }
+
+                        var serviceNotes =
+                            string.IsNullOrWhiteSpace(existingJobOrder.Notes)
+                                ? serviceRecordMarker
+                                : $"{serviceRecordMarker} {existingJobOrder.Notes.Trim()}";
+
+                        var serviceRecord = new ServiceRecord
+                        {
+                            VehicleId = existingJobOrder.VehicleId,
+                            ServiceDate = DateTime.SpecifyKind(
+                                existingJobOrder.JobOrderDate,
+                                DateTimeKind.Unspecified),
+                            Mileage = vehicle.Mileage,
+                            Complaint = existingJobOrder.Description,
+                            Diagnosis = existingJobOrder.Diagnosis,
+                            Status = "Completed",
+                            Notes = serviceNotes,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        _context.ServiceRecords.Add(serviceRecord);
+                    }
                 }
 
                 await _context.SaveChangesAsync();

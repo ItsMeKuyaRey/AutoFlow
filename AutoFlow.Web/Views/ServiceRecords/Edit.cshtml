@@ -1,70 +1,352 @@
 @model AutoFlow.Web.Models.ServiceRecord
 
 @{
-    Layout = null;
+    ViewData["Title"] = "Edit Service Record";
 }
 
-<!DOCTYPE html>
+<style>
+    .af-page {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
 
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Edit</title>
-</head>
-<body>
+    .af-breadcrumb {
+        font-size: 13px;
+        color: #8a94a6;
+        margin-bottom: 8px;
+    }
 
-<h4>ServiceRecord</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="ServiceRecordId" />
-            <div class="form-group">
-                <label asp-for="VehicleId" class="control-label"></label>
-                <select asp-for="VehicleId" class="form-control" asp-items="ViewBag.VehicleId"></select>
-                <span asp-validation-for="VehicleId" class="text-danger"></span>
+    .af-breadcrumb a {
+        color: #6f42c1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .af-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #182235;
+        margin: 0;
+    }
+
+    .af-subtitle {
+        margin: 7px 0 26px;
+        color: #7c8798;
+        font-size: 14px;
+    }
+
+    .af-id {
+        float: right;
+        background: #f6f7f9;
+        border: 1px solid #e8ebf0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #687386;
+        font-size: 12px;
+    }
+
+    .af-card {
+        background: #fff;
+        border: 1px solid #e9edf3;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(31, 41, 55, 0.06);
+        overflow: hidden;
+    }
+
+    .af-card-header {
+        padding: 22px 26px;
+        border-bottom: 1px solid #edf0f4;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .af-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #f1eafe;
+        color: #6f42c1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+    }
+
+    .af-card-title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 750;
+        color: #202b3c;
+    }
+
+    .af-card-description {
+        margin: 3px 0 0;
+        color: #8a94a6;
+        font-size: 13px;
+    }
+
+    .af-body {
+        padding: 28px 26px;
+    }
+
+    .af-section-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        color: #9aa3b2;
+        text-transform: uppercase;
+        margin: 8px 0 16px;
+    }
+
+    .form-label {
+        color: #394458;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 45px;
+        border-color: #dfe4eb;
+        border-radius: 9px;
+        font-size: 14px;
+        box-shadow: none;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.10);
+    }
+
+    textarea.form-control {
+        min-height: 125px;
+        resize: vertical;
+    }
+
+    .af-actions {
+        border-top: 1px solid #edf0f4;
+        padding: 20px 26px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .af-btn {
+        border-radius: 9px;
+        padding: 10px 17px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+
+    .af-btn-secondary {
+        background: #fff;
+        border-color: #dfe4eb;
+        color: #596579;
+    }
+
+    .af-btn-primary {
+        background: #6f42c1;
+        color: #fff;
+    }
+
+    .af-btn-primary:hover {
+        background: #5f35ad;
+        color: #fff;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="af-page">
+
+        <div class="af-breadcrumb">
+            <a asp-action="Index">Service History</a>
+            <span> / Edit Service Record</span>
+        </div>
+
+        <span class="af-id">
+            Record #@Model.ServiceRecordId
+        </span>
+
+        <h1 class="af-title">Edit Service Record</h1>
+
+        <p class="af-subtitle">
+            Update the service history record and vehicle service information.
+        </p>
+
+        <div class="af-card">
+
+            <div class="af-card-header">
+                <div class="af-icon">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+
+                <div>
+                    <h2 class="af-card-title">
+                        Service Record Information
+                    </h2>
+                    <p class="af-card-description">
+                        Modify the existing service record.
+                    </p>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="ServiceDate" class="control-label"></label>
-                <input asp-for="ServiceDate" class="form-control" />
-                <span asp-validation-for="ServiceDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Mileage" class="control-label"></label>
-                <input asp-for="Mileage" class="form-control" />
-                <span asp-validation-for="Mileage" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Complaint" class="control-label"></label>
-                <input asp-for="Complaint" class="form-control" />
-                <span asp-validation-for="Complaint" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Diagnosis" class="control-label"></label>
-                <input asp-for="Diagnosis" class="form-control" />
-                <span asp-validation-for="Diagnosis" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Notes" class="control-label"></label>
-                <input asp-for="Notes" class="form-control" />
-                <span asp-validation-for="Notes" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+
+            <form asp-action="Edit" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       asp-for="ServiceRecordId" />
+
+                <div class="af-body">
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-4"></div>
+
+                    <div class="af-section-label">
+                        Vehicle & Service
+                    </div>
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+                            <label asp-for="VehicleId" class="form-label">
+                                Vehicle
+                            </label>
+
+                            <select asp-for="VehicleId"
+                                    class="form-select"
+                                    asp-items="ViewBag.VehicleId">
+                                <option value="">Select vehicle</option>
+                            </select>
+
+                            <span asp-validation-for="VehicleId"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="ServiceDate" class="form-label">
+                                Service Date
+                            </label>
+
+                            <input asp-for="ServiceDate"
+                                   type="datetime-local"
+                                   class="form-control" />
+
+                            <span asp-validation-for="ServiceDate"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Mileage" class="form-label">
+                                Mileage
+                            </label>
+
+                            <input asp-for="Mileage"
+                                   type="number"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Mileage"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label">
+                                Status
+                            </label>
+
+                            <select asp-for="Status"
+                                    class="form-select">
+                                <option value="Completed">Completed</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+
+                            <span asp-validation-for="Status"
+                                  class="text-danger small"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="af-section-label mt-5">
+                        Service Findings
+                    </div>
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+                            <label asp-for="Complaint" class="form-label">
+                                Customer Complaint
+                            </label>
+
+                            <textarea asp-for="Complaint"
+                                      class="form-control"></textarea>
+
+                            <span asp-validation-for="Complaint"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Diagnosis" class="form-label">
+                                Diagnosis
+                            </label>
+
+                            <textarea asp-for="Diagnosis"
+                                      class="form-control"></textarea>
+
+                            <span asp-validation-for="Diagnosis"
+                                  class="text-danger small"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="af-section-label mt-5">
+                        Additional Information
+                    </div>
+
+                    <div>
+                        <label asp-for="Notes" class="form-label">
+                            Notes
+                        </label>
+
+                        <textarea asp-for="Notes"
+                                  class="form-control"></textarea>
+
+                        <span asp-validation-for="Notes"
+                              class="text-danger small"></span>
+                    </div>
+
+                </div>
+
+                <div class="af-actions">
+
+                    <a asp-action="Index"
+                       class="af-btn af-btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back
+                    </a>
+
+                    <button type="submit"
+                            class="af-btn af-btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
-</body>
-</html>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

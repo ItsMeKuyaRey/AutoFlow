@@ -2,124 +2,477 @@
 
 @{
     ViewData["Title"] = "Job Order Details";
+
+    var badgeClass = Model.Status switch
+    {
+        "Open" => "badge-blue",
+        "In Progress" => "badge-orange",
+        "Completed" => "badge-green",
+        "Cancelled" => "badge-red",
+        _ => "badge-blue"
+    };
+
+    var partsTotal = Model.JobOrderParts?
+        .Sum(jp => jp.Quantity * jp.UnitPriceAtTimeOfUse) ?? 0;
+
+    var partsCount = Model.JobOrderParts?.Sum(jp => jp.Quantity) ?? 0;
 }
+
+<style>
+    .job-detail-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .job-detail-card {
+        background: var(--af-surface);
+        border: 1px solid var(--af-border);
+        border-radius: 12px;
+        padding: 26px;
+        margin-bottom: 22px;
+        box-shadow: var(--af-shadow);
+    }
+
+    .job-detail-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .job-card-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .job-card-heading-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+    }
+
+    .job-card-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        background: var(--af-bg);
+        border: 1px solid var(--af-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .job-card-heading h2 {
+        font-size: 0.98rem;
+        font-weight: 650;
+        margin: 0;
+    }
+
+    .job-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .job-info-label {
+        display: block;
+        color: var(--af-text-muted);
+        font-size: 0.74rem;
+        margin-bottom: 5px;
+    }
+
+    .job-info-value {
+        font-weight: 600;
+    }
+
+    .job-info-sub {
+        display: block;
+        color: var(--af-text-muted);
+        font-size: 0.78rem;
+        margin-top: 3px;
+    }
+
+    .repair-field {
+        margin-bottom: 20px;
+    }
+
+    .repair-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .repair-field-label {
+        color: var(--af-text-muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .repair-field-value {
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .empty-text {
+        color: var(--af-text-muted);
+        margin: 0;
+        font-size: 0.86rem;
+    }
+
+    .parts-summary {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        color: var(--af-text-secondary);
+        font-size: 0.78rem;
+    }
+
+    .parts-table td,
+    .parts-table th {
+        vertical-align: middle;
+    }
+
+    .remove-part-button {
+        background: transparent;
+        border: 0;
+        color: var(--af-danger);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 5px 7px;
+    }
+
+    .remove-part-button:hover {
+        text-decoration: underline;
+    }
+
+    .cost-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .cost-box {
+        padding: 17px;
+        border: 1px solid var(--af-border);
+        border-radius: 10px;
+        background: var(--af-bg);
+    }
+
+    .cost-label {
+        color: var(--af-text-muted);
+        font-size: 0.75rem;
+        margin-bottom: 6px;
+    }
+
+    .cost-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .cost-total {
+        font-size: 1.35rem;
+        color: var(--af-primary);
+    }
+
+    .side-detail {
+        margin-bottom: 18px;
+    }
+
+    .side-detail:last-child {
+        margin-bottom: 0;
+    }
+
+    .side-label {
+        display: block;
+        color: var(--af-text-muted);
+        font-size: 0.73rem;
+        margin-bottom: 4px;
+    }
+
+    .side-value {
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .side-divider {
+        border-top: 1px solid var(--af-border);
+        margin: 20px 0;
+    }
+
+    .job-footer-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    @@media (max-width: 1050px) {
+        .job-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .job-info-grid,
+        .cost-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .job-card-heading {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .job-card-heading .af-button {
+            width: 100%;
+        }
+
+        .job-footer-actions {
+            flex-direction: column;
+        }
+
+        .job-footer-actions .af-button {
+            width: 100%;
+        }
+    }
+</style>
 
 <div class="dashboard-page">
 
     <div class="page-header">
+
         <div>
-            <h1>Job Order #@Model.JobOrderId</h1>
-            <p>View repair job information and service details.</p>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                <h1 style="margin:0;">
+                    Job Order #@Model.JobOrderId
+                </h1>
+
+                <span class="af-badge @badgeClass">
+                    @Model.Status
+                </span>
+            </div>
+
+            <p>
+                Repair workspace containing service information, vehicle details,
+                parts usage, and cost summary.
+            </p>
         </div>
+
         <div class="page-header-actions">
-            <a asp-action="Edit" asp-route-id="@Model.JobOrderId"
+
+            <a asp-action="Edit"
+               asp-route-id="@Model.JobOrderId"
                class="af-button af-button-primary">
-                Edit
+                Edit Job
             </a>
-            <a asp-action="Index" class="af-button af-button-secondary">
+
+            <a asp-action="Index"
+               class="af-button af-button-secondary">
                 Back
             </a>
+
         </div>
+
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start;">
+    <div class="job-detail-grid">
 
         <!-- LEFT COLUMN -->
         <div>
 
-            <!-- Job Order Info -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Job Order Information</h2>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Job Order ID</small>
-                        <strong>#@Model.JobOrderId</strong>
-                    </div>
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Status</small>
-                        @{
-                            var badgeClass = Model.Status switch
-                            {
-                                "Open" => "badge-blue",
-                                "In Progress" => "badge-orange",
-                                "Completed" => "badge-green",
-                                "Cancelled" => "badge-red",
-                                _ => "badge-blue"
-                            };
-                        }
-                        <span class="af-badge @badgeClass">@Model.Status</span>
-                    </div>
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Job Order Date</small>
-                        <strong>@Model.JobOrderDate.ToString("MMM dd, yyyy")</strong>
-                        <small style="display:block; color:var(--af-text-muted);">@Model.JobOrderDate.ToString("hh:mm tt")</small>
-                    </div>
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Created</small>
-                        <span>@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+            <!-- JOB INFORMATION -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">🔧</div>
+
+                        <h2>Job Order Information</h2>
                     </div>
                 </div>
+
+                <div class="job-info-grid">
+
+                    <div>
+                        <span class="job-info-label">
+                            Job Order ID
+                        </span>
+
+                        <span class="job-info-value">
+                            #@Model.JobOrderId
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="job-info-label">
+                            Status
+                        </span>
+
+                        <span class="af-badge @badgeClass">
+                            @Model.Status
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="job-info-label">
+                            Job Order Date
+                        </span>
+
+                        <span class="job-info-value">
+                            @Model.JobOrderDate.ToString("MMM dd, yyyy")
+                        </span>
+
+                        <span class="job-info-sub">
+                            @Model.JobOrderDate.ToString("hh:mm tt")
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="job-info-label">
+                            Created
+                        </span>
+
+                        <span class="job-info-value">
+                            @Model.CreatedAt.ToString("MMM dd, yyyy")
+                        </span>
+                    </div>
+
+                </div>
+
             </div>
 
-            <!-- Repair Info -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Repair Information</h2>
+            <!-- REPAIR INFORMATION -->
+            <div class="job-detail-card">
 
-                <div style="margin-bottom:16px;">
-                    <small style="color:var(--af-text-muted); display:block; margin-bottom:4px;">Description</small>
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">📝</div>
+
+                        <h2>Repair Information</h2>
+                    </div>
+                </div>
+
+                <div class="repair-field">
+
+                    <div class="repair-field-label">
+                        Repair Description
+                    </div>
+
                     @if (!string.IsNullOrWhiteSpace(Model.Description))
                     {
-                        <p style="margin:0;">@Model.Description</p>
+                        <div class="repair-field-value">
+                            @Model.Description
+                        </div>
                     }
                     else
                     {
-                        <span style="color:var(--af-text-muted);">No description provided.</span>
+                        <p class="empty-text">
+                            No repair description provided.
+                        </p>
                     }
+
                 </div>
 
-                <div style="margin-bottom:16px;">
-                    <small style="color:var(--af-text-muted); display:block; margin-bottom:4px;">Diagnosis</small>
+                <div class="repair-field">
+
+                    <div class="repair-field-label">
+                        Diagnosis
+                    </div>
+
                     @if (!string.IsNullOrWhiteSpace(Model.Diagnosis))
                     {
-                        <p style="margin:0;">@Model.Diagnosis</p>
+                        <div class="repair-field-value">
+                            @Model.Diagnosis
+                        </div>
                     }
                     else
                     {
-                        <span style="color:var(--af-text-muted);">No diagnosis recorded.</span>
+                        <p class="empty-text">
+                            No diagnosis recorded.
+                        </p>
                     }
+
                 </div>
 
-                <div>
-                    <small style="color:var(--af-text-muted); display:block; margin-bottom:4px;">Notes</small>
+                <div class="repair-field">
+
+                    <div class="repair-field-label">
+                        Additional Notes
+                    </div>
+
                     @if (!string.IsNullOrWhiteSpace(Model.Notes))
                     {
-                        <p style="margin:0;">@Model.Notes</p>
+                        <div class="repair-field-value">
+                            @Model.Notes
+                        </div>
                     }
                     else
                     {
-                        <span style="color:var(--af-text-muted);">No additional notes.</span>
+                        <p class="empty-text">
+                            No additional notes.
+                        </p>
                     }
+
                 </div>
+
             </div>
 
-            <!-- Parts Used -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 style="font-size:1rem; font-weight:600; margin:0;">Parts Used</h2>
-                    <a asp-action="AddPart" asp-route-id="@Model.JobOrderId"
-                       class="af-button af-button-primary" style="padding:6px 14px; font-size:12px;">
+            <!-- PARTS -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">📦</div>
+
+                        <div>
+                            <h2>Parts Used</h2>
+
+                            <div class="parts-summary">
+                                @partsCount item(s) used
+                            </div>
+                        </div>
+                    </div>
+
+                    <a asp-action="AddPart"
+                       asp-route-id="@Model.JobOrderId"
+                       class="af-button af-button-primary"
+                       style="padding:7px 13px; font-size:12px;">
                         + Add Part
                     </a>
+
                 </div>
 
-                @if (!Model.JobOrderParts.Any())
+                @if (Model.JobOrderParts == null || !Model.JobOrderParts.Any())
                 {
-                    <p style="color:var(--af-text-muted); margin:0;">No parts have been added to this job order yet.</p>
+                    <div style="padding:24px;
+                                border:1px dashed var(--af-border);
+                                border-radius:9px;
+                                text-align:center;">
+
+                        <div style="font-size:1.6rem; margin-bottom:8px;">
+                            📦
+                        </div>
+
+                        <strong style="display:block; margin-bottom:4px;">
+                            No Parts Added
+                        </strong>
+
+                        <span style="color:var(--af-text-muted);
+                                     font-size:0.82rem;">
+                            Parts consumed during this repair will appear here.
+                        </span>
+
+                    </div>
                 }
                 else
                 {
                     <div class="af-table-wrapper">
-                        <table class="af-table">
+
+                        <table class="af-table parts-table">
+
                             <thead>
                                 <tr>
                                     <th>Part</th>
@@ -129,57 +482,131 @@
                                     <th></th>
                                 </tr>
                             </thead>
+
                             <tbody>
+
                                 @foreach (var jp in Model.JobOrderParts)
                                 {
                                     <tr>
-                                        <td><strong>@jp.Part?.Name</strong></td>
-                                        <td>@jp.Quantity</td>
-                                        <td>@jp.UnitPriceAtTimeOfUse.ToString("C")</td>
-                                        <td><strong>@((jp.Quantity * jp.UnitPriceAtTimeOfUse).ToString("C"))</strong></td>
+
                                         <td>
-                                            <form asp-action="RemovePart" method="post" style="display:inline;">
+                                            <strong>
+                                                @jp.Part?.Name
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            @jp.Quantity
+                                        </td>
+
+                                        <td>
+                                            @jp.UnitPriceAtTimeOfUse.ToString("C")
+                                        </td>
+
+                                        <td>
+                                            <strong>
+                                                @((jp.Quantity * jp.UnitPriceAtTimeOfUse).ToString("C"))
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            <form asp-action="RemovePart"
+                                                  method="post"
+                                                  style="display:inline;">
+
                                                 @Html.AntiForgeryToken()
-                                                <input type="hidden" name="jobOrderPartId" value="@jp.JobOrderPartId" />
-                                                <input type="hidden" name="jobOrderId" value="@Model.JobOrderId" />
+
+                                                <input type="hidden"
+                                                       name="jobOrderPartId"
+                                                       value="@jp.JobOrderPartId" />
+
+                                                <input type="hidden"
+                                                       name="jobOrderId"
+                                                       value="@Model.JobOrderId" />
+
                                                 <button type="submit"
-                                                        onclick="return confirm('Remove this part and restore stock?');"
-                                                        style="background:none; border:none; color:var(--af-danger); cursor:pointer; font-size:12px; padding:4px 8px;">
+                                                        class="remove-part-button"
+                                                        onclick="return confirm('Remove this part and restore stock?');">
                                                     Remove
                                                 </button>
+
                                             </form>
                                         </td>
+
                                     </tr>
                                 }
+
                             </tbody>
+
                             <tfoot>
+
                                 <tr>
-                                    <td colspan="3" style="text-align:right; font-weight:600;">Parts Total</td>
-                                    <td colspan="2"><strong>@Model.JobOrderParts.Sum(jp => jp.Quantity * jp.UnitPriceAtTimeOfUse).ToString("C")</strong></td>
+                                    <td colspan="3"
+                                        style="text-align:right; font-weight:600;">
+                                        Parts Total
+                                    </td>
+
+                                    <td colspan="2">
+                                        <strong>
+                                            @partsTotal.ToString("C")
+                                        </strong>
+                                    </td>
                                 </tr>
+
                             </tfoot>
+
                         </table>
+
                     </div>
                 }
+
             </div>
 
-            <!-- Cost Summary -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Cost Summary</h2>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Labor Cost</small>
-                        <strong style="font-size:1.1rem;">@Model.LaborCost.ToString("C")</strong>
-                    </div>
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Parts Cost</small>
-                        <strong style="font-size:1.1rem;">@Model.PartsCost.ToString("C")</strong>
-                    </div>
-                    <div>
-                        <small style="color:var(--af-text-muted); display:block;">Total Cost</small>
-                        <strong style="font-size:1.25rem; color:var(--af-primary);">@Model.TotalCost.ToString("C")</strong>
+            <!-- COST SUMMARY -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">₱</div>
+
+                        <h2>Cost Summary</h2>
                     </div>
                 </div>
+
+                <div class="cost-grid">
+
+                    <div class="cost-box">
+                        <div class="cost-label">
+                            Labor Cost
+                        </div>
+
+                        <div class="cost-value">
+                            @Model.LaborCost.ToString("C")
+                        </div>
+                    </div>
+
+                    <div class="cost-box">
+                        <div class="cost-label">
+                            Parts Cost
+                        </div>
+
+                        <div class="cost-value">
+                            @Model.PartsCost.ToString("C")
+                        </div>
+                    </div>
+
+                    <div class="cost-box">
+                        <div class="cost-label">
+                            Total Job Cost
+                        </div>
+
+                        <div class="cost-value cost-total">
+                            @Model.TotalCost.ToString("C")
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
@@ -187,112 +614,228 @@
         <!-- RIGHT COLUMN -->
         <div>
 
-            <!-- Vehicle -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Vehicle</h2>
+            <!-- VEHICLE -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">🚗</div>
+
+                        <h2>Vehicle</h2>
+                    </div>
+                </div>
+
                 @if (Model.Vehicle != null)
                 {
-                    <div style="margin-bottom:12px;">
-                        <small style="color:var(--af-text-muted); display:block;">Plate Number</small>
-                        <strong style="font-size:1.1rem;">@Model.Vehicle.PlateNumber</strong>
+                    <div class="side-detail">
+                        <span class="side-label">
+                            Plate Number
+                        </span>
+
+                        <span class="side-value">
+                            @Model.Vehicle.PlateNumber
+                        </span>
                     </div>
-                    <div style="margin-bottom:12px;">
-                        <small style="color:var(--af-text-muted); display:block;">Vehicle</small>
-                        <span>@Model.Vehicle.Make @Model.Vehicle.Model</span>
+
+                    <div class="side-detail">
+                        <span class="side-label">
+                            Vehicle
+                        </span>
+
+                        <span class="side-value">
+                            @Model.Vehicle.Make @Model.Vehicle.Model
+                        </span>
                     </div>
+
                     @if (Model.Vehicle.Year.HasValue)
                     {
-                        <div style="margin-bottom:12px;">
-                            <small style="color:var(--af-text-muted); display:block;">Year</small>
-                            <span>@Model.Vehicle.Year</span>
+                        <div class="side-detail">
+                            <span class="side-label">
+                                Year
+                            </span>
+
+                            <span class="side-value">
+                                @Model.Vehicle.Year
+                            </span>
                         </div>
                     }
+
                     @if (!string.IsNullOrWhiteSpace(Model.Vehicle.Color))
                     {
-                        <div>
-                            <small style="color:var(--af-text-muted); display:block;">Color</small>
-                            <span>@Model.Vehicle.Color</span>
+                        <div class="side-detail">
+                            <span class="side-label">
+                                Color
+                            </span>
+
+                            <span class="side-value">
+                                @Model.Vehicle.Color
+                            </span>
                         </div>
                     }
                 }
                 else
                 {
-                    <p style="color:var(--af-text-muted); margin:0;">Vehicle information unavailable.</p>
+                    <p class="empty-text">
+                        Vehicle information unavailable.
+                    </p>
                 }
+
             </div>
 
-            <!-- Customer -->
-            <div class="af-card" style="padding:28px; margin-bottom:24px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Customer</h2>
+            <!-- CUSTOMER -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">👤</div>
+
+                        <h2>Customer</h2>
+                    </div>
+                </div>
+
                 @if (Model.Vehicle?.Customer != null)
                 {
-                    <div style="margin-bottom:12px;">
-                        <small style="color:var(--af-text-muted); display:block;">Name</small>
-                        <strong>@Model.Vehicle.Customer.FirstName @Model.Vehicle.Customer.LastName</strong>
+                    <div class="side-detail">
+
+                        <span class="side-label">
+                            Customer Name
+                        </span>
+
+                        <span class="side-value">
+                            @Model.Vehicle.Customer.FirstName
+                            @Model.Vehicle.Customer.LastName
+                        </span>
+
                     </div>
+
                     @if (!string.IsNullOrWhiteSpace(Model.Vehicle.Customer.Phone))
                     {
-                        <div style="margin-bottom:12px;">
-                            <small style="color:var(--af-text-muted); display:block;">Phone</small>
-                            <span>@Model.Vehicle.Customer.Phone</span>
+                        <div class="side-detail">
+
+                            <span class="side-label">
+                                Phone
+                            </span>
+
+                            <span class="side-value">
+                                @Model.Vehicle.Customer.Phone
+                            </span>
+
                         </div>
                     }
+
                     @if (!string.IsNullOrWhiteSpace(Model.Vehicle.Customer.Email))
                     {
-                        <div>
-                            <small style="color:var(--af-text-muted); display:block;">Email</small>
-                            <span>@Model.Vehicle.Customer.Email</span>
+                        <div class="side-detail">
+
+                            <span class="side-label">
+                                Email
+                            </span>
+
+                            <span class="side-value">
+                                @Model.Vehicle.Customer.Email
+                            </span>
+
                         </div>
                     }
                 }
                 else
                 {
-                    <p style="color:var(--af-text-muted); margin:0;">Customer information unavailable.</p>
+                    <p class="empty-text">
+                        Customer information unavailable.
+                    </p>
                 }
+
             </div>
 
-            <!-- Appointment -->
-            <div class="af-card" style="padding:28px;">
-                <h2 style="font-size:1rem; font-weight:600; margin-bottom:20px;">Appointment</h2>
+            <!-- APPOINTMENT -->
+            <div class="job-detail-card">
+
+                <div class="job-card-heading">
+                    <div class="job-card-heading-left">
+                        <div class="job-card-icon">📅</div>
+
+                        <h2>Appointment</h2>
+                    </div>
+                </div>
+
                 @if (Model.Appointment != null)
                 {
-                    <div style="margin-bottom:12px;">
-                        <small style="color:var(--af-text-muted); display:block;">Appointment Date</small>
-                        <strong>@Model.Appointment.AppointmentDate.ToString("MMM dd, yyyy")</strong>
-                        <small style="display:block; color:var(--af-text-muted);">@Model.Appointment.AppointmentDate.ToString("hh:mm tt")</small>
+                    <div class="side-detail">
+
+                        <span class="side-label">
+                            Appointment Date
+                        </span>
+
+                        <span class="side-value">
+                            @Model.Appointment.AppointmentDate.ToString("MMM dd, yyyy")
+                        </span>
+
+                        <span class="job-info-sub">
+                            @Model.Appointment.AppointmentDate.ToString("hh:mm tt")
+                        </span>
+
                     </div>
-                    <div style="margin-bottom:12px;">
-                        <small style="color:var(--af-text-muted); display:block;">Status</small>
-                        <span class="af-badge badge-blue">@Model.Appointment.Status</span>
+
+                    <div class="side-detail">
+
+                        <span class="side-label">
+                            Status
+                        </span>
+
+                        <span class="af-badge badge-blue">
+                            @Model.Appointment.Status
+                        </span>
+
                     </div>
+
                     @if (!string.IsNullOrWhiteSpace(Model.Appointment.CustomerConcern))
                     {
-                        <div>
-                            <small style="color:var(--af-text-muted); display:block;">Customer Concern</small>
-                            <p style="margin:4px 0 0 0;">@Model.Appointment.CustomerConcern</p>
+                        <div class="side-detail">
+
+                            <span class="side-label">
+                                Customer Concern
+                            </span>
+
+                            <span class="side-value">
+                                @Model.Appointment.CustomerConcern
+                            </span>
+
                         </div>
                     }
                 }
                 else
                 {
-                    <p style="color:var(--af-text-muted); margin:0;">No appointment linked to this job.</p>
+                    <p class="empty-text">
+                        No appointment linked to this job.
+                    </p>
                 }
+
             </div>
 
         </div>
 
     </div>
 
-    <!-- Footer Actions -->
-    <div style="margin-top:24px; display:flex; gap:12px;">
-        <a asp-action="Edit" asp-route-id="@Model.JobOrderId"
+    <div class="job-footer-actions">
+
+        <a asp-action="Edit"
+           asp-route-id="@Model.JobOrderId"
            class="af-button af-button-primary">
             Edit Job Order
         </a>
-        <a asp-action="Delete" asp-route-id="@Model.JobOrderId"
+
+        <a asp-action="AddPart"
+           asp-route-id="@Model.JobOrderId"
+           class="af-button af-button-secondary">
+            + Add Part
+        </a>
+
+        <a asp-action="Delete"
+           asp-route-id="@Model.JobOrderId"
            class="af-button af-button-secondary">
             Delete
         </a>
+
     </div>
 
 </div>

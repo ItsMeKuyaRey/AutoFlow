@@ -2,65 +2,228 @@
     ViewData["Title"] = "Add Part";
 }
 
+<style>
+    .part-form-card {
+        max-width: 900px;
+    }
+
+    .part-section {
+        margin-bottom: 28px;
+    }
+
+    .part-heading {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .part-heading-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--af-bg);
+        border: 1px solid var(--af-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .part-heading h2 {
+        font-size: 1rem;
+        font-weight: 650;
+        margin: 0 0 4px;
+    }
+
+    .part-heading p {
+        color: var(--af-text-secondary);
+        margin: 0;
+        font-size: 0.84rem;
+    }
+
+    .job-reference {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 14px;
+        align-items: center;
+        padding: 18px;
+        background: var(--af-bg);
+        border: 1px solid var(--af-border);
+        border-radius: 10px;
+        margin-bottom: 28px;
+    }
+
+    .job-reference-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        background: var(--af-surface);
+        border: 1px solid var(--af-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .job-reference-label {
+        color: var(--af-text-muted);
+        font-size: 0.75rem;
+        margin-bottom: 2px;
+    }
+
+    .job-reference-value {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .part-form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 22px;
+        border-top: 1px solid var(--af-border);
+    }
+
+    @@media (max-width: 768px) {
+        .part-form-footer {
+            flex-direction: column-reverse;
+        }
+
+        .part-form-footer .af-button {
+            width: 100%;
+        }
+    }
+</style>
+
 <div class="dashboard-page">
 
     <div class="page-header">
         <div>
-            <h1>Add Part</h1>
-            <p>Add a part or material used for Job Order #@ViewBag.JobOrderId.</p>
+            <h1>Add Part to Job Order</h1>
+            <p>Record a part or material consumed during this repair.</p>
         </div>
+
         <div class="page-header-actions">
-            <a asp-action="Details" asp-route-id="@ViewBag.JobOrderId"
+            <a asp-action="Details"
+               asp-route-id="@ViewBag.JobOrderId"
                class="af-button af-button-secondary">
                 Back to Job Order
             </a>
         </div>
     </div>
 
-    <div class="af-card" style="max-width:900px; padding:28px;">
-        <form asp-action="AddPart" asp-route-id="@ViewBag.JobOrderId" method="post">
+    <div class="af-card part-form-card" style="padding:30px;">
+
+        <div class="job-reference">
+            <div class="job-reference-icon">🔧</div>
+
+            <div>
+                <div class="job-reference-label">
+                    Job Order
+                </div>
+
+                <div class="job-reference-value">
+                    #@ViewBag.JobOrderId
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="AddPart"
+              asp-route-id="@ViewBag.JobOrderId"
+              method="post">
+
             @Html.AntiForgeryToken()
 
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-4"></div>
 
-            <div style="margin-bottom:28px;">
-                <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:6px;">Part Information</h2>
-                <p style="color:var(--af-text-secondary); margin-bottom:20px;">
-                    Select the part used for this repair and specify the quantity.
-                </p>
+            <div class="part-section">
+
+                <div class="part-heading">
+                    <div class="part-heading-icon">📦</div>
+
+                    <div>
+                        <h2>Part Usage</h2>
+                        <p>
+                            Select the inventory part used for this repair and enter the quantity consumed.
+                        </p>
+                    </div>
+                </div>
 
                 <div class="row g-3">
+
                     <div class="col-md-8">
-                        <label for="partId" class="form-label fw-semibold">Part</label>
-                        <select id="partId" name="partId" class="form-select" asp-items="ViewBag.PartId">
+                        <label for="partId"
+                               class="form-label fw-semibold">
+                            Part
+                        </label>
+
+                        <select id="partId"
+                                name="partId"
+                                class="form-select"
+                                asp-items="ViewBag.PartId"
+                                required>
                             <option value="">-- Select Part --</option>
                         </select>
                     </div>
 
                     <div class="col-md-4">
-                        <label for="quantity" class="form-label fw-semibold">Quantity</label>
-                        <input id="quantity" name="quantity" class="form-control"
-                               type="number" min="1" step="1" value="1" required />
+                        <label for="quantity"
+                               class="form-label fw-semibold">
+                            Quantity
+                        </label>
+
+                        <input id="quantity"
+                               name="quantity"
+                               class="form-control"
+                               type="number"
+                               min="1"
+                               step="1"
+                               value="1"
+                               required />
                     </div>
+
                 </div>
+
             </div>
 
-            <div style="background:var(--af-bg); border:1px solid var(--af-border); border-radius:8px; padding:20px; margin-bottom:28px;">
-                <h3 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">Job Order</h3>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:var(--af-text-secondary);">Job Order ID</span>
-                    <strong>#@ViewBag.JobOrderId</strong>
+            <div style="padding:16px 18px;
+                        border:1px solid var(--af-border);
+                        border-radius:9px;
+                        background:var(--af-bg);
+                        margin-bottom:28px;">
+
+                <div style="font-size:0.8rem;
+                            font-weight:600;
+                            margin-bottom:5px;">
+                    Inventory Update
                 </div>
+
+                <div style="font-size:0.8rem;
+                            color:var(--af-text-secondary);">
+                    Adding a part to this job records the part as used for the repair.
+                    The existing Job Order backend handles the corresponding inventory logic.
+                </div>
+
             </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:12px; padding-top:20px; border-top:1px solid var(--af-border);">
-                <a asp-action="Details" asp-route-id="@ViewBag.JobOrderId"
+            <div class="part-form-footer">
+
+                <a asp-action="Details"
+                   asp-route-id="@ViewBag.JobOrderId"
                    class="af-button af-button-secondary">
                     Cancel
                 </a>
-                <button type="submit" class="af-button af-button-primary">Add Part</button>
+
+                <button type="submit"
+                        class="af-button af-button-primary">
+                    Add Part
+                </button>
+
             </div>
+
         </form>
+
     </div>
 
 </div>

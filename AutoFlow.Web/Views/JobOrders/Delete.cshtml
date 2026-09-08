@@ -4,13 +4,113 @@
     ViewData["Title"] = "Delete Job Order";
 }
 
+<style>
+    .delete-card {
+        max-width: 760px;
+    }
+
+    .delete-warning {
+        text-align: center;
+        padding: 18px 10px 28px;
+    }
+
+    .delete-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(220, 53, 69, 0.08);
+        font-size: 28px;
+    }
+
+    .delete-warning h2 {
+        font-size: 1.25rem;
+        font-weight: 650;
+        margin-bottom: 8px;
+    }
+
+    .delete-warning p {
+        color: var(--af-text-secondary);
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    .delete-summary {
+        border: 1px solid var(--af-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 26px;
+    }
+
+    .delete-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--af-border);
+    }
+
+    .delete-summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .delete-summary-label {
+        color: var(--af-text-secondary);
+    }
+
+    .delete-summary-value {
+        font-weight: 650;
+        text-align: right;
+    }
+
+    .delete-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 22px;
+        border-top: 1px solid var(--af-border);
+    }
+
+    .delete-button {
+        background: #dc3545;
+        color: #fff;
+        border: none;
+    }
+
+    .delete-button:hover {
+        background: #bb2d3b;
+        color: #fff;
+    }
+
+    @@media (max-width: 600px) {
+        .delete-footer {
+            flex-direction: column-reverse;
+        }
+
+        .delete-footer .af-button {
+            width: 100%;
+        }
+
+        .delete-summary-row {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .delete-summary-value {
+            text-align: left;
+        }
+    }
+</style>
+
 <div class="dashboard-page">
 
-    <!-- PAGE HEADER -->
     <div class="page-header">
         <div>
             <h1>Delete Job Order</h1>
-            <p>Confirm that you want to remove this repair job from the system.</p>
+            <p>Review the repair job before permanently removing it.</p>
         </div>
 
         <div class="page-header-actions">
@@ -21,89 +121,91 @@
         </div>
     </div>
 
+    <div class="af-card delete-card" style="padding:30px;">
 
-    <!-- DELETE CONFIRMATION -->
-    <div class="af-card"
-         style="max-width:720px; padding:28px;">
+        <div class="delete-warning">
 
-        <div style="text-align:center; padding:20px 10px 28px;">
-
-            <div style="font-size:3rem; margin-bottom:16px;">
+            <div class="delete-icon">
                 ⚠️
             </div>
 
-            <h2 style="font-size:1.3rem; font-weight:600; margin-bottom:8px;">
+            <h2>
                 Delete Job Order #@Model.JobOrderId?
             </h2>
 
-            <p style="color:var(--af-text-secondary); margin:0;">
-                This action cannot be undone. Are you sure you want to delete
-                this repair job?
+            <p>
+                This action permanently removes this repair job from the system.
+                Review the information below before continuing.
             </p>
 
         </div>
 
+        <div class="delete-summary">
 
-        <!-- JOB SUMMARY -->
-        <div style="border:1px solid var(--af-border); border-radius:8px; padding:20px; margin-bottom:24px;">
-
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--af-border);">
-
-                <span style="color:var(--af-text-secondary);">
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
                     Job Order
                 </span>
 
-                <strong>
+                <span class="delete-summary-value">
                     #@Model.JobOrderId
-                </strong>
-
+                </span>
             </div>
 
-
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--af-border);">
-
-                <span style="color:var(--af-text-secondary);">
-                    Date
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
+                    Job Order Date
                 </span>
 
-                <strong>
-                    @Model.JobOrderDate.ToString("MMM dd, yyyy")
-                </strong>
-
+                <span class="delete-summary-value">
+                    @Model.JobOrderDate.ToString("MMM dd, yyyy hh:mm tt")
+                </span>
             </div>
 
-
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--af-border);">
-
-                <span style="color:var(--af-text-secondary);">
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
                     Status
                 </span>
 
-                <strong>
+                <span class="delete-summary-value">
                     @(string.IsNullOrWhiteSpace(Model.Status)
                         ? "Pending"
                         : Model.Status)
-                </strong>
-
+                </span>
             </div>
 
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
+                    Labor Cost
+                </span>
 
-            <div style="display:flex; justify-content:space-between; padding:10px 0;">
+                <span class="delete-summary-value">
+                    @Model.LaborCost.ToString("C")
+                </span>
+            </div>
 
-                <span style="color:var(--af-text-secondary);">
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
+                    Parts Cost
+                </span>
+
+                <span class="delete-summary-value">
+                    @Model.PartsCost.ToString("C")
+                </span>
+            </div>
+
+            <div class="delete-summary-row">
+                <span class="delete-summary-label">
                     Total Cost
                 </span>
 
-                <strong>
-                    ₱@Model.TotalCost.ToString("N2")
-                </strong>
-
+                <span class="delete-summary-value">
+                    @Model.TotalCost.ToString("C")
+                </span>
             </div>
 
         </div>
 
-
-        <!-- CONFIRMATION FORM -->
         <form asp-action="Delete"
               method="post">
 
@@ -112,8 +214,7 @@
             <input type="hidden"
                    asp-for="JobOrderId" />
 
-
-            <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <div class="delete-footer">
 
                 <a asp-action="Details"
                    asp-route-id="@Model.JobOrderId"
@@ -122,8 +223,7 @@
                 </a>
 
                 <button type="submit"
-                        class="af-button"
-                        style="background:#dc3545; color:#fff; border:none;">
+                        class="af-button delete-button">
                     Delete Job Order
                 </button>
 

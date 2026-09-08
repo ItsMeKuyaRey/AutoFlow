@@ -1,58 +1,372 @@
 @model AutoFlow.Web.Models.Part
+
 @{
     ViewData["Title"] = "Add Part";
 }
-<div class="container-fluid py-4">
-    <div class="mb-4">
-        <h1 class="fw-bold mb-1">Add Part</h1>
-        <p class="text-muted mb-0">Add a new part to inventory.</p>
+
+<style>
+    .part-form-page {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .part-form-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: #8b92a3;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .part-form-breadcrumb .current {
+        color: #7544f5;
+    }
+
+    .part-form-header {
+        margin-bottom: 22px;
+    }
+
+    .part-form-title {
+        margin: 0;
+        color: #171b26;
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.8px;
+    }
+
+    .part-form-subtitle {
+        margin-top: 7px;
+        color: #858c9d;
+        font-size: 13px;
+    }
+
+    .part-form-panel {
+        background: #ffffff;
+        border: 1px solid #e5e8ee;
+        border-radius: 13px;
+        box-shadow: 0 2px 8px rgba(24, 31, 45, 0.025);
+    }
+
+    .part-form-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 19px 20px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .part-form-icon {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #f0ebff;
+        color: #7544f5;
+        font-size: 16px;
+    }
+
+    .part-form-panel-title {
+        margin: 0;
+        color: #1b2030;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .part-form-panel-subtitle {
+        margin-top: 3px;
+        color: #9299a8;
+        font-size: 10px;
+    }
+
+    .part-form-body {
+        padding: 24px 20px;
+    }
+
+    .part-field {
+        margin-bottom: 19px;
+    }
+
+    .part-field-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 7px;
+        color: #4d5565;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    .part-field-label i {
+        color: #7544f5;
+    }
+
+    .part-field .form-control,
+    .part-field .form-select {
+        min-height: 43px;
+        border-color: #dfe3ea;
+        border-radius: 8px;
+        color: #303746;
+        font-size: 12px;
+        box-shadow: none;
+    }
+
+    .part-field .form-control:focus,
+    .part-field .form-select:focus {
+        border-color: #9d83ef;
+        box-shadow: 0 0 0 3px #f3efff;
+    }
+
+    .part-help {
+        margin-top: 5px;
+        color: #9aa1af;
+        font-size: 9px;
+    }
+
+    .part-validation {
+        margin-top: 5px;
+        color: #dc5962;
+        font-size: 10px;
+    }
+
+    .part-form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 9px;
+        padding: 16px 20px;
+        border-top: 1px solid #edf0f4;
+        background: #fafbfc;
+    }
+
+    .part-cancel-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 13px;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #687082;
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .part-save-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 14px;
+        border: 0;
+        border-radius: 8px;
+        background: #7544f5;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 750;
+    }
+
+    @@media (max-width: 720px) {
+        .part-form-footer {
+            justify-content: stretch;
+        }
+
+        .part-cancel-button,
+        .part-save-button {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="part-form-page">
+
+    <div class="part-form-breadcrumb">
+        <span>Inventory</span>
+        <span>/</span>
+        <span>Parts</span>
+        <span>/</span>
+        <span class="current">Add Part</span>
     </div>
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <form asp-action="Create" method="post">
-                @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="Name" class="form-label fw-semibold">Name</label>
-                        <input asp-for="Name" class="form-control" placeholder="e.g. Brake Pads" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="PartNumber" class="form-label fw-semibold">Part Number</label>
-                        <input asp-for="PartNumber" class="form-control" placeholder="Optional" />
-                        <span asp-validation-for="PartNumber" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="UnitPrice" class="form-label fw-semibold">Unit Price</label>
-                        <input asp-for="UnitPrice" type="number" step="0.01" class="form-control" />
-                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="StockQuantity" class="form-label fw-semibold">Stock Quantity</label>
-                        <input asp-for="StockQuantity" type="number" class="form-control" />
-                        <span asp-validation-for="StockQuantity" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="SupplierId" class="form-label fw-semibold">Supplier</label>
-                        <select asp-for="SupplierId" class="form-select" asp-items="ViewBag.SupplierId">
-                            <option value="">— No Supplier —</option>
-                        </select>
-                    </div>
+
+    <div class="part-form-header">
+
+        <h1 class="part-form-title">
+            Add Part
+        </h1>
+
+        <p class="part-form-subtitle">
+            Add a new automotive part to the inventory.
+        </p>
+
+    </div>
+
+    <section class="part-form-panel">
+
+        <div class="part-form-panel-header">
+
+            <div class="part-form-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+
+            <div>
+                <h2 class="part-form-panel-title">
+                    Part Information
+                </h2>
+
+                <div class="part-form-panel-subtitle">
+                    Enter the part details used by the inventory module.
                 </div>
-                <hr class="my-4" />
-                <div class="d-flex justify-content-between">
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg"></i> Add Part
-                    </button>
-                </div>
-            </form>
+            </div>
+
         </div>
-    </div>
+
+        <form asp-action="Create">
+
+            <div class="part-form-body">
+
+                <div asp-validation-summary="ModelOnly" class="part-validation"></div>
+
+                <div class="row">
+
+                    <div class="col-md-7">
+
+                        <div class="part-field">
+
+                            <label asp-for="Name" class="part-field-label">
+                                <i class="bi bi-tag"></i>
+                                Part Name
+                            </label>
+
+                            <input asp-for="Name"
+                                   class="form-control"
+                                   placeholder="e.g. Brake Pad Set" />
+
+                            <span asp-validation-for="Name"
+                                  class="part-validation"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-5">
+
+                        <div class="part-field">
+
+                            <label asp-for="PartNumber" class="part-field-label">
+                                <i class="bi bi-upc-scan"></i>
+                                Part Number
+                            </label>
+
+                            <input asp-for="PartNumber"
+                                   class="form-control"
+                                   placeholder="e.g. BP-2026-001" />
+
+                            <span asp-validation-for="PartNumber"
+                                  class="part-validation"></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-4">
+
+                        <div class="part-field">
+
+                            <label asp-for="UnitPrice" class="part-field-label">
+                                <i class="bi bi-currency-dollar"></i>
+                                Unit Price
+                            </label>
+
+                            <input asp-for="UnitPrice"
+                                   class="form-control"
+                                   type="number"
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="0.00" />
+
+                            <span asp-validation-for="UnitPrice"
+                                  class="part-validation"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <div class="part-field">
+
+                            <label asp-for="StockQuantity" class="part-field-label">
+                                <i class="bi bi-boxes"></i>
+                                Stock Quantity
+                            </label>
+
+                            <input asp-for="StockQuantity"
+                                   class="form-control"
+                                   type="number"
+                                   min="0"
+                                   placeholder="0" />
+
+                            <span asp-validation-for="StockQuantity"
+                                  class="part-validation"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <div class="part-field">
+
+                            <label asp-for="SupplierId" class="part-field-label">
+                                <i class="bi bi-buildings"></i>
+                                Supplier
+                            </label>
+
+                            <select asp-for="SupplierId"
+                                    class="form-select"
+                                    asp-items="ViewBag.SupplierId">
+                                <option value="">Select supplier</option>
+                            </select>
+
+                            <span asp-validation-for="SupplierId"
+                                  class="part-validation"></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="part-form-footer">
+
+                <a asp-action="Index" class="part-cancel-button">
+                    <i class="bi bi-arrow-left"></i>
+                    Cancel
+                </a>
+
+                <button type="submit" class="part-save-button">
+                    <i class="bi bi-check-lg"></i>
+                    Save Part
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
 </div>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");

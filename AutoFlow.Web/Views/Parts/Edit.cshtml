@@ -1,59 +1,546 @@
 @model AutoFlow.Web.Models.Part
+
 @{
     ViewData["Title"] = "Edit Part";
+
+    var stockStatus = Model.StockQuantity <= 0
+        ? "Out of Stock"
+        : Model.StockQuantity <= 5
+            ? "Low Stock"
+            : "In Stock";
+
+    var stockIcon = Model.StockQuantity <= 0
+        ? "bi-x-circle"
+        : Model.StockQuantity <= 5
+            ? "bi-exclamation-triangle"
+            : "bi-check-circle";
 }
-<div class="container-fluid py-4">
-    <div class="mb-4">
-        <h1 class="fw-bold mb-1">Edit Part</h1>
-        <p class="text-muted mb-0">Update part information and stock.</p>
+
+<style>
+    .parts-form-page {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 32px 28px 50px;
+    }
+
+    .parts-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #7b8190;
+        font-size: 13px;
+        margin-bottom: 22px;
+    }
+
+    .parts-breadcrumb a {
+        color: #6f42c1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .parts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+
+    .parts-header h1 {
+        font-size: 30px;
+        font-weight: 800;
+        color: #202431;
+        margin: 0 0 7px;
+        letter-spacing: -0.5px;
+    }
+
+    .parts-header p {
+        color: #7b8190;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .parts-back {
+        border: 1px solid #e1e4ea;
+        color: #596070;
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .parts-back:hover {
+        background: #f7f7fa;
+        color: #4f2a91;
+    }
+
+    .parts-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 22px;
+    }
+
+    .parts-card {
+        background: #fff;
+        border: 1px solid #ececf1;
+        border-radius: 16px;
+        box-shadow: 0 5px 20px rgba(30, 25, 50, 0.05);
+        overflow: hidden;
+    }
+
+    .parts-card-header {
+        padding: 21px 24px;
+        border-bottom: 1px solid #eeeeF2;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+    }
+
+    .parts-card-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1ebff;
+        color: #7043c1;
+        font-size: 20px;
+    }
+
+    .parts-card-header h2 {
+        font-size: 17px;
+        font-weight: 750;
+        margin: 0;
+        color: #252936;
+    }
+
+    .parts-card-header p {
+        font-size: 12px;
+        color: #858b98;
+        margin: 3px 0 0;
+    }
+
+    .parts-card-body {
+        padding: 25px;
+    }
+
+    .parts-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #3e4350;
+        margin-bottom: 8px;
+    }
+
+    .parts-required {
+        color: #c23a55;
+    }
+
+    .parts-input {
+        border: 1px solid #dfe2e8;
+        border-radius: 10px;
+        min-height: 45px;
+        padding: 9px 13px;
+        font-size: 14px;
+        box-shadow: none !important;
+    }
+
+    .parts-input:focus,
+    .parts-select:focus {
+        border-color: #8060bd;
+        box-shadow: 0 0 0 3px rgba(112, 67, 193, 0.1) !important;
+    }
+
+    .parts-select {
+        border: 1px solid #dfe2e8;
+        border-radius: 10px;
+        min-height: 45px;
+        padding: 9px 13px;
+        font-size: 14px;
+        box-shadow: none !important;
+    }
+
+    .parts-field {
+        margin-bottom: 20px;
+    }
+
+    .parts-help {
+        color: #9297a2;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    .parts-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding-top: 22px;
+        margin-top: 4px;
+        border-top: 1px solid #eeeeF2;
+    }
+
+    .parts-btn {
+        border-radius: 10px;
+        min-height: 44px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .parts-btn-primary {
+        background: #7043c1;
+        border-color: #7043c1;
+        color: #fff;
+    }
+
+    .parts-btn-primary:hover {
+        background: #5d35a6;
+        border-color: #5d35a6;
+        color: #fff;
+    }
+
+    .parts-status-card {
+        padding: 22px;
+    }
+
+    .parts-status-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 750;
+        color: #282d38;
+        margin-bottom: 18px;
+    }
+
+    .parts-status-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #f1ebff;
+        color: #7043c1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .parts-current {
+        border: 1px solid #ececf1;
+        border-radius: 12px;
+        padding: 16px;
+        background: #fafafd;
+        margin-bottom: 14px;
+    }
+
+    .parts-current-label {
+        font-size: 11px;
+        color: #858b98;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .parts-current-value {
+        font-size: 24px;
+        font-weight: 800;
+        color: #252936;
+    }
+
+    .parts-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #f1ebff;
+        color: #7043c1;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .parts-info {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #7b8190;
+    }
+
+    .validation-summary-errors {
+        border: 1px solid #f2c8d0;
+        background: #fff5f6;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-size: 13px;
+    }
+
+    .field-validation-error {
+        font-size: 11px;
+        margin-top: 5px;
+        display: block;
+    }
+
+    @@media (max-width: 900px) {
+        .parts-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .parts-header {
+            flex-direction: column;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .parts-form-page {
+            padding: 22px 16px 35px;
+        }
+
+        .parts-header h1 {
+            font-size: 25px;
+        }
+
+        .parts-card-body {
+            padding: 18px;
+        }
+
+        .parts-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .parts-actions a,
+        .parts-actions button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="parts-form-page">
+
+    <div class="parts-breadcrumb">
+        <a asp-action="Index">
+            <i class="bi bi-box-seam"></i> Parts Inventory
+        </a>
+        <i class="bi bi-chevron-right"></i>
+        <span>Edit Part</span>
     </div>
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <form asp-action="Edit" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="PartId" />
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="Name" class="form-label fw-semibold">Name</label>
-                        <input asp-for="Name" class="form-control" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="PartNumber" class="form-label fw-semibold">Part Number</label>
-                        <input asp-for="PartNumber" class="form-control" />
-                        <span asp-validation-for="PartNumber" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="UnitPrice" class="form-label fw-semibold">Unit Price</label>
-                        <input asp-for="UnitPrice" type="number" step="0.01" class="form-control" />
-                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="StockQuantity" class="form-label fw-semibold">Stock Quantity</label>
-                        <input asp-for="StockQuantity" type="number" class="form-control" />
-                        <span asp-validation-for="StockQuantity" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="SupplierId" class="form-label fw-semibold">Supplier</label>
-                        <select asp-for="SupplierId" class="form-select" asp-items="ViewBag.SupplierId">
-                            <option value="">— No Supplier —</option>
-                        </select>
-                    </div>
-                </div>
-                <hr class="my-4" />
-                <div class="d-flex justify-content-between">
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg"></i> Save Changes
-                    </button>
-                </div>
-            </form>
+
+    <div class="parts-header">
+        <div>
+            <h1>Edit Part</h1>
+            <p>Update part information, supplier assignment, pricing, and stock level.</p>
         </div>
+
+        <a asp-action="Index" class="parts-back">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Inventory
+        </a>
     </div>
+
+    <div class="parts-grid">
+
+        <div class="parts-card">
+
+            <div class="parts-card-header">
+                <div class="parts-card-icon">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+
+                <div>
+                    <h2>Part Information</h2>
+                    <p>Modify the existing inventory record.</p>
+                </div>
+            </div>
+
+            <div class="parts-card-body">
+
+                <form asp-action="Edit" method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" asp-for="PartId" />
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-4"></div>
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <div class="parts-field">
+                                <label asp-for="Name" class="parts-label">
+                                    Part Name <span class="parts-required">*</span>
+                                </label>
+
+                                <input asp-for="Name"
+                                       class="form-control parts-input"
+                                       placeholder="e.g. Engine Oil Filter" />
+
+                                <span asp-validation-for="Name"
+                                      class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="parts-field">
+                                <label asp-for="PartNumber" class="parts-label">
+                                    Part Number
+                                </label>
+
+                                <input asp-for="PartNumber"
+                                       class="form-control parts-input"
+                                       placeholder="e.g. OF-2025-001" />
+
+                                <span asp-validation-for="PartNumber"
+                                      class="text-danger"></span>
+
+                                <div class="parts-help">
+                                    Optional manufacturer or internal reference number.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="parts-field">
+                                <label asp-for="UnitPrice" class="parts-label">
+                                    Unit Price <span class="parts-required">*</span>
+                                </label>
+
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+
+                                    <input asp-for="UnitPrice"
+                                           type="number"
+                                           step="0.01"
+                                           min="0"
+                                           class="form-control parts-input"
+                                           placeholder="0.00" />
+                                </div>
+
+                                <span asp-validation-for="UnitPrice"
+                                      class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="parts-field">
+                                <label asp-for="StockQuantity" class="parts-label">
+                                    Stock Quantity <span class="parts-required">*</span>
+                                </label>
+
+                                <input asp-for="StockQuantity"
+                                       type="number"
+                                       min="0"
+                                       class="form-control parts-input"
+                                       placeholder="0" />
+
+                                <span asp-validation-for="StockQuantity"
+                                      class="text-danger"></span>
+
+                                <div class="parts-help">
+                                    Quantities of 5 or below are treated as low stock.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="parts-field">
+                                <label asp-for="SupplierId" class="parts-label">
+                                    Supplier
+                                </label>
+
+                                <select asp-for="SupplierId"
+                                        class="form-select parts-select"
+                                        asp-items="ViewBag.SupplierId">
+                                    <option value="">— No Supplier —</option>
+                                </select>
+
+                                <div class="parts-help">
+                                    Only active suppliers are available.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="parts-actions">
+
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary parts-btn">
+                            <i class="bi bi-x-lg me-1"></i>
+                            Cancel
+                        </a>
+
+                        <button type="submit"
+                                class="btn parts-btn parts-btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Save Changes
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+        <div class="parts-card">
+            <div class="parts-status-card">
+
+                <div class="parts-status-title">
+                    <div class="parts-status-icon">
+                        <i class="bi @stockIcon"></i>
+                    </div>
+
+                    <span>Current Inventory Status</span>
+                </div>
+
+                <div class="parts-current">
+
+                    <div class="parts-current-label">
+                        Current Stock
+                    </div>
+
+                    <div class="parts-current-value">
+                        @Model.StockQuantity
+                    </div>
+
+                    <span class="parts-status-badge">
+                        <i class="bi @stockIcon"></i>
+                        @stockStatus
+                    </span>
+
+                </div>
+
+                <div class="parts-info">
+                    <strong>@Model.Name</strong>
+                    <br />
+
+                    @if (!string.IsNullOrWhiteSpace(Model.PartNumber))
+                    {
+                        <span>Part No. @Model.PartNumber</span>
+                    }
+                    else
+                    {
+                        <span>No part number assigned.</span>
+                    }
+
+                    <br />
+
+                    <span>
+                        Current price:
+                        <strong>₱@Model.UnitPrice.ToString("N2")</strong>
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
 </div>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");

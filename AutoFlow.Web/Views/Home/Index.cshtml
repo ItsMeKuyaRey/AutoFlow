@@ -3,264 +3,1750 @@
 
 @{
     ViewData["Title"] = "Dashboard";
+
+    var today = DateTime.Now;
+
+    var maxTrendCount = Model.AppointmentTrend.Any()
+        ? Math.Max(1, Model.AppointmentTrend.Max(x => x.Count))
+        : 1;
+
+    var totalPipelineJobs =
+        Model.OpenJobCount +
+        Model.InProgressJobCount +
+        Model.CompletedJobCount;
+
+    var openPercent =
+        totalPipelineJobs > 0
+            ? (Model.OpenJobCount * 100m / totalPipelineJobs)
+            : 0m;
+
+    var progressPercent =
+        totalPipelineJobs > 0
+            ? (Model.InProgressJobCount * 100m / totalPipelineJobs)
+            : 0m;
+
+    var completedPercent =
+        totalPipelineJobs > 0
+            ? (Model.CompletedJobCount * 100m / totalPipelineJobs)
+            : 0m;
+
+    var bayPercent =
+        Model.TotalBays > 0
+            ? Math.Min(
+                100,
+                (int)Math.Round(
+                    (double)Model.ActiveBayCount /
+                    Model.TotalBays *
+                    100))
+            : 0;
 }
 
-<div class="dashboard-page">
+<style>
+    .admin-dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        padding-bottom: 40px;
+    }
 
-    <!-- PAGE HEADER -->
-    <div class="page-header">
+    .admin-dashboard *,
+    .admin-dashboard *::before,
+    .admin-dashboard *::after {
+        box-sizing: border-box;
+    }
 
-        <div>
-            <h1>Good morning, Administrator</h1>
+    .admin-dashboard a {
+        text-decoration: none;
+    }
+
+    .ad-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    .ad-heading h1 {
+        margin: 0;
+        color: #111827;
+        font-size: clamp(26px, 3vw, 34px);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+    }
+
+    .ad-heading p {
+        margin: 7px 0 0;
+        color: #718096;
+        font-size: 14px;
+    }
+
+    .ad-heading-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 7px;
+        min-width: 170px;
+    }
+
+    .ad-date {
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .ad-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .ad-live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+    }
+
+    .ad-top-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .ad-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 700;
+        transition: 0.18s ease;
+    }
+
+    .ad-button:hover {
+        border-color: #c4b5fd;
+        color: #6d28d9;
+        transform: translateY(-1px);
+    }
+
+    .ad-button-primary {
+        border-color: #7c3aed;
+        background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+        color: #ffffff;
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.18);
+    }
+
+    .ad-button-primary:hover {
+        color: #ffffff;
+        border-color: #6d28d9;
+        box-shadow: 0 10px 24px rgba(124, 58, 237, 0.24);
+    }
+
+    .ad-quick-actions {
+        position: relative;
+    }
+
+    .ad-quick-actions summary {
+        list-style: none;
+        cursor: pointer;
+    }
+
+    .ad-quick-actions summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .ad-quick-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        z-index: 30;
+        width: 220px;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.16);
+    }
+
+    .ad-quick-menu a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .ad-quick-menu a:hover {
+        background: #f5f3ff;
+        color: #6d28d9;
+    }
+
+    .ad-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .ad-kpi {
+        position: relative;
+        min-height: 146px;
+        padding: 18px;
+        overflow: hidden;
+        border: 1px solid #e7eaf0;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+        color: inherit;
+        transition: 0.18s ease;
+    }
+
+    .ad-kpi:hover {
+        border-color: #d8ccff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+        transform: translateY(-2px);
+    }
+
+    .ad-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .ad-kpi-icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: #f5f3ff;
+        color: #7c3aed;
+        font-size: 15px;
+        font-weight: 900;
+    }
+
+    .ad-kpi-badge {
+        padding: 4px 7px;
+        border-radius: 999px;
+        background: #f5f3ff;
+        color: #7c3aed;
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .ad-kpi-label {
+        margin-top: 17px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .ad-kpi-value {
+        margin-top: 4px;
+        color: #111827;
+        font-size: 27px;
+        font-weight: 850;
+        letter-spacing: -0.035em;
+    }
+
+    .ad-kpi-note {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        color: #94a3b8;
+        font-size: 9px;
+        font-weight: 650;
+    }
+
+    .ad-note-positive {
+        color: #10b981;
+    }
+
+    .ad-note-danger {
+        color: #ef4444;
+    }
+
+    .ad-card {
+        border: 1px solid #e7eaf0;
+        border-radius: 15px;
+        background: #ffffff;
+        box-shadow: 0 3px 14px rgba(15, 23, 42, 0.035);
+    }
+
+    .ad-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .ad-card-title h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .ad-card-title p {
+        margin: 4px 0 0;
+        color: #94a3b8;
+        font-size: 10px;
+    }
+
+    .ad-link {
+        color: #7c3aed;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .ad-link:hover {
+        color: #5b21b6;
+    }
+
+    .ad-workflow {
+        padding: 22px 20px 24px;
+    }
+
+    .ad-workflow-grid {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(92px, 1fr));
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .ad-flow-node {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+        padding: 8px 4px;
+        color: #334155;
+        text-align: center;
+    }
+
+    .ad-flow-node:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 27px;
+        left: calc(50% + 25px);
+        width: calc(100% - 42px);
+        height: 1px;
+        background: #ddd6fe;
+    }
+
+    .ad-flow-icon {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid #e5e7eb;
+        border-radius: 11px;
+        background: #ffffff;
+        color: #64748b;
+        font-size: 16px;
+        transition: 0.18s ease;
+    }
+
+    a.ad-flow-node:hover .ad-flow-icon {
+        border-color: #a78bfa;
+        background: #7c3aed;
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+
+    .ad-flow-count {
+        margin-top: 9px;
+        color: #0f172a;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .ad-flow-label {
+        margin-top: 3px;
+        color: #94a3b8;
+        font-size: 7px;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .ad-flow-action {
+        margin-top: 11px;
+        color: #334155;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .ad-flow-disabled {
+        opacity: 0.58;
+    }
+
+    .ad-flow-disabled .ad-flow-action {
+        color: #94a3b8;
+    }
+
+    .ad-two-column {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+        gap: 16px;
+    }
+
+    .ad-appointments-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .ad-appointments-table th {
+        padding: 11px 18px;
+        border-bottom: 1px solid #eef1f5;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .ad-appointments-table td {
+        padding: 13px 18px;
+        border-bottom: 1px solid #f2f4f7;
+        color: #475569;
+        font-size: 11px;
+        vertical-align: middle;
+    }
+
+    .ad-appointments-table tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .ad-customer-name {
+        color: #111827;
+        font-weight: 800;
+    }
+
+    .ad-subtext {
+        display: block;
+        margin-top: 2px;
+        color: #94a3b8;
+        font-size: 9px;
+    }
+
+    .ad-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .ad-status-blue {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .ad-status-green {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .ad-status-orange {
+        background: #fff7ed;
+        color: #ea580c;
+    }
+
+    .ad-status-red {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .ad-status-purple {
+        background: #f5f3ff;
+        color: #7c3aed;
+    }
+
+    .ad-empty {
+        padding: 32px 20px;
+        color: #94a3b8;
+        font-size: 11px;
+        text-align: center;
+    }
+
+    .ad-job-body {
+        padding: 18px 20px 20px;
+    }
+
+    .ad-pipeline-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .ad-pipeline {
+        display: flex;
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #f1f5f9;
+    }
+
+    .ad-pipeline-open {
+        background: #94a3b8;
+    }
+
+    .ad-pipeline-progress {
+        background: #3b82f6;
+    }
+
+    .ad-pipeline-completed {
+        background: #10b981;
+    }
+
+    .ad-pipeline-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 10px;
+        color: #64748b;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .ad-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        margin-right: 4px;
+        border-radius: 50%;
+    }
+
+    .ad-job-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        margin-top: 18px;
+    }
+
+    .ad-job-row {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 11px;
+        padding: 10px;
+        border: 1px solid #edf0f4;
+        border-radius: 10px;
+        background: #fafbfc;
+        color: inherit;
+        transition: 0.18s ease;
+    }
+
+    .ad-job-row:hover {
+        border-color: #d8ccff;
+        background: #ffffff;
+        transform: translateX(2px);
+    }
+
+    .ad-job-id {
+        padding: 6px 4px;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #64748b;
+        font-size: 8px;
+        font-weight: 850;
+        text-align: center;
+    }
+
+    .ad-job-name {
+        color: #172033;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .ad-job-description {
+        display: block;
+        margin-top: 2px;
+        overflow: hidden;
+        color: #94a3b8;
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ad-three-column {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .ad-panel-body {
+        padding: 18px 20px 20px;
+    }
+
+    .ad-inventory-value {
+        padding: 18px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: #ffffff;
+        box-shadow: 0 12px 28px rgba(124, 58, 237, 0.18);
+    }
+
+    .ad-inventory-value span {
+        display: block;
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        opacity: 0.8;
+        text-transform: uppercase;
+    }
+
+    .ad-inventory-value strong {
+        display: block;
+        margin-top: 7px;
+        font-size: 23px;
+        font-weight: 850;
+    }
+
+    .ad-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .ad-mini-stat {
+        padding: 12px;
+        border: 1px solid #edf0f4;
+        border-radius: 10px;
+        background: #fafbfc;
+    }
+
+    .ad-mini-stat span {
+        display: block;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .ad-mini-stat strong {
+        display: block;
+        margin-top: 5px;
+        color: #172033;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .ad-billing-ring {
+        display: grid;
+        place-items: center;
+        width: 116px;
+        height: 116px;
+        margin: 4px auto 18px;
+        border-radius: 50%;
+        background:
+            conic-gradient(
+                #10b981 calc(@Model.CollectionRate * 1%),
+                #f59e0b 0
+            );
+    }
+
+    .ad-billing-ring-inner {
+        display: grid;
+        place-items: center;
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        background: #ffffff;
+        text-align: center;
+    }
+
+    .ad-billing-ring-inner strong {
+        color: #172033;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .ad-billing-ring-inner span {
+        color: #94a3b8;
+        font-size: 7px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .ad-financial-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 0;
+        border-top: 1px solid #eef1f5;
+        color: #64748b;
+        font-size: 10px;
+    }
+
+    .ad-financial-row strong {
+        color: #172033;
+    }
+
+    .ad-follow-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    .ad-follow-item {
+        padding: 11px;
+        border: 1px solid #eee9ff;
+        border-left: 3px solid #8b5cf6;
+        border-radius: 9px;
+        background: #fcfbff;
+    }
+
+    .ad-follow-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .ad-follow-item strong {
+        color: #172033;
+        font-size: 10px;
+    }
+
+    .ad-follow-item span {
+        display: block;
+        margin-top: 3px;
+        color: #94a3b8;
+        font-size: 9px;
+    }
+
+    .ad-bottom-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(310px, 0.6fr);
+        gap: 16px;
+    }
+
+    .ad-activity-list {
+        position: relative;
+        padding: 18px 20px 22px;
+    }
+
+    .ad-activity-list::before {
+        content: "";
+        position: absolute;
+        top: 27px;
+        bottom: 28px;
+        left: 29px;
+        width: 1px;
+        background: #ebe7ff;
+    }
+
+    .ad-activity {
+        position: relative;
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr) auto;
+        gap: 11px;
+        padding: 9px 0;
+    }
+
+    .ad-activity-dot {
+        position: relative;
+        z-index: 2;
+        width: 12px;
+        height: 12px;
+        margin-top: 3px;
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        background: #8b5cf6;
+        box-shadow: 0 0 0 1px #ddd6fe;
+    }
+
+    .ad-activity strong {
+        display: block;
+        color: #172033;
+        font-size: 10px;
+    }
+
+    .ad-activity p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 9px;
+    }
+
+    .ad-activity-module {
+        display: inline-flex;
+        margin-top: 6px;
+        padding: 3px 6px;
+        border-radius: 5px;
+        background: #f5f3ff;
+        color: #7c3aed;
+        font-size: 7px;
+        font-weight: 850;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .ad-activity-time {
+        color: #94a3b8;
+        font-size: 8px;
+        white-space: nowrap;
+    }
+
+    .ad-report-body {
+        padding: 18px 20px 20px;
+    }
+
+    .ad-trend-title {
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .ad-trend {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 6px;
+        height: 110px;
+        margin-top: 14px;
+        padding-top: 8px;
+        border-bottom: 1px solid #eef1f5;
+    }
+
+    .ad-trend-item {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        gap: 5px;
+    }
+
+    .ad-trend-count {
+        color: #64748b;
+        font-size: 7px;
+        font-weight: 700;
+    }
+
+    .ad-trend-bar {
+        width: min(18px, 70%);
+        min-height: 3px;
+        border-radius: 5px 5px 0 0;
+        background: linear-gradient(180deg, #8b5cf6, #7c3aed);
+    }
+
+    .ad-trend-day {
+        color: #94a3b8;
+        font-size: 7px;
+        font-weight: 700;
+    }
+
+    .ad-record-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 18px;
+    }
+
+    .ad-record {
+        padding: 10px;
+        border: 1px solid #edf0f4;
+        border-radius: 9px;
+        background: #fafbfc;
+    }
+
+    .ad-record span {
+        display: block;
+        color: #94a3b8;
+        font-size: 7px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .ad-record strong {
+        display: block;
+        margin-top: 4px;
+        color: #172033;
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    .ad-footer-link {
+        display: block;
+        margin-top: 16px;
+        color: #7c3aed;
+        font-size: 9px;
+        font-weight: 850;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    @@media (max-width: 1280px) {
+        .ad-kpi-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .ad-workflow-grid {
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+        }
+
+        .ad-flow-node:nth-child(4)::after {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 980px) {
+        .ad-two-column,
+        .ad-three-column,
+        .ad-bottom-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ad-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 680px) {
+        .ad-header {
+            flex-direction: column;
+        }
+
+        .ad-heading-meta {
+            align-items: flex-start;
+        }
+
+        .ad-top-actions {
+            flex-wrap: wrap;
+        }
+
+        .ad-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ad-workflow-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ad-flow-node::after {
+            display: none !important;
+        }
+
+        .ad-card-head {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .ad-appointments-table {
+            min-width: 650px;
+        }
+
+        .ad-table-scroll {
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<div class="admin-dashboard">
+
+    <!-- Dashboard header -->
+    <section class="ad-header">
+
+        <div class="ad-heading">
+
+            <h1>Good morning, Administrator.</h1>
 
             <p>
-                Here's what's happening with your automotive service business today.
+                Here's your current AutoFlow operational overview.
             </p>
-        </div>
 
-        <div class="page-header-actions">
+            <div class="ad-top-actions">
 
-            <a asp-controller="Appointments" asp-action="Create" class="af-button af-button-primary">
-                + New Appointment
-            </a>
+                <details class="ad-quick-actions">
 
-        </div>
+                    <summary class="ad-button ad-button-primary">
+                        + Quick Action
+                    </summary>
 
-    </div>
+                    <div class="ad-quick-menu">
 
+                        <a asp-controller="Customers" asp-action="Create">
+                            👤 Add Customer
+                        </a>
 
-    <!-- KPI CARDS -->
-    <div class="dashboard-grid dashboard-grid-4">
+                        <a asp-controller="Vehicles" asp-action="Create">
+                            🚗 Register Vehicle
+                        </a>
 
-        <a asp-controller="Billings" asp-action="Index" class="af-card metric-card" style="text-decoration:none;color:inherit;">
+                        <a asp-controller="Appointments" asp-action="Create">
+                            📅 New Appointment
+                        </a>
 
-            <div class="metric-icon metric-blue">
-                $
-            </div>
+                        <a asp-controller="JobOrders" asp-action="Create">
+                            🔧 New Repair Job
+                        </a>
 
-            <div class="metric-label">
-                Total Revenue
-            </div>
+                        <a asp-controller="Parts" asp-action="Create">
+                            📦 Add Inventory Part
+                        </a>
 
-            <div class="metric-value">
-                @Model.TotalRevenue.ToString("C0")
-            </div>
-
-            <div class="metric-change positive">
-                All time
-            </div>
-
-        </a>
-
-
-        <a asp-controller="JobOrders" asp-action="Index" class="af-card metric-card" style="text-decoration:none;color:inherit;">
-
-            <div class="metric-icon metric-purple">
-                🔧
-            </div>
-
-            <div class="metric-label">
-                Active Repair Jobs
-            </div>
-
-            <div class="metric-value">
-                @Model.ActiveJobCount
-            </div>
-
-            <div class="metric-change positive">
-                @Model.TodayJobCount <span>today</span>
-            </div>
-
-        </a>
-
-
-        <a asp-controller="Appointments" asp-action="Index" class="af-card metric-card" style="text-decoration:none;color:inherit;">
-
-            <div class="metric-icon metric-orange">
-                📅
-            </div>
-
-            <div class="metric-label">
-                Pending Appointments
-            </div>
-
-            <div class="metric-value">
-                @Model.PendingAppointmentCount
-            </div>
-
-            <div class="metric-change negative">
-                @Model.RescheduledAppointmentCount <span>rescheduled</span>
-            </div>
-
-        </a>
-
-
-        <a asp-controller="Parts" asp-action="Index" class="af-card metric-card" style="text-decoration:none;color:inherit;">
-
-            <div class="metric-icon metric-red">
-                !
-            </div>
-
-            <div class="metric-label">
-                Low Stock Alerts
-            </div>
-
-            <div class="metric-value">
-                @Model.LowStockAlertCount
-            </div>
-
-            <div class="metric-change negative">
-                Critical parts
-            </div>
-
-        </a>
-
-    </div>
-
-
-    <!-- MIDDLE SECTION -->
-    <div class="dashboard-grid dashboard-grid-main">
-
-        <!-- JOB STATUS -->
-        <div class="af-card dashboard-card">
-
-            <div class="card-header">
-
-                <div>
-                    <h2>Distribution of Job Statuses</h2>
-
-                    <p>
-                        Current repair workload
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div class="job-status-chart">
-
-                <div class="status-ring">
-
-                    <div class="status-ring-inner">
-
-                        <strong>@Model.TotalJobCount</strong>
-
-                        <span>Total Jobs</span>
+                        <a asp-controller="Suppliers" asp-action="Create">
+                            🚚 Add Supplier
+                        </a>
 
                     </div>
 
-                </div>
+                </details>
+
+                <a asp-controller="Appointments"
+                   asp-action="Index"
+                   class="ad-button">
+                    View Schedule
+                </a>
 
             </div>
 
         </div>
 
+        <div class="ad-heading-meta">
 
-        <!-- ACTIVE FOLLOW UPS -->
-        <div class="af-card dashboard-card">
+            <div class="ad-date">
+                @today.ToString("MMMM dd, yyyy")
+            </div>
 
-            <div class="card-header">
+            <div class="ad-live">
+                <span class="ad-live-dot"></span>
+                Live database information
+            </div>
 
-                <div>
-                    <h2>Active Follow-ups</h2>
+        </div>
 
-                    <p>
-                        Customers requiring attention
-                    </p>
-                </div>
+    </section>
 
-                <span class="af-badge badge-blue">
-                    @Model.FollowUps.Count due
+
+    <!-- KPI overview -->
+    <section class="ad-kpi-grid">
+
+        <a asp-controller="Appointments"
+           asp-action="Index"
+           class="ad-kpi">
+
+            <div class="ad-kpi-head">
+
+                <div class="ad-kpi-icon">▣</div>
+
+                <span class="ad-kpi-badge">
+                    Today
                 </span>
 
             </div>
 
+            <div class="ad-kpi-label">
+                Today's Appointments
+            </div>
 
-            <div class="follow-up-list">
+            <div class="ad-kpi-value">
+                @Model.TodayAppointmentCount
+            </div>
 
-                @if (Model.FollowUps.Any())
-                {
-                    @foreach (var followUp in Model.FollowUps)
-                    {
-                        <div class="follow-up-item">
+            <div class="ad-kpi-note ad-note-positive">
+                ● @Model.ScheduledThisWeek scheduled next 7 days
+            </div>
 
-                            <div class="avatar avatar-@followUp.AvatarColor">
-                                @followUp.AvatarInitials
-                            </div>
+        </a>
 
-                            <div class="follow-up-info">
 
-                                <strong>@followUp.CustomerName</strong>
+        <a asp-controller="JobOrders"
+           asp-action="Index"
+           class="ad-kpi">
 
-                                <span>
-                                    @followUp.VehicleInfo
-                                </span>
+            <div class="ad-kpi-head">
 
-                            </div>
+                <div class="ad-kpi-icon">🔧</div>
 
-                            <span class="af-badge badge-blue">
-                                @followUp.Status
-                            </span>
-
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="follow-up-item">
-                        <div class="follow-up-info">
-                            <strong>No pending follow-ups</strong>
-                        </div>
-                    </div>
-                }
+                <span class="ad-kpi-badge">
+                    Active
+                </span>
 
             </div>
 
+            <div class="ad-kpi-label">
+                Active Repair Jobs
+            </div>
 
-            <div class="capacity-section">
+            <div class="ad-kpi-value">
+                @Model.ActiveJobCount
+            </div>
 
-                @{
-                    var bayPercent = Model.TotalBays > 0
-                        ? (int)Math.Round((double)Model.ActiveBayCount / Model.TotalBays * 100)
-                        : 0;
-                }
+            <div class="ad-kpi-note">
+                @Model.InProgressJobCount currently in progress
+            </div>
 
-                <div class="capacity-circle">
-                    @bayPercent%
-                </div>
+        </a>
 
-                <div>
-                    <strong>@bayPercent% Bay Capacity Utilized</strong>
 
-                    <span>
-                        @Model.ActiveBayCount of @Model.TotalBays bays occupied right now
-                    </span>
+        <a asp-controller="Billings"
+           asp-action="Index"
+           class="ad-kpi">
+
+            <div class="ad-kpi-head">
+
+                <div class="ad-kpi-icon">₱</div>
+
+                <span class="ad-kpi-badge">
+                    Unpaid
+                </span>
+
+            </div>
+
+            <div class="ad-kpi-label">
+                Outstanding Billing
+            </div>
+
+            <div class="ad-kpi-value">
+                ₱@Model.OutstandingAmount.ToString("N0")
+            </div>
+
+            <div class="ad-kpi-note ad-note-danger">
+                ● @Model.OutstandingInvoiceCount outstanding invoice(s)
+            </div>
+
+        </a>
+
+
+        <a asp-controller="Appointments"
+           asp-action="Index"
+           class="ad-kpi">
+
+            <div class="ad-kpi-head">
+
+                <div class="ad-kpi-icon">↻</div>
+
+                <span class="ad-kpi-badge">
+                    Queue
+                </span>
+
+            </div>
+
+            <div class="ad-kpi-label">
+                Follow-up Queue
+            </div>
+
+            <div class="ad-kpi-value">
+                @Model.FollowUps.Count
+            </div>
+
+            <div class="ad-kpi-note">
+                Appointment-based customer follow-ups
+            </div>
+
+        </a>
+
+
+        <a asp-controller="Customers"
+           asp-action="Index"
+           class="ad-kpi">
+
+            <div class="ad-kpi-head">
+
+                <div class="ad-kpi-icon">♟</div>
+
+                <span class="ad-kpi-badge">
+                    Records
+                </span>
+
+            </div>
+
+            <div class="ad-kpi-label">
+                Customer Records
+            </div>
+
+            <div class="ad-kpi-value">
+                @Model.TotalCustomerCount
+            </div>
+
+            <div class="ad-kpi-note ad-note-positive">
+                ● Centralized customer directory
+            </div>
+
+        </a>
+
+    </section>
+
+
+    <!-- Integrated workflow -->
+    <section class="ad-card">
+
+        <div class="ad-card-head">
+
+            <div class="ad-card-title">
+
+                <h2>
+                    Integrated AutoFlow Workflow
+                </h2>
+
+                <p>
+                    Connected automotive repair operations from customer intake to service history.
+                </p>
+
+            </div>
+
+            <div class="ad-live">
+                <span class="ad-live-dot"></span>
+                Real-time counts
+            </div>
+
+        </div>
+
+        <div class="ad-workflow">
+
+            <div class="ad-workflow-grid">
+
+                <a asp-controller="Customers"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">👥</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalCustomerCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Customer
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Customer Directory →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="Vehicles"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">🚗</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalVehicleCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Vehicle
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Garage Workspace →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="Appointments"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">▣</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalAppointmentCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Appointment
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Scheduling →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="JobOrders"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">🔧</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalJobCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Repair Job
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Repair Workflow →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="Parts"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">▦</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalPartCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Parts / Labor
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Inventory Control →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="Billings"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">₱</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalBillingCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Billing
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Financial Workspace →
+                    </div>
+
+                </a>
+
+
+                <a asp-controller="ServiceRecords"
+                   asp-action="Index"
+                   class="ad-flow-node">
+
+                    <div class="ad-flow-icon">↶</div>
+
+                    <div class="ad-flow-count">
+                        @Model.TotalServiceRecordCount
+                    </div>
+
+                    <div class="ad-flow-label">
+                        Service History
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Service Timeline →
+                    </div>
+
+                </a>
+
+
+                <div class="ad-flow-node ad-flow-disabled">
+
+                    <div class="ad-flow-icon">☏</div>
+
+                    <div class="ad-flow-count">
+                        @Model.FollowUps.Count
+                    </div>
+
+                    <div class="ad-flow-label">
+                        CRM Follow-up
+                    </div>
+
+                    <div class="ad-flow-action">
+                        Dedicated CRM next
+                    </div>
+
                 </div>
 
             </div>
 
         </div>
 
-    </div>
+    </section>
 
 
-    <!-- RECENT JOBS -->
-    <div class="af-card dashboard-card recent-jobs">
+    <!-- Appointments and repair jobs -->
+    <section class="ad-two-column">
 
-        <div class="card-header">
+        <div class="ad-card">
 
-            <div>
-                <h2>Recent Repair Jobs</h2>
+            <div class="ad-card-head">
 
-                <p>
-                    Latest service activity across the shop
-                </p>
+                <div class="ad-card-title">
+
+                    <h2>
+                        Today's Appointments
+                    </h2>
+
+                    <p>
+                        Live service schedule for @today.ToString("dddd, MMMM dd").
+                    </p>
+
+                </div>
+
+                <a asp-controller="Appointments"
+                   asp-action="Index"
+                   class="ad-link">
+                    View All Appointments →
+                </a>
+
             </div>
 
-            <div class="table-actions">
+            @if (Model.TodayAppointments.Any())
+            {
+                <div class="ad-table-scroll">
 
-                <a asp-controller="JobOrders" asp-action="Index" class="af-button af-button-secondary">
-                    View All Jobs
+                    <table class="ad-appointments-table">
+
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Customer & Vehicle</th>
+                                <th>Concern</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var appointment in Model.TodayAppointments)
+                            {
+                                var appointmentStatusClass =
+                                    appointment.Status switch
+                                    {
+                                        "Completed" => "ad-status-green",
+                                        "Confirmed" => "ad-status-green",
+                                        "Rescheduled" => "ad-status-orange",
+                                        "Cancelled" => "ad-status-red",
+                                        _ => "ad-status-blue"
+                                    };
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            @appointment.AppointmentDate.ToString("hh:mm tt")
+                                        </strong>
+                                    </td>
+
+                                    <td>
+
+                                        <a asp-controller="Appointments"
+                                           asp-action="Details"
+                                           asp-route-id="@appointment.AppointmentId"
+                                           class="ad-customer-name">
+                                            @appointment.CustomerName
+                                        </a>
+
+                                        <span class="ad-subtext">
+                                            @appointment.VehicleInfo
+                                            @if (!string.IsNullOrWhiteSpace(appointment.PlateNumber))
+                                            {
+                                                <text> · @appointment.PlateNumber</text>
+                                            }
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+                                        @appointment.Concern
+                                    </td>
+
+                                    <td>
+
+                                        <span class="ad-status @appointmentStatusClass">
+                                            @appointment.Status
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="ad-empty">
+                    No appointments scheduled for today.
+                    <br /><br />
+
+                    <a asp-controller="Appointments"
+                       asp-action="Create"
+                       class="ad-link">
+                        + Schedule an appointment
+                    </a>
+                </div>
+            }
+
+        </div>
+
+
+        <div class="ad-card">
+
+            <div class="ad-card-head">
+
+                <div class="ad-card-title">
+
+                    <h2>
+                        Repair Job Status
+                    </h2>
+
+                    <p>
+                        Current repair operations distribution.
+                    </p>
+
+                </div>
+
+                <a asp-controller="JobOrders"
+                   asp-action="Index"
+                   class="ad-link">
+                    View Repair Job Orders →
+                </a>
+
+            </div>
+
+            <div class="ad-job-body">
+
+                <div class="ad-pipeline-header">
+
+                    <span>
+                        Active jobs pipeline
+                    </span>
+
+                    <span>
+                        @Model.TotalJobCount total jobs
+                    </span>
+
+                </div>
+
+                <div class="ad-pipeline">
+
+                    <div class="ad-pipeline-open"
+                         style="width:@openPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                    </div>
+
+                    <div class="ad-pipeline-progress"
+                         style="width:@progressPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                    </div>
+
+                    <div class="ad-pipeline-completed"
+                         style="width:@completedPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                    </div>
+
+                </div>
+
+                <div class="ad-pipeline-legend">
+
+                    <span>
+                        <span class="ad-dot" style="background:#94a3b8;"></span>
+                        Open (@Model.OpenJobCount)
+                    </span>
+
+                    <span>
+                        <span class="ad-dot" style="background:#3b82f6;"></span>
+                        In Progress (@Model.InProgressJobCount)
+                    </span>
+
+                    <span>
+                        <span class="ad-dot" style="background:#10b981;"></span>
+                        Completed (@Model.CompletedJobCount)
+                    </span>
+
+                </div>
+
+                <div class="ad-job-list">
+
+                    @if (Model.RecentJobs.Any())
+                    {
+                        @foreach (var job in Model.RecentJobs.Take(3))
+                        {
+                            var jobStatusClass =
+                                job.Status switch
+                                {
+                                    "Completed" => "ad-status-green",
+                                    "In Progress" => "ad-status-blue",
+                                    "Open" => "ad-status-orange",
+                                    "Cancelled" => "ad-status-red",
+                                    _ => "ad-status-purple"
+                                };
+
+                            <a asp-controller="JobOrders"
+                               asp-action="Details"
+                               asp-route-id="@job.JobOrderId"
+                               class="ad-job-row">
+
+                                <div class="ad-job-id">
+                                    JOB<br />
+                                    @job.JobOrderId
+                                </div>
+
+                                <div>
+
+                                    <div class="ad-job-name">
+                                        @job.VehicleMake @job.VehicleModel
+                                    </div>
+
+                                    <span class="ad-job-description">
+                                        @(job.Description ?? "No repair description")
+                                    </span>
+
+                                </div>
+
+                                <span class="ad-status @jobStatusClass">
+                                    @job.Status
+                                </span>
+
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="ad-empty">
+                            No repair job records available.
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Inventory, billing, follow-ups -->
+    <section class="ad-three-column">
+
+        <div class="ad-card">
+
+            <div class="ad-card-head">
+
+                <div class="ad-card-title">
+                    <h2>Inventory Snapshot</h2>
+                    <p>Current parts inventory position.</p>
+                </div>
+
+            </div>
+
+            <div class="ad-panel-body">
+
+                <div class="ad-inventory-value">
+
+                    <span>
+                        Estimated Inventory Value
+                    </span>
+
+                    <strong>
+                        ₱@Model.InventoryValue.ToString("N2")
+                    </strong>
+
+                </div>
+
+                <div class="ad-mini-grid">
+
+                    <div class="ad-mini-stat">
+
+                        <span>Total Parts</span>
+
+                        <strong>
+                            @Model.TotalPartCount
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-mini-stat">
+
+                        <span>Stock Quantity</span>
+
+                        <strong>
+                            @Model.TotalStockQuantity
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-mini-stat">
+
+                        <span>Low Stock</span>
+
+                        <strong>
+                            @Model.LowStockAlertCount
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-mini-stat">
+
+                        <span>Suppliers</span>
+
+                        <strong>
+                            View
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <a asp-controller="Parts"
+                   asp-action="Index"
+                   class="ad-footer-link">
+                    View Parts Inventory →
                 </a>
 
             </div>
@@ -268,150 +1754,430 @@
         </div>
 
 
-        <div class="af-table-wrapper">
+        <div class="ad-card">
 
-            <table class="af-table">
+            <div class="ad-card-head">
 
-                <thead>
+                <div class="ad-card-title">
+                    <h2>Billing & Payments</h2>
+                    <p>Live financial collection position.</p>
+                </div>
 
-                    <tr>
+            </div>
 
-                        <th>Vehicle</th>
-                        <th>Customer</th>
-                        <th>Service</th>
-                        <th>Value</th>
-                        <th>Status</th>
+            <div class="ad-panel-body">
 
-                    </tr>
+                <div class="ad-billing-ring">
 
-                </thead>
+                    <div class="ad-billing-ring-inner">
+
+                        <div>
+
+                            <strong>
+                                @Model.CollectionRate.ToString("0.0")%
+                            </strong>
+
+                            <span>
+                                Collection Rate
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="ad-financial-row">
+
+                    <span>
+                        Total Paid
+                    </span>
+
+                    <strong>
+                        ₱@Model.TotalPaid.ToString("N2")
+                    </strong>
+
+                </div>
+
+                <div class="ad-financial-row">
+
+                    <span>
+                        Outstanding
+                    </span>
+
+                    <strong>
+                        ₱@Model.OutstandingAmount.ToString("N2")
+                    </strong>
+
+                </div>
+
+                <div class="ad-financial-row">
+
+                    <span>
+                        Total Billed
+                    </span>
+
+                    <strong>
+                        ₱@Model.TotalRevenue.ToString("N2")
+                    </strong>
+
+                </div>
+
+                <a asp-controller="Billings"
+                   asp-action="Index"
+                   class="ad-footer-link">
+                    View Billing & Payments →
+                </a>
+
+            </div>
+
+        </div>
 
 
-                <tbody>
+        <div class="ad-card">
 
-                    @if (Model.RecentJobs.Any())
+            <div class="ad-card-head">
+
+                <div class="ad-card-title">
+
+                    <h2>
+                        Customer Follow-ups
+                    </h2>
+
+                    <p>
+                        Appointment-based queue until dedicated CRM is implemented.
+                    </p>
+
+                </div>
+
+                <span class="ad-status ad-status-orange">
+                    @Model.FollowUps.Count due
+                </span>
+
+            </div>
+
+            <div class="ad-panel-body">
+
+                <div class="ad-follow-list">
+
+                    @if (Model.FollowUps.Any())
                     {
-                        @foreach (var job in Model.RecentJobs)
+                        @foreach (var followUp in Model.FollowUps.Take(4))
                         {
-                            var badgeClass = job.Status switch
-                            {
-                                "In Progress" => "badge-blue",
-                                "Completed" => "badge-green",
-                                "Pending" => "badge-orange",
-                                _ => "badge-blue"
-                            };
+                            <div class="ad-follow-item">
 
-                            <tr>
+                                <div class="ad-follow-top">
 
-                                <td>
-                                    <strong>@job.VehicleMake @job.VehicleModel</strong>
-                                    <small>Plate · @job.PlateNumber</small>
-                                </td>
+                                    <strong>
+                                        @followUp.CustomerName
+                                    </strong>
 
-                                <td>
-                                    @job.CustomerName
-                                </td>
-
-                                <td>
-                                    @(job.Description ?? "No description")
-                                </td>
-
-                                <td>
-                                    <strong>@job.TotalCost.ToString("C0")</strong>
-                                </td>
-
-                                <td>
-                                    <span class="af-badge @badgeClass">
-                                        @job.Status
+                                    <span class="ad-status ad-status-purple">
+                                        @followUp.Status
                                     </span>
-                                </td>
 
-                            </tr>
+                                </div>
+
+                                <span>
+                                    @followUp.VehicleInfo
+                                </span>
+
+                            </div>
                         }
                     }
                     else
                     {
-                        <tr>
-                            <td colspan="5" style="text-align:center;padding:2rem;">
-                                No repair jobs yet. <a asp-controller="JobOrders" asp-action="Create">Create your first job order</a>.
-                            </td>
-                        </tr>
+                        <div class="ad-empty">
+                            No customers currently require appointment-based follow-up.
+                        </div>
                     }
 
-                </tbody>
+                </div>
 
-            </table>
+                <a asp-controller="Appointments"
+                   asp-action="Index"
+                   class="ad-footer-link">
+                    View Follow-up Source Appointments →
+                </a>
+
+            </div>
 
         </div>
 
-    </div>
+    </section>
 
 
-    <!-- BOTTOM METRICS -->
-    <div class="dashboard-grid dashboard-grid-3">
+    <!-- Activity and reports -->
+    <section class="ad-bottom-grid">
 
-        <div class="af-card mini-chart-card">
+        <div class="ad-card">
 
-            <div class="mini-card-header">
+            <div class="ad-card-head">
 
-                <span>
-                    Completed Jobs
-                </span>
+                <div class="ad-card-title">
+
+                    <h2>
+                        Recent Record Activity
+                    </h2>
+
+                    <p>
+                        Latest real updates from appointments, repairs and inventory.
+                    </p>
+
+                </div>
+
+                <div class="ad-live">
+                    <span class="ad-live-dot"></span>
+                    Connected modules
+                </div>
 
             </div>
 
-            <div class="mini-value">
-                @(Model.JobStatusCounts.FirstOrDefault(s => s.Status == "Completed")?.Count ?? 0)
-            </div>
+            <div class="ad-activity-list">
 
-            <span class="mini-description">
-                total completed
-            </span>
+                @if (Model.RecentActivities.Any())
+                {
+                    @foreach (var activity in Model.RecentActivities)
+                    {
+                        <div class="ad-activity">
+
+                            <div class="ad-activity-dot"></div>
+
+                            <div>
+
+                                <strong>
+                                    @activity.Title
+                                </strong>
+
+                                <p>
+                                    @activity.Description
+                                </p>
+
+                                <span class="ad-activity-module">
+                                    @activity.Module
+                                </span>
+
+                            </div>
+
+                            <span class="ad-activity-time">
+                                @activity.ActivityDate.ToString("MMM dd · hh:mm tt")
+                            </span>
+
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="ad-empty">
+                        No recent system records available yet.
+                    </div>
+                }
+
+            </div>
 
         </div>
 
 
-        <div class="af-card mini-chart-card">
+        <div class="ad-card">
 
-            <div class="mini-card-header">
+            <div class="ad-card-head">
 
-                <span>
-                    Open Jobs
-                </span>
+                <div class="ad-card-title">
+
+                    <h2>
+                        Reporting Snapshot
+                    </h2>
+
+                    <p>
+                        Database-driven operational indicators.
+                    </p>
+
+                </div>
 
             </div>
 
-            <div class="mini-value">
-                @(Model.JobStatusCounts.FirstOrDefault(s => s.Status == "Open")?.Count ?? 0)
-            </div>
+            <div class="ad-report-body">
 
-            <span class="mini-description">
-                awaiting work
-            </span>
+                <div class="ad-trend-title">
+                    Appointments — Last 7 Days
+                </div>
+
+                <div class="ad-trend">
+
+                    @foreach (var trend in Model.AppointmentTrend)
+                    {
+                        var height =
+                            Math.Max(
+                                3,
+                                (int)Math.Round(
+                                    trend.Count /
+                                    (double)maxTrendCount *
+                                    75));
+
+                        <div class="ad-trend-item">
+
+                            <span class="ad-trend-count">
+                                @trend.Count
+                            </span>
+
+                            <div class="ad-trend-bar"
+                                 style="height:@(height)px;">
+                            </div>
+
+                            <span class="ad-trend-day">
+                                @trend.Date.ToString("ddd")
+                            </span>
+
+                        </div>
+                    }
+
+                </div>
+
+                <div class="ad-record-grid">
+
+                    <div class="ad-record">
+
+                        <span>Customer Records</span>
+
+                        <strong>
+                            @Model.TotalCustomerCount
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-record">
+
+                        <span>Vehicle Records</span>
+
+                        <strong>
+                            @Model.TotalVehicleCount
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-record">
+
+                        <span>Parts Inventory</span>
+
+                        <strong>
+                            @Model.TotalPartCount
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-record">
+
+                        <span>Service Records</span>
+
+                        <strong>
+                            @Model.TotalServiceRecordCount
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <div class="ad-mini-grid">
+
+                    <div class="ad-mini-stat">
+
+                        <span>Next 7 Days</span>
+
+                        <strong>
+                            @Model.ScheduledThisWeek
+                        </strong>
+
+                    </div>
+
+                    <div class="ad-mini-stat">
+
+                        <span>Completed This Month</span>
+
+                        <strong>
+                            @Model.CompletedThisMonth
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <div class="ad-footer-link"
+                     style="color:#94a3b8;">
+                    Reports module will use these same database sources
+                </div>
+
+            </div>
 
         </div>
 
+    </section>
 
-        <div class="af-card mini-chart-card">
 
-            <div class="mini-card-header">
+    <!-- Bay utilization -->
+    <section class="ad-card">
 
-                <span>
-                    In Progress
-                </span>
+        <div class="ad-panel-body"
+             style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+
+            <div>
+
+                <div class="ad-card-title">
+
+                    <h2>
+                        Service Bay Utilization
+                    </h2>
+
+                    <p>
+                        Current active repair workload against configured shop capacity.
+                    </p>
+
+                </div>
 
             </div>
 
-            <div class="mini-value">
-                @(Model.JobStatusCounts.FirstOrDefault(s => s.Status == "In Progress")?.Count ?? 0)
-            </div>
+            <div style="display:flex;align-items:center;gap:16px;">
 
-            <span class="mini-description">
-                jobs in bay
-            </span>
+                <div style="
+                    display:grid;
+                    place-items:center;
+                    width:66px;
+                    height:66px;
+                    border-radius:50%;
+                    background:conic-gradient(#7c3aed @(bayPercent)%, #ede9fe 0);
+                ">
+
+                    <div style="
+                        display:grid;
+                        place-items:center;
+                        width:48px;
+                        height:48px;
+                        border-radius:50%;
+                        background:white;
+                        color:#172033;
+                        font-size:12px;
+                        font-weight:850;
+                    ">
+                        @bayPercent%
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <strong style="display:block;color:#172033;font-size:13px;">
+                        @Model.ActiveBayCount of @Model.TotalBays bays occupied
+                    </strong>
+
+                    <span style="display:block;margin-top:4px;color:#94a3b8;font-size:10px;">
+                        Calculated from Open and In Progress repair jobs
+                    </span>
+
+                </div>
+
+            </div>
 
         </div>
 
-    </div>
+    </section>
 
 </div>
