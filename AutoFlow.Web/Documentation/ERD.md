@@ -1,430 +1,419 @@
-# AutoFlow ERP & CRM System
+AutoFlow ERP & CRM System
 
-## System Purpose
+Current Entity Relationship Documentation
 
-AutoFlow is an ERP and CRM system designed for automotive repair shops.
+This ERD documentation reflects the current AutoFlow implementation and the final 10-module project scope.
 
-The system manages:
+AutoFlow is an integrated ERP and CRM system for automotive repair shop operations. The system connects customer, vehicle, appointment, repair job, parts, supplier, billing/payment, CRM follow-up, service history, and reporting workflows.
 
-- Customers
-- Vehicles
-- Service Appointments
-- Repair Jobs
-- Services
-- Parts Inventory
-- Suppliers
-- Billing
-- Payments
-- Customer Follow-ups
-- Service History
-- Reports
+1. Customer Management
 
----
+Customer
 
-# 1. Customers
+CustomerId (PK)
 
-Stores customer information.
+FirstName
 
-### Customers
+LastName
 
-- CustomerId (PK)
-- FirstName
-- LastName
-- Phone
-- Email
-- Address
-- CreatedAt
-- UpdatedAt
+Phone
 
----
+Email
 
-# 2. Vehicles
+Address
 
-Stores vehicles owned by customers.
+CreatedAt
 
-### Vehicles
+UpdatedAt
 
-- VehicleId (PK)
-- CustomerId (FK)
-- PlateNumber
-- VIN
-- Make
-- Model
-- Year
-- Color
-- Mileage
-- ImageUrl
-- CreatedAt
-- UpdatedAt
-
-### Relationship
+Relationship
 
 One Customer can have many Vehicles.
 
 Customer 1 ──── * Vehicle
 
----
+2. Vehicle Records
 
-# 3. Service Appointments
+Vehicle
 
-Manages scheduled customer visits.
+VehicleId (PK)
 
-### ServiceAppointments
+CustomerId (FK)
 
-- AppointmentId (PK)
-- CustomerId (FK)
-- VehicleId (FK)
-- AppointmentDate
-- Reason
-- Status
-- Notes
-- CreatedAt
-- UpdatedAt
+PlateNumber
 
-### Relationship
+VIN
 
-Customer 1 ──── * ServiceAppointment
+Make
 
-Vehicle 1 ──── * ServiceAppointment
+Model
 
----
+Year
 
-# 4. Repair Jobs
+Color
 
-Represents the actual repair work performed.
+Mileage
 
-### RepairJobs
+ImageUrl
 
-- RepairJobId (PK)
-- VehicleId (FK)
-- AppointmentId (FK, Optional)
-- JobNumber
-- Complaint
-- Diagnosis
-- Notes
-- Status
-- StartDate
-- CompletionDate
-- LaborCost
-- CreatedAt
-- UpdatedAt
+IsArchived
 
-### Relationship
+CreatedAt
 
-Vehicle 1 ──── * RepairJob
+UpdatedAt
 
-Appointment 1 ──── 0..1 RepairJob
+Relationship
 
----
+Customer 1 ──── * Vehicle
 
-# 5. Services
+A vehicle belongs to one customer and can have multiple appointments, repair jobs, and service records.
 
-Stores services offered by the repair shop.
+3. Service Appointment Scheduling
 
-### Services
+Appointment
 
-- ServiceId (PK)
-- ServiceName
-- Description
-- StandardPrice
-- EstimatedDuration
-- IsActive
-- CreatedAt
+AppointmentId (PK)
 
----
+CustomerId (FK)
 
-# 6. Repair Job Services
+VehicleId (FK)
 
-Connects repair jobs with multiple services.
+AppointmentDate
 
-### RepairJobServices
+Reason
 
-- RepairJobServiceId (PK)
-- RepairJobId (FK)
-- ServiceId (FK)
-- Quantity
-- UnitPrice
-- Subtotal
+Status
 
-### Relationship
+Notes
 
-RepairJob * ──── * Service
+CreatedAt
 
-through RepairJobServices
+UpdatedAt
 
----
+Relationships
 
-# 7. Parts Inventory
+Customer 1 ──── * Appointment
+Vehicle 1 ──── * Appointment
 
-Stores parts available in the shop.
+Appointments are associated with the customer and vehicle involved in the scheduled service.
 
-### Parts
+4. Repair Job Orders
 
-- PartId (PK)
-- PartNumber
-- PartName
-- Description
-- QuantityInStock
-- ReorderLevel
-- CostPrice
-- SellingPrice
-- Location
-- IsActive
-- CreatedAt
-- UpdatedAt
+JobOrder
 
----
+JobOrderId (PK)
 
-# 8. Repair Job Parts
+VehicleId (FK)
 
-Records which parts were used in a repair.
+AppointmentId (FK, Optional)
 
-### RepairJobParts
+JobOrderDate
 
-- RepairJobPartId (PK)
-- RepairJobId (FK)
-- PartId (FK)
-- Quantity
-- UnitPrice
-- Subtotal
+Complaint / Description
 
-### Relationship
+Diagnosis
 
-RepairJob * ──── * Part
+Notes
 
-through RepairJobParts
+Status
 
----
+LaborCost
 
-# 9. Suppliers
+TotalCost
 
-Stores supplier information.
+CreatedAt
 
-### Suppliers
+UpdatedAt
 
-- SupplierId (PK)
-- SupplierName
-- ContactPerson
-- Phone
-- Email
-- Address
-- CreatedAt
-- UpdatedAt
+Relationship
 
----
+Vehicle 1 ──── * JobOrder
+Appointment 1 ──── 0..1 JobOrder
 
-# 10. Supplier Parts
+A Job Order represents the actual repair work performed on a vehicle.
 
-Allows suppliers to provide multiple parts.
+When a job is completed, AutoFlow creates the related billing record and retains the completed service as service history.
 
-### SupplierParts
+5. Parts Inventory
 
-- SupplierPartId (PK)
-- SupplierId (FK)
-- PartId (FK)
-- SupplierPrice
-- LeadTimeDays
+Part
 
-### Relationship
+PartId (PK)
 
-Supplier * ──── * Part
+Name
 
-through SupplierParts
+PartNumber
 
----
+UnitPrice
 
-# 11. Invoices
+StockQuantity
 
-Stores billing information.
+SupplierId (FK)
 
-### Invoices
+CreatedAt
 
-- InvoiceId (PK)
-- RepairJobId (FK)
-- InvoiceNumber
-- InvoiceDate
-- Subtotal
-- Tax
-- Discount
-- TotalAmount
-- Status
-- CreatedAt
+UpdatedAt
 
-### Relationship
+Relationship
 
-RepairJob 1 ──── 0..1 Invoice
+Supplier 1 ──── * Part
 
----
+Parts are stored in inventory and may be used in repair job orders.
 
-# 12. Payments
-
-Records payments made by customers.
-
-### Payments
-
-- PaymentId (PK)
-- InvoiceId (FK)
-- PaymentDate
-- Amount
-- PaymentMethod
-- ReferenceNumber
-- Notes
-- CreatedAt
-
-### Relationship
-
-Invoice 1 ──── * Payment
-
----
-
-# 13. Customer Follow-ups CRM
-
-Stores customer follow-up activities.
-
-### CustomerFollowUps
-
-- FollowUpId (PK)
-- CustomerId (FK)
-- RepairJobId (FK, Optional)
-- FollowUpDate
-- FollowUpType
-- Subject
-- Notes
-- Status
-- NextFollowUpDate
-- CreatedAt
-
-### Relationship
-
-Customer 1 ──── * CustomerFollowUp
-
-RepairJob 1 ──── * CustomerFollowUp
-
----
-
-# 14. Service History
-
-Service history is generated from completed repair jobs.
-
-The system will display:
-
-- Customer
-- Vehicle
-- Repair Job
-- Services performed
-- Parts used
-- Labor cost
-- Total cost
-- Completion date
-- Diagnosis
-- Repair notes
-
-Service History does not necessarily require a separate database table.
-
-It can be generated from existing RepairJob, RepairJobServices, RepairJobParts, Invoice and Payment data.
-
----
-
-# 15. Reports
-
-Reports will be generated from the system data.
-
-Examples:
-
-- Daily Sales
-- Monthly Sales
-- Outstanding Payments
-- Completed Repairs
-- Active Repair Jobs
-- Appointment Statistics
-- Parts Inventory
-- Low Stock Parts
-- Supplier Purchases
-- Customer Service History
-- Most Frequently Used Services
-- Revenue by Service
-- Revenue by Vehicle
-- Revenue by Customer
-
-Reports are generated from existing database tables.
-
----
-
-# Main System Relationships
-
-Customer
-    │
-    ├── Vehicles
-    │       │
-    │       ├── Appointments
-    │       │
-    │       └── Repair Jobs
-    │               │
-    │               ├── Services
-    │               │      through RepairJobServices
-    │               │
-    │               ├── Parts
-    │               │      through RepairJobParts
-    │               │
-    │               └── Invoice
-    │                       │
-    │                       └── Payments
-    │
-    └── Customer Follow-ups
-
+6. Supplier Management
 
 Supplier
-    │
-    └── Parts
-          through SupplierParts
 
+SupplierId (PK)
 
-# Core Business Flow
+Name
+
+ContactPerson
+
+Phone
+
+Email
+
+Address
+
+City
+
+Status
+
+Notes
+
+CreatedAt
+
+UpdatedAt
+
+Relationship
+
+Supplier 1 ──── * Part
+
+A supplier can provide multiple parts. The current implementation stores the supplier relationship directly through SupplierId in Part.
+
+7. Billing & Payments
+
+Billing
+
+BillingId (PK)
+
+JobOrderId (FK)
+
+InvoiceNumber
+
+IssuedAt
+
+TotalAmount
+
+AmountPaid
+
+Status
+
+CreatedAt
+
+UpdatedAt
+
+Payment
+
+PaymentId (PK)
+
+BillingId (FK)
+
+AmountPaid
+
+PaymentMethod
+
+PaymentDate
+
+Notes
+
+CreatedAt
+
+Relationships
+
+JobOrder 1 ──── 0..1 Billing
+Billing 1 ──── * Payment
+
+A completed Job Order can generate one billing record. A billing record can have multiple payment records, allowing partial payments.
+
+8. Customer Follow-ups CRM
+
+CustomerFollowUp
+
+FollowUpId (PK)
+
+CustomerId (FK)
+
+VehicleId (FK)
+
+ServiceRecordId (FK, Optional)
+
+FollowUpDate
+
+FollowUpType
+
+Subject
+
+Notes
+
+Status
+
+NextFollowUpDate
+
+CreatedAt
+
+UpdatedAt
+
+Relationships
+
+Customer 1 ──── * CustomerFollowUp
+Vehicle 1 ──── * CustomerFollowUp
+ServiceRecord 1 ──── * CustomerFollowUp
+
+Customer Follow-ups CRM stores follow-up activities related to customers and their vehicles. A follow-up may optionally reference a service record.
+
+9. Service History
+
+ServiceRecord
+
+ServiceRecordId (PK)
+
+VehicleId (FK)
+
+ServiceDate
+
+Mileage
+
+Complaint
+
+Diagnosis
+
+Status
+
+Notes
+
+CreatedAt
+
+UpdatedAt
+
+Relationship
+
+Vehicle 1 ──── * ServiceRecord
+
+Service History stores service records for vehicles.
+
+Completed repair jobs are retained as service history through the application workflow. The ServiceRecord table uses the documented service-history fields and is connected to Vehicle.
+
+10. Reports
+
+Reports are not stored as a separate transactional entity.
+
+Reports are generated from existing AutoFlow database records.
+
+Current report families include:
+
+Daily Sales
+
+Monthly Sales
+
+Outstanding Payments
+
+Completed Repairs
+
+Active Repair Jobs
+
+Appointment Statistics
+
+Parts Inventory
+
+Low Stock Parts
+
+Reports use current database information from the corresponding modules rather than hardcoded operational records.
+
+Main System Relationships
+
+Customer
+   │
+   ├── 1 ──── * Vehicle
+   │              │
+   │              ├── 1 ──── * Appointment
+   │              │
+   │              ├── 1 ──── * JobOrder
+   │              │              │
+   │              │              ├── 1 ──── * JobOrderPart ──── * Part
+   │              │              │
+   │              │              └── 1 ──── 0..1 Billing
+   │              │                                      │
+   │              │                                      └── 1 ──── * Payment
+   │              │
+   │              └── 1 ──── * ServiceRecord
+   │
+   └── 1 ──── * CustomerFollowUp
+
+Supplier
+   │
+   └── 1 ──── * Part
+
+Repair Job Parts Relationship
+
+Repair jobs and parts are connected through the existing JobOrderPart relationship.
+
+JobOrder 1 ──── * JobOrderPart * ──── 1 Part
+
+The application records the part used, quantity, and applicable price information for the repair job.
+
+Inventory stock is adjusted when parts are added to or removed from a repair job.
+
+Core Business Flow
 
 Customer
     ↓
 Vehicle
     ↓
-Appointment
+Service Appointment
     ↓
-Repair Job
+Repair Job Order
     ↓
-Diagnosis
+Diagnosis + Labor
     ↓
-Services + Parts
+Parts Inventory
     ↓
-Invoice
-    ↓
-Payment
-    ↓
-Customer Follow-up
-    ↓
-Service History
+Job Completed
+    ├──────────────→ Billing
+    │                   ↓
+    │                Payment
+    │
+    └──────────────→ Service History
+                            ↓
+                     Customer Follow-up
+                            ↓
+                         Reports
 
+The workflow connects the operational modules instead of treating them as independent pages.
 
-# AutoFlow Architecture
+Application Architecture
 
-Frontend / UI
-    ↓
+Frontend / Razor Views
+        ↓
 ASP.NET Core MVC
-    ↓
+        ↓
 Controllers
-    ↓
-Business Logic
-    ↓
+        ↓
 Entity Framework Core
-    ↓
+        ↓
 PostgreSQL
-    ↓
+        ↓
 Supabase
 
+Authentication and authorization are handled through Firebase Authentication and ASP.NET Core cookie/RBAC authorization.
 
-# Storage
+Storage
 
-Supabase Storage will be used for files such as:
+Vehicle image/file references are stored by URL/path where applicable. The PostgreSQL database stores the corresponding application data and relationships.
 
-- Vehicle Images
-- Customer Documents
-- Repair Documents
 
-The database will store the corresponding file URL/path rather than the actual image binary.
+
+
+const scripts = [...document.scripts];
+scripts.find(s => s.textContent.includes("firebaseConfig"))?.textContent.includes('apiKey:\n                ""')

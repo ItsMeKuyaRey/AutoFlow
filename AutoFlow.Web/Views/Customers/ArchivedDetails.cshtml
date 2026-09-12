@@ -1,0 +1,153 @@
+@model AutoFlow.Web.Models.Customer
+
+@{
+    ViewData["Title"] = "Archived Customer";
+}
+
+<div class="customer-detail-page">
+
+    <div class="customer-detail-header">
+
+        <div>
+            <a asp-action="Archived"
+               class="customer-back-link">
+                <span>←</span> Back to Archived
+            </a>
+
+            <h1>Archived Customer</h1>
+            <p>
+                Historical customer record preserved by AutoFlow.
+            </p>
+        </div>
+
+        <form asp-action="Restore"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   name="id"
+                   value="@Model.CustomerId" />
+
+            <button type="submit"
+                    class="customer-primary-button">
+                Restore Customer
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="customer-profile-card">
+
+        <div class="customer-profile-main">
+
+            <div class="customer-large-avatar archived-avatar">
+                @Model.FirstName.Substring(0, 1)@Model.LastName.Substring(0, 1)
+            </div>
+
+            <div>
+
+                <span class="customer-status-badge archived">
+                    Archived
+                </span>
+
+                <h2>
+                    @Model.FirstName @Model.LastName
+                </h2>
+
+                <p>
+                    Customer ID #@Model.CustomerId
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="customer-information-grid">
+
+        <section class="customer-info-card">
+
+            <div class="customer-card-heading">
+                <div class="customer-card-icon">☎</div>
+
+                <div>
+                    <h3>Contact Information</h3>
+                    <p>Preserved customer details</p>
+                </div>
+            </div>
+
+            <div class="customer-info-list">
+
+                <div class="customer-info-item">
+                    <span>Phone</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Phone)
+                            ? "Not provided"
+                            : Model.Phone)
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Email</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Email)
+                            ? "Not provided"
+                            : Model.Email)
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Address</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Address)
+                            ? "Not provided"
+                            : Model.Address)
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="customer-info-card">
+
+            <div class="customer-card-heading">
+                <div class="customer-card-icon">◷</div>
+
+                <div>
+                    <h3>Record Information</h3>
+                    <p>Archive status and history</p>
+                </div>
+            </div>
+
+            <div class="customer-info-list">
+
+                <div class="customer-info-item">
+                    <span>Customer ID</span>
+                    <strong>#@Model.CustomerId</strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Created</span>
+                    <strong>
+                        @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Archived / Updated</span>
+                    <strong>
+                        @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>

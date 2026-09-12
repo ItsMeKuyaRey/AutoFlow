@@ -1,0 +1,169 @@
+@model IEnumerable<AutoFlow.Web.Models.Vehicle>
+
+@{
+    ViewData["Title"] = "Archived Vehicles";
+}
+
+<div class="customer-archive-page">
+
+    <div class="customer-form-header">
+
+        <div>
+            <a asp-action="Index" class="customer-back-link">
+                ← Back to Vehicles
+            </a>
+
+            <h1>Archived Vehicles</h1>
+            <p>View vehicle records that have been archived.</p>
+        </div>
+
+    </div>
+
+    <div class="af-card customer-profile-card">
+
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+
+            <div>
+                <h2 class="mb-1" style="font-size:18px;">
+                    Archived Records
+                </h2>
+
+                <p class="text-muted mb-0">
+                    These vehicles are hidden from the active vehicle list.
+                </p>
+            </div>
+
+            <span class="customer-status-badge">
+                @Model.Count() Archived
+            </span>
+
+        </div>
+
+        @if (Model.Any())
+        {
+            <div class="af-table-wrapper">
+
+                <table class="af-table">
+
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Plate</th>
+                            <th>Owner</th>
+                            <th>Archived</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+
+                                <td>
+                                    <div class="customer-table-person">
+
+                                        <div class="customer-avatar">
+                                            🚗
+                                        </div>
+
+                                        <div>
+                                            <strong>
+                                                @item.Make @item.Model
+                                            </strong>
+
+                                            <small>
+                                                @(item.Year?.ToString() ?? "Year unknown")
+                                            </small>
+                                        </div>
+
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <strong>@item.PlateNumber</strong>
+                                </td>
+
+                                <td>
+                                    @if (item.Customer != null)
+                                    {
+                                        <strong>
+                                            @item.Customer.FirstName
+                                            @item.Customer.LastName
+                                        </strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            No owner assigned
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @item.UpdatedAt.ToString("MMM dd, yyyy")
+                                </td>
+
+                                <td style="text-align:right;">
+
+                                    <div class="d-flex gap-1 justify-content-end">
+
+                                        <a asp-action="ArchivedDetails"
+                                           asp-route-id="@item.VehicleId"
+                                           class="af-icon-button"
+                                           title="View archived vehicle">
+                                            👁
+                                        </a>
+
+                                        <form asp-action="Restore"
+                                              asp-route-id="@item.VehicleId"
+                                              method="post"
+                                              style="display:inline;">
+
+                                            <button type="submit"
+                                                    class="af-icon-button"
+                                                    title="Restore vehicle">
+                                                ↻
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+        else
+        {
+            <div class="customer-empty-state">
+
+                <div class="customer-empty-icon">
+                    🚗
+                </div>
+
+                <h3>No archived vehicles</h3>
+
+                <p>
+                    Archived vehicle records will appear here.
+                </p>
+
+                <a asp-action="Index"
+                   class="af-button af-button-primary">
+                    Back to Vehicles
+                </a>
+
+            </div>
+        }
+
+    </div>
+
+</div>

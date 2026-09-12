@@ -2,105 +2,654 @@
 
 @{
     ViewData["Title"] = "Customers";
+    var customers = Model.ToList();
+    var activeCount = customers.Count(c => !c.IsArchived);
+    var archivedCount = customers.Count(c => c.IsArchived);
 }
 
-<div class="page-header">
-    <div>
-        <h1>Customers</h1>
-        <p>Manage customer profiles, contact info, and service history.</p>
-    </div>
-    <div class="page-header-actions">
-        <a asp-action="Create" class="af-button af-button-primary">
-            + Add Customer
-        </a>
-    </div>
-</div>
+<div class="customer-page customer-page-premium">
 
-<div class="af-card" style="padding: 20px;">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="d-flex gap-2 flex-wrap">
-            <input type="text" class="af-input" placeholder="Search by name, phone or email..." style="width: 260px;" />
-            <button class="af-button af-button-secondary">Filters</button>
+    <div class="customer-page-header">
+        <div>
+            <div class="customer-eyebrow">
+                <span class="customer-eyebrow-dot"></span>
+                CUSTOMER MANAGEMENT
+            </div>
+            <h1>Customers</h1>
+            <p>Manage customer records and their automotive service relationships.</p>
         </div>
-        <div class="d-flex gap-2">
-            <button class="af-button af-button-secondary">Export</button>
+
+        <div class="customer-header-actions">
+            <a asp-action="Archived" class="customer-secondary-button customer-archive-link">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16v13H4z" />
+                    <path d="M3 4h18v3H3z" />
+                    <path d="M9 11h6" />
+                </svg>
+                Archived
+                <span class="customer-header-count">@archivedCount</span>
+            </a>
+
+            <a asp-action="Create" class="customer-primary-button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Customer
+            </a>
         </div>
     </div>
 
-    <div class="af-table-wrapper">
-        <table class="af-table">
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Contact Info</th>
-                    <th>Address</th>
-                    <th>Created</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    var initials = $"{(item.FirstName?.FirstOrDefault().ToString() ?? "")}{(item.LastName?.FirstOrDefault().ToString() ?? "")}".ToUpper();
+    <div class="customer-summary-strip">
+        <div class="customer-summary-item">
+            <span class="customer-summary-icon customer-summary-icon-purple">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 4 18.5V20" />
+                    <circle cx="10" cy="7" r="3" />
+                    <path d="M16 4.5a3 3 0 0 1 0 5.8M18 14.2a4.4 4.4 0 0 1 2 3.8V20" />
+                </svg>
+            </span>
+            <span><strong>@activeCount</strong> Active Customers</span>
+        </div>
+        <div class="customer-summary-divider"></div>
+        <div class="customer-summary-item">
+            <span class="customer-summary-icon customer-summary-icon-green">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16v13H4z" />
+                    <path d="M3 4h18v3H3z" />
+                    <path d="M9 11h6" />
+                </svg>
+            </span>
+            <span><strong>@archivedCount</strong> Archived Records</span>
+        </div>
+        <div class="customer-summary-divider"></div>
+        <div class="customer-summary-item customer-summary-item-muted">
+            <span class="customer-summary-icon customer-summary-icon-blue">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M12 8v4l2.5 2.5" />
+                </svg>
+            </span>
+            <span>Database-synced customer records</span>
+        </div>
+    </div>
+
+    <div class="customer-toolbar customer-toolbar-premium">
+
+        <div class="customer-search">
+            <span class="customer-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </svg>
+            </span>
+            <input type="search"
+                   id="customerSearch"
+                   autocomplete="off"
+                   placeholder="Search by name, ID, phone, email, or address..."
+                   aria-label="Search customers" />
+        </div>
+
+        <div class="customer-filter customer-filter-select">
+            <span class="customer-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 8h12M8 12h8M10 16h4" />
+                </svg>
+            </span>
+            <label for="customerStatusFilter">Status</label>
+            <select id="customerStatusFilter" aria-label="Filter customers by status">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+            </select>
+            <svg class="customer-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 9 5 5 5-5" />
+            </svg>
+        </div>
+
+        <div class="customer-date-filter customer-filter-select">
+            <span class="customer-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <rect x="4" y="5" width="16" height="15" rx="2" />
+                    <path d="M8 3v4M16 3v4M4 9h16" />
+                </svg>
+            </span>
+            <label for="customerDateFilter">Created</label>
+            <select id="customerDateFilter" aria-label="Filter customers by creation date">
+                <option value="all">All Time</option>
+                <option value="30">Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="365">Last 12 Months</option>
+            </select>
+            <svg class="customer-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 9 5 5 5-5" />
+            </svg>
+        </div>
+
+        <div class="customer-filter-popover-wrap">
+            <button type="button"
+                    class="customer-filter-button customer-filter-toggle"
+                    id="customerAdvancedToggle"
+                    aria-expanded="false"
+                    aria-controls="customerAdvancedFilters"
+                    title="More customer filters">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+                <span class="customer-filter-triangle" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="m7 9 5 5 5-5" />
+                    </svg>
+                </span>
+                <span class="customer-filter-count" id="customerFilterCount">0</span>
+            </button>
+
+            <div class="customer-advanced-filters" id="customerAdvancedFilters" hidden>
+                <div class="customer-advanced-head">
+                    <div>
+                        <strong>More Filters</strong>
+                        <span>Refine the customer list</span>
+                    </div>
+                    <button type="button" id="customerAdvancedClose" class="customer-popover-close" aria-label="Close filters">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m7 7 10 10M17 7 7 17" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="customer-advanced-field">
+                    <label for="customerSortFilter">Sort By</label>
+                    <select id="customerSortFilter">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="nameAsc">Name A–Z</option>
+                        <option value="nameDesc">Name Z–A</option>
+                    </select>
+                </div>
+
+                <div class="customer-advanced-field">
+                    <label for="customerContactFilter">Contact Details</label>
+                    <select id="customerContactFilter">
+                        <option value="all">Any contact details</option>
+                        <option value="email">Has email</option>
+                        <option value="phone">Has phone</option>
+                        <option value="both">Has email and phone</option>
+                    </select>
+                </div>
+
+                <div class="customer-advanced-footer">
+                    <span id="customerAdvancedSummary">No additional filters</span>
+                    <button type="button" id="customerApplyAdvanced" class="customer-small-primary">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="customer-clear-button" id="clearCustomerFilters">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M9 11v6M15 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" />
+            </svg>
+            Clear
+        </button>
+
+    </div>
+
+    <div class="customer-result-bar">
+        <div>
+            <strong id="customerResultCount">@customers.Count</strong>
+            <span>records shown</span>
+        </div>
+        <div class="customer-result-state" id="customerResultState">
+            Showing all customer records
+        </div>
+    </div>
+
+    <div class="customer-table-card customer-table-card-premium">
+
+        <div class="customer-table-wrapper">
+
+            <table class="customer-table">
+
+                <thead>
                     <tr>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="avatar avatar-blue">@initials</div>
-                                <div>
-                                    <strong>@item.FirstName @item.LastName</strong>
-                                    <small>ID: AF-@item.CustomerId.ToString("D5")</small>
+                        <th>Customer</th>
+                        <th>Contact</th>
+                        <th>Address</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th class="customer-actions-heading">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="customerTableBody">
+
+                    @foreach (var item in customers)
+                    {
+                        var firstInitial = string.IsNullOrWhiteSpace(item.FirstName) ? "?" : item.FirstName[0].ToString();
+                        var lastInitial = string.IsNullOrWhiteSpace(item.LastName) ? "" : item.LastName[0].ToString();
+                        var initials = (firstInitial + lastInitial).ToUpperInvariant();
+                        var fullName = $"{item.FirstName} {item.LastName}".Trim();
+                        var searchText = $"{fullName} AF-{item.CustomerId:D5} {item.CustomerId} {item.Phone} {item.Email} {item.Address}".ToLowerInvariant();
+                        var status = item.IsArchived ? "archived" : "active";
+
+                        <tr class="customer-row"
+                            data-customer-search="@searchText"
+                            data-customer-name="@fullName.ToLowerInvariant()"
+                            data-customer-status="@status"
+                            data-customer-created="@item.CreatedAt.ToString("O")"
+                            data-has-email="@((!string.IsNullOrWhiteSpace(item.Email)).ToString().ToLowerInvariant())"
+                            data-has-phone="@((!string.IsNullOrWhiteSpace(item.Phone)).ToString().ToLowerInvariant())">
+
+                            <td>
+                                <div class="customer-identity">
+                                    <div class="customer-avatar @(item.IsArchived ? "customer-avatar-archived" : "")">
+                                        @initials
+                                    </div>
+                                    <div class="customer-identity-text">
+                                        <strong>@fullName</strong>
+                                        <small>ID: AF-@item.CustomerId.ToString("D5")</small>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                @if (!string.IsNullOrEmpty(item.Phone))
+                            </td>
+
+                            <td>
+                                <div class="customer-contact">
+                                    @if (!string.IsNullOrWhiteSpace(item.Email))
+                                    {
+                                        <a href="mailto:@item.Email" class="customer-contact-link">@item.Email</a>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(item.Phone))
+                                    {
+                                        <a href="tel:@item.Phone" class="customer-phone-link">@item.Phone</a>
+                                    }
+                                    @if (string.IsNullOrWhiteSpace(item.Email) && string.IsNullOrWhiteSpace(item.Phone))
+                                    {
+                                        <small class="customer-no-contact">No contact details</small>
+                                    }
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="customer-address" title="@item.Address">
+                                    @(string.IsNullOrWhiteSpace(item.Address) ? "Not provided" : item.Address)
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="customer-date">
+                                    @item.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (item.IsArchived)
                                 {
-                                    <strong>@item.Phone</strong>
+                                    <span class="customer-status-badge archived">
+                                        <span></span>
+                                        ARCHIVED
+                                    </span>
                                 }
                                 else
                                 {
-                                    <strong class="text-muted">—</strong>
+                                    <span class="customer-status-badge active">
+                                        <span></span>
+                                        ACTIVE
+                                    </span>
                                 }
-                                @if (!string.IsNullOrEmpty(item.Email))
-                                {
-                                    <small>@item.Email</small>
-                                }
-                            </div>
-                        </td>
-                        <td>
-                            @(string.IsNullOrEmpty(item.Address) ? "—" : item.Address)
-                        </td>
-                        <td>
-                            @item.CreatedAt.ToString("MMM dd, yyyy")
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="d-flex gap-1 justify-content-end">
-                                <a asp-action="Details" asp-route-id="@item.CustomerId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="View">
-                                    👁
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@item.CustomerId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="Edit">
-                                    ✎
-                                </a>
-                                <a asp-action="Delete" asp-route-id="@item.CustomerId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px; color: #dc2626;" title="Delete">
-                                    🗑
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                            </td>
+
+                            <td>
+                                <div class="customer-row-actions">
+                                    <a asp-action="Details"
+                                       asp-route-id="@item.CustomerId"
+                                       class="customer-icon-button"
+                                       title="View customer"
+                                       aria-label="View customer">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                                            <circle cx="12" cy="12" r="2.5" />
+                                        </svg>
+                                    </a>
+
+                                    @if (!item.IsArchived)
+                                    {
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.CustomerId"
+                                           class="customer-icon-button"
+                                           title="Edit customer"
+                                           aria-label="Edit customer">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="m4 16-.8 4.8L8 20l10.8-10.8a2.2 2.2 0 0 0-3.1-3.1L4 16Z" />
+                                                <path d="m14.8 7.2 2 2" />
+                                            </svg>
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.CustomerId"
+                                           class="customer-icon-button customer-delete-action"
+                                           title="Archive customer"
+                                           aria-label="Archive customer">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16v13H4z" />
+                                                <path d="M3 4h18v3H3z" />
+                                                <path d="M9 11h6" />
+                                            </svg>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Restore" method="post" class="customer-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.CustomerId" />
+                                            <button type="submit"
+                                                    class="customer-icon-button customer-restore-action"
+                                                    title="Restore customer"
+                                                    aria-label="Restore customer">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M4 12a8 8 0 1 0 3-6" />
+                                                    <path d="M4 5v5h5" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="customer-filtered-empty" id="customerFilteredEmpty" hidden>
+            <div class="customer-empty-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </svg>
+            </div>
+            <strong>No matching customers</strong>
+            <span>Try changing your search or filters.</span>
+            <button type="button" class="customer-secondary-button" id="customerEmptyClear">Clear Filters</button>
+        </div>
+
+        @if (!customers.Any())
+        {
+            <div class="customer-empty-state">
+                <div class="customer-empty-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                </div>
+                <strong>No customers found</strong>
+                <span>Create your first customer record to get started.</span>
+                <a asp-action="Create" class="customer-primary-button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Add Customer
+                </a>
+            </div>
+        }
+
+        <div class="customer-table-footer">
+            <span>
+                Showing <strong id="customerShowingRange">0–0</strong>
+                of <strong id="customerTotalFiltered">0</strong> customers
+            </span>
+
+            <div class="customer-pagination" id="customerPagination" aria-label="Customer pagination"></div>
+        </div>
+
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="text-center py-5 text-muted">
-            <p class="mb-2">No customers yet.</p>
-            <a asp-action="Create" class="af-button af-button-primary">Add your first customer</a>
-        </div>
-    }
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("customerSearch");
+            const statusFilter = document.getElementById("customerStatusFilter");
+            const dateFilter = document.getElementById("customerDateFilter");
+            const sortFilter = document.getElementById("customerSortFilter");
+            const contactFilter = document.getElementById("customerContactFilter");
+            const clearButton = document.getElementById("clearCustomerFilters");
+            const emptyClearButton = document.getElementById("customerEmptyClear");
+            const advancedToggle = document.getElementById("customerAdvancedToggle");
+            const advancedFilters = document.getElementById("customerAdvancedFilters");
+            const advancedClose = document.getElementById("customerAdvancedClose");
+            const advancedApply = document.getElementById("customerApplyAdvanced");
+            const filterCount = document.getElementById("customerFilterCount");
+            const advancedSummary = document.getElementById("customerAdvancedSummary");
+            const resultCount = document.getElementById("customerResultCount");
+            const resultState = document.getElementById("customerResultState");
+            const showingRange = document.getElementById("customerShowingRange");
+            const totalFiltered = document.getElementById("customerTotalFiltered");
+            const pagination = document.getElementById("customerPagination");
+            const filteredEmpty = document.getElementById("customerFilteredEmpty");
+            const tableBody = document.getElementById("customerTableBody");
+            const rows = Array.from(document.querySelectorAll(".customer-row"));
+            const pageSize = 8;
+            let currentPage = 1;
+
+            function closeAdvanced() {
+                advancedFilters.hidden = true;
+                advancedToggle.setAttribute("aria-expanded", "false");
+                advancedToggle.classList.remove("is-open");
+            }
+
+            function openAdvanced() {
+                advancedFilters.hidden = false;
+                advancedToggle.setAttribute("aria-expanded", "true");
+                advancedToggle.classList.add("is-open");
+            }
+
+            function getDaysLimit() {
+                const value = dateFilter.value;
+                return value === "all" ? null : Number(value);
+            }
+
+            function matchesDate(row) {
+                const days = getDaysLimit();
+                if (days === null) return true;
+
+                const createdValue = row.dataset.customerCreated;
+                const created = new Date(createdValue);
+                if (Number.isNaN(created.getTime())) return true;
+
+                const now = new Date();
+                const cutoff = new Date(now);
+                cutoff.setHours(0, 0, 0, 0);
+                cutoff.setDate(cutoff.getDate() - days);
+                return created >= cutoff;
+            }
+
+            function matchesContact(row) {
+                const value = contactFilter.value;
+                const hasEmail = row.dataset.hasEmail === "true";
+                const hasPhone = row.dataset.hasPhone === "true";
+
+                if (value === "email") return hasEmail;
+                if (value === "phone") return hasPhone;
+                if (value === "both") return hasEmail && hasPhone;
+                return true;
+            }
+
+            function sortRows(list) {
+                return list.sort((a, b) => {
+                    const sort = sortFilter.value;
+                    const nameA = a.dataset.customerName || "";
+                    const nameB = b.dataset.customerName || "";
+                    const dateA = new Date(a.dataset.customerCreated || 0).getTime();
+                    const dateB = new Date(b.dataset.customerCreated || 0).getTime();
+
+                    if (sort === "oldest") return dateA - dateB;
+                    if (sort === "nameAsc") return nameA.localeCompare(nameB);
+                    if (sort === "nameDesc") return nameB.localeCompare(nameA);
+                    return dateB - dateA;
+                });
+            }
+
+            function updateFilterCount() {
+                let count = 0;
+                if (statusFilter.value !== "all") count++;
+                if (dateFilter.value !== "all") count++;
+                if (sortFilter.value !== "newest") count++;
+                if (contactFilter.value !== "all") count++;
+                if (searchInput.value.trim()) count++;
+
+                filterCount.textContent = count;
+                filterCount.classList.toggle("has-filters", count > 0);
+
+                const labels = [];
+                if (sortFilter.value !== "newest") labels.push("custom sort");
+                if (contactFilter.value !== "all") labels.push(contactFilter.options[contactFilter.selectedIndex].text.toLowerCase());
+                advancedSummary.textContent = labels.length
+                    ? labels.join(" • ")
+                    : "No additional filters";
+            }
+
+            function updatePagination(totalPages) {
+                pagination.innerHTML = "";
+                if (totalPages <= 1) return;
+
+                const previous = document.createElement("button");
+                previous.type = "button";
+                previous.className = "customer-page-nav";
+                previous.textContent = "Previous";
+                previous.disabled = currentPage === 1;
+                previous.addEventListener("click", () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        filterCustomers(false);
+                    }
+                });
+                pagination.appendChild(previous);
+
+                const start = Math.max(1, currentPage - 2);
+                const end = Math.min(totalPages, start + 4);
+
+                for (let page = start; page <= end; page++) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = page === currentPage ? "active" : "";
+                    button.textContent = page;
+                    button.setAttribute("aria-label", `Go to page ${page}`);
+                    button.addEventListener("click", () => {
+                        currentPage = page;
+                        filterCustomers(false);
+                    });
+                    pagination.appendChild(button);
+                }
+
+                const next = document.createElement("button");
+                next.type = "button";
+                next.className = "customer-page-nav";
+                next.textContent = "Next";
+                next.disabled = currentPage === totalPages;
+                next.addEventListener("click", () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        filterCustomers(false);
+                    }
+                });
+                pagination.appendChild(next);
+            }
+
+            function filterCustomers(resetPage = true) {
+                if (resetPage) currentPage = 1;
+
+                const searchValue = searchInput.value.toLowerCase().trim();
+                const statusValue = statusFilter.value;
+
+                let matchingRows = rows.filter(row => {
+                    const searchableText = row.dataset.customerSearch || "";
+                    const matchesSearch = searchableText.includes(searchValue);
+                    const matchesStatus = statusValue === "all" || row.dataset.customerStatus === statusValue;
+                    return matchesSearch && matchesStatus && matchesDate(row) && matchesContact(row);
+                });
+
+                matchingRows = sortRows(matchingRows);
+
+                rows.forEach(row => {
+                    row.style.display = "none";
+                    row.classList.remove("customer-row-visible");
+                });
+
+                const total = matchingRows.length;
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                if (currentPage > totalPages) currentPage = totalPages;
+
+                const startIndex = (currentPage - 1) * pageSize;
+                const visibleRows = matchingRows.slice(startIndex, startIndex + pageSize);
+
+                visibleRows.forEach(row => {
+                    row.style.display = "table-row";
+                    row.classList.add("customer-row-visible");
+                    tableBody.appendChild(row);
+                });
+
+                resultCount.textContent = total;
+                totalFiltered.textContent = total;
+
+                if (total === 0) {
+                    showingRange.textContent = "0–0";
+                    filteredEmpty.hidden = rows.length === 0;
+                    resultState.textContent = rows.length === 0
+                        ? "No customer records in the database"
+                        : "No records match the current filters";
+                } else {
+                    filteredEmpty.hidden = true;
+                    const first = startIndex + 1;
+                    const last = Math.min(startIndex + pageSize, total);
+                    showingRange.textContent = `${first}–${last}`;
+                    resultState.textContent = total === rows.length
+                        ? "Showing all customer records"
+                        : `${total} record${total === 1 ? "" : "s"} match your filters`;
+                }
+
+                updatePagination(totalPages);
+                updateFilterCount();
+            }
+
+            searchInput.addEventListener("input", () => filterCustomers(true));
+            statusFilter.addEventListener("change", () => filterCustomers(true));
+            dateFilter.addEventListener("change", () => filterCustomers(true));
+            sortFilter.addEventListener("change", () => filterCustomers(true));
+            contactFilter.addEventListener("change", () => filterCustomers(true));
+
+            advancedToggle.addEventListener("click", function () {
+                if (advancedFilters.hidden) openAdvanced();
+                else closeAdvanced();
+            });
+
+            advancedClose.addEventListener("click", closeAdvanced);
+
+            advancedApply.addEventListener("click", function () {
+                closeAdvanced();
+                filterCustomers(true);
+            });
+
+            document.addEventListener("click", function (event) {
+                const wrapper = document.querySelector(".customer-filter-popover-wrap");
+                if (wrapper && !wrapper.contains(event.target)) closeAdvanced();
+            });
+
+            function clearFilters() {
+                searchInput.value = "";
+                statusFilter.value = "all";
+                dateFilter.value = "all";
+                sortFilter.value = "newest";
+                contactFilter.value = "all";
+                closeAdvanced();
+                filterCustomers(true);
+            }
+
+            clearButton.addEventListener("click", clearFilters);
+            emptyClearButton.addEventListener("click", clearFilters);
+
+            filterCustomers(true);
+        });
+    </script>
+}

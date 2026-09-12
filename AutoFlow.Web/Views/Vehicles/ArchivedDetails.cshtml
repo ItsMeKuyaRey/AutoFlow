@@ -1,0 +1,141 @@
+@model AutoFlow.Web.Models.Vehicle
+
+@{
+    ViewData["Title"] = "Archived Vehicle";
+}
+
+<div class="customer-detail-page">
+
+    <div class="customer-detail-header">
+
+        <div>
+            <a asp-action="Archived" class="customer-back-link">
+                ← Back to Archived Vehicles
+            </a>
+
+            <h1>Archived Vehicle</h1>
+            <p>View the stored information for this archived vehicle.</p>
+        </div>
+
+        <div class="page-header-actions">
+
+            <form asp-action="Restore"
+                  asp-route-id="@Model.VehicleId"
+                  method="post">
+
+                <button type="submit"
+                        class="af-button af-button-primary">
+                    Restore Vehicle
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <div class="customer-profile-card">
+
+        <div class="customer-profile-main">
+
+            <div class="customer-large-avatar">
+                🚗
+            </div>
+
+            <div>
+
+                <span class="customer-status-badge">
+                    Archived
+                </span>
+
+                <h2>
+                    @Model.Make @Model.Model
+                </h2>
+
+                <p>
+                    @(Model.Year?.ToString() ?? "Year unknown")
+                    ·
+                    @Model.PlateNumber
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="customer-information-grid">
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Owner</span>
+
+                <strong>
+                    @if (Model.Customer != null)
+                    {
+                        @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
+                    }
+                    else
+                    {
+                        <span>Not assigned</span>
+                    }
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Plate Number</span>
+                <strong>@Model.PlateNumber</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">VIN</span>
+
+                <strong>
+                    @(string.IsNullOrWhiteSpace(Model.VIN)
+                        ? "Not recorded"
+                        : Model.VIN)
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Make</span>
+                <strong>@Model.Make</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Model</span>
+                <strong>@Model.Model</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Year</span>
+                <strong>@(Model.Year?.ToString() ?? "—")</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Color</span>
+                <strong>
+                    @(string.IsNullOrWhiteSpace(Model.Color)
+                        ? "—"
+                        : Model.Color)
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Mileage</span>
+                <strong>
+                    @(Model.Mileage.HasValue
+                        ? $"{Model.Mileage:N0} km"
+                        : "—")
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Archived</span>
+                <strong>
+                    @Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")
+                </strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

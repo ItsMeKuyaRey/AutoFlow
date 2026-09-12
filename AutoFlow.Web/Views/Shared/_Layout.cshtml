@@ -256,19 +256,23 @@
         }
 
         .af-brand-icon {
-            width: 40px;
-            height: 40px;
+            width: 112px;
+            height: 54px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            background: var(--af-purple);
-            color: #ffffff;
-            font-size: 20px;
-            box-shadow:
-                0 8px 20px
-                rgba(117, 68, 245, 0.25);
+            background: transparent;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .af-brand-icon img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 54px;
+            object-fit: contain;
         }
 
         .af-brand-text {
@@ -779,7 +783,8 @@
         <div class="af-brand">
 
             <div class="af-brand-icon">
-                ⚙
+                <img src="~/images/autoFlow-logo.png"
+                     alt="AutoFlow" />
             </div>
 
             <div class="af-brand-text">

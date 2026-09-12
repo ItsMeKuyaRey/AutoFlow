@@ -1,0 +1,170 @@
+@model IEnumerable<AutoFlow.Web.Models.Customer>
+
+@{
+    ViewData["Title"] = "Archived Customers";
+}
+
+<div class="customer-page">
+
+    <div class="customer-page-header">
+
+        <div>
+            <a asp-action="Index"
+               class="customer-back-link">
+                <span>←</span> Back to Customers
+            </a>
+
+            <h1>Archived Customers</h1>
+            <p>
+                View customers that are no longer active.
+            </p>
+        </div>
+
+        <div class="customer-header-actions">
+            <span class="customer-archive-count">
+                @Model.Count() Archived
+            </span>
+        </div>
+
+    </div>
+
+    <div class="customer-table-card">
+
+        @if (Model.Any())
+        {
+            <div class="customer-table-wrapper">
+
+                <table class="customer-table">
+
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Contact Info</th>
+                            <th>Address</th>
+                            <th>Archived</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var customer in Model)
+                        {
+                            <tr>
+
+                                <td>
+                                    <div class="customer-table-person">
+
+                                        <div class="customer-avatar">
+                                            @customer.FirstName.Substring(0, 1)@customer.LastName.Substring(0, 1)
+                                        </div>
+
+                                        <div>
+                                            <strong>
+                                                @customer.FirstName @customer.LastName
+                                            </strong>
+
+                                            <span>
+                                                ID #@customer.CustomerId
+                                            </span>
+                                        </div>
+
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="customer-contact-cell">
+
+                                        <span>
+                                            @(string.IsNullOrWhiteSpace(customer.Phone)
+                                                ? "No phone"
+                                                : customer.Phone)
+                                        </span>
+
+                                        <span>
+                                            @(string.IsNullOrWhiteSpace(customer.Email)
+                                                ? "No email"
+                                                : customer.Email)
+                                        </span>
+
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(customer.Address)
+                                        ? "Not provided"
+                                        : customer.Address)
+                                </td>
+
+                                <td>
+                                    <span class="customer-status-badge archived">
+                                        Archived
+                                    </span>
+
+                                    <div class="customer-date-text">
+                                        @customer.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="customer-row-actions">
+
+                                        <a asp-action="ArchivedDetails"
+                                           asp-route-id="@customer.CustomerId"
+                                           title="View archived customer">
+                                            View
+                                        </a>
+
+                                        <form asp-action="Restore"
+                                              method="post">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@customer.CustomerId" />
+
+                                            <button type="submit"
+                                                    title="Restore customer">
+                                                Restore
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+        else
+        {
+            <div class="customer-empty-state">
+
+                <div class="customer-empty-icon">
+                    ✓
+                </div>
+
+                <h2>No Archived Customers</h2>
+
+                <p>
+                    All customer records are currently active.
+                </p>
+
+                <a asp-action="Index"
+                   class="customer-primary-button">
+                    Back to Customers
+                </a>
+
+            </div>
+        }
+
+    </div>
+
+</div>

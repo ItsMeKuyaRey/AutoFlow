@@ -2,49 +2,135 @@
 
 @{
     ViewData["Title"] = "Customer Details";
-    var initials = $"{(Model.FirstName?.FirstOrDefault().ToString() ?? "")}{(Model.LastName?.FirstOrDefault().ToString() ?? "")}".ToUpper();
 }
 
-<div class="page-header">
-    <div>
-        <h1>Customer Details</h1>
-        <p>View customer profile and information.</p>
-    </div>
-    <div class="page-header-actions">
-        <a asp-action="Edit" asp-route-id="@Model.CustomerId" class="af-button af-button-primary">Edit</a>
-        <a asp-action="Index" class="af-button af-button-secondary">Back to List</a>
-    </div>
-</div>
+<div class="customer-detail-page">
 
-<div class="af-card" style="max-width: 720px; padding: 28px;">
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <div class="avatar avatar-blue" style="width: 48px; height: 48px; font-size: 16px;">@initials</div>
+    <div class="customer-detail-header">
         <div>
-            <h2 class="mb-0" style="font-size: 20px;">@Model.FirstName @Model.LastName</h2>
-            <small class="text-muted">ID: AF-@Model.CustomerId.ToString("D5")</small>
+            <a asp-action="Index" class="customer-back-link">
+                <span>←</span> Back to Customers
+            </a>
+
+            <h1>Customer Details</h1>
+            <p>View customer information and account details.</p>
+        </div>
+
+        <div class="customer-detail-actions">
+            <a asp-action="Edit"
+               asp-route-id="@Model.CustomerId"
+               class="customer-secondary-button">
+                Edit Customer
+            </a>
+
+            <a asp-action="Delete"
+               asp-route-id="@Model.CustomerId"
+               class="customer-danger-button">
+                Archive
+            </a>
         </div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Phone</label>
-            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)</div>
+    <div class="customer-profile-card">
+
+        <div class="customer-profile-main">
+            <div class="customer-large-avatar">
+                @Model.FirstName.Substring(0, 1)@Model.LastName.Substring(0, 1)
+            </div>
+
+            <div>
+                <span class="customer-status-badge active">
+                    Active
+                </span>
+
+                <h2>
+                    @Model.FirstName @Model.LastName
+                </h2>
+
+                <p>
+                    Customer ID #@Model.CustomerId
+                </p>
+            </div>
         </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Email</label>
-            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</div>
-        </div>
-        <div class="col-12">
-            <label class="form-label text-muted small">Address</label>
-            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Created</label>
-            <div class="fw-semibold">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Last Updated</label>
-            <div class="fw-semibold">@Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</div>
-        </div>
+
     </div>
+
+    <div class="customer-information-grid">
+
+        <section class="customer-info-card">
+            <div class="customer-card-heading">
+                <div class="customer-card-icon">☎</div>
+                <div>
+                    <h3>Contact Information</h3>
+                    <p>Customer contact details</p>
+                </div>
+            </div>
+
+            <div class="customer-info-list">
+
+                <div class="customer-info-item">
+                    <span>Phone</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Phone)
+                            ? "Not provided"
+                            : Model.Phone)
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Email</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Email)
+                            ? "Not provided"
+                            : Model.Email)
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Address</span>
+                    <strong>
+                        @(string.IsNullOrWhiteSpace(Model.Address)
+                            ? "Not provided"
+                            : Model.Address)
+                    </strong>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="customer-info-card">
+            <div class="customer-card-heading">
+                <div class="customer-card-icon">◷</div>
+                <div>
+                    <h3>Account Information</h3>
+                    <p>Customer record information</p>
+                </div>
+            </div>
+
+            <div class="customer-info-list">
+
+                <div class="customer-info-item">
+                    <span>Customer ID</span>
+                    <strong>#@Model.CustomerId</strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Created</span>
+                    <strong>
+                        @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                    </strong>
+                </div>
+
+                <div class="customer-info-item">
+                    <span>Last Updated</span>
+                    <strong>
+                        @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                    </strong>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
 </div>

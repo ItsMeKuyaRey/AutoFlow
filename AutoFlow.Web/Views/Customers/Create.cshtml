@@ -6,50 +6,128 @@
 
 <div class="page-header">
     <div>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a asp-action="Index" class="text-decoration-none" style="color: #6f42c1;">
+                <i class="bi bi-arrow-left"></i> Customers
+            </a>
+        </div>
         <h1>Add Customer</h1>
-        <p>Create a new customer profile.</p>
+        <p>Create a new customer profile for AutoFlow.</p>
     </div>
 </div>
 
-<div class="af-card" style="max-width: 720px; padding: 28px;">
-    <form asp-action="Create" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div class="af-card" style="max-width: 820px; padding: 32px;">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div style="
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #f0eafa;
+            color: #6f42c1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;">
+            <i class="bi bi-person-plus"></i>
+        </div>
 
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label asp-for="FirstName" class="form-label fw-semibold">First Name</label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="LastName" class="form-label fw-semibold">Last Name</label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Phone" class="form-label fw-semibold">Phone</label>
-                <input asp-for="Phone" class="form-control" />
-                <span asp-validation-for="Phone" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Email" class="form-label fw-semibold">Email</label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            <div class="col-12">
-                <label asp-for="Address" class="form-label fw-semibold">Address</label>
-                <input asp-for="Address" class="form-control" />
-                <span asp-validation-for="Address" class="text-danger"></span>
+        <div>
+            <h5 class="mb-1 fw-semibold">Customer Information</h5>
+            <p class="text-muted mb-0" style="font-size: 14px;">
+                Enter the customer's basic contact information below.
+            </p>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <div class="mb-4">
+            <h6 class="fw-semibold mb-3">Personal Information</h6>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FirstName" class="form-label fw-semibold">
+                        First Name
+                    </label>
+                    <input asp-for="FirstName"
+                           class="form-control"
+                           placeholder="Enter first name"
+                           autocomplete="given-name" />
+                    <span asp-validation-for="FirstName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="LastName" class="form-label fw-semibold">
+                        Last Name
+                    </label>
+                    <input asp-for="LastName"
+                           class="form-control"
+                           placeholder="Enter last name"
+                           autocomplete="family-name" />
+                    <span asp-validation-for="LastName" class="text-danger small"></span>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="af-button af-button-primary">Create Customer</button>
-            <a asp-action="Index" class="af-button af-button-secondary">Cancel</a>
+        <hr class="my-4" />
+
+        <div class="mb-4">
+            <h6 class="fw-semibold mb-3">Contact Information</h6>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Phone" class="form-label fw-semibold">
+                        Phone Number
+                    </label>
+                    <input asp-for="Phone"
+                           class="form-control"
+                           placeholder="Enter phone number"
+                           autocomplete="tel" />
+                    <span asp-validation-for="Phone" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label fw-semibold">
+                        Email Address
+                    </label>
+                    <input asp-for="Email"
+                           type="email"
+                           class="form-control"
+                           placeholder="customer@example.com"
+                           autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Address" class="form-label fw-semibold">
+                        Address
+                    </label>
+                    <textarea asp-for="Address"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Enter complete customer address"
+                              autocomplete="street-address"></textarea>
+                    <span asp-validation-for="Address" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 pt-3">
+            <a asp-action="Index" class="af-button af-button-secondary">
+                Cancel
+            </a>
+
+            <button type="submit" class="af-button af-button-primary">
+                <i class="bi bi-person-plus me-1"></i>
+                Create Customer
+            </button>
         </div>
     </form>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

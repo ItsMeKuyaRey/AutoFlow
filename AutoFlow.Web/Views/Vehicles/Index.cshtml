@@ -1,98 +1,1021 @@
 @model IEnumerable<AutoFlow.Web.Models.Vehicle>
 
 @{
-    ViewData["Title"] = "Vehicles";
+    ViewData["Title"] = "Vehicle Records";
 }
 
-<div class="page-header">
-    <div>
-        <h1>Vehicles</h1>
-        <p>Manage service history, specs, and status for all shop-registered vehicles.</p>
-    </div>
-    <div class="page-header-actions">
-        <a asp-action="Create" class="af-button af-button-primary">
-            + Add Vehicle
-        </a>
-    </div>
-</div>
+<div class="vehicle-page">
 
-<div class="af-card" style="padding: 20px;">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="d-flex gap-2 flex-wrap">
-            <input type="text" class="af-input" placeholder="Search by plate, VIN, make or model..." style="width: 280px;" />
-            <button class="af-button af-button-secondary">Filters</button>
+    <div class="vehicle-page-header">
+        <div>
+            <h1>Vehicle Records</h1>
+            <p>Manage customer vehicles and service history</p>
         </div>
-        <button class="af-button af-button-secondary">Report</button>
+
+        <button type="button"
+                class="vehicle-primary-button"
+                onclick="openVehicleDrawer('add')">
+            <span>+</span>
+            Add Vehicle
+        </button>
     </div>
 
-    <div class="af-table-wrapper">
-        <table class="af-table">
-            <thead>
-                <tr>
-                    <th>Vehicle</th>
-                    <th>Identifiers</th>
-                    <th>Owner</th>
-                    <th>Mileage</th>
-                    <th>Color / Year</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
+    <div class="vehicle-card">
+
+        <div class="vehicle-toolbar">
+
+            <div class="vehicle-search">
+                <span>⌕</span>
+
+                <input type="text"
+                       id="vehicleSearch"
+                       placeholder="Search by plate number, VIN, customer, make, or model..." />
+            </div>
+
+            <button type="button"
+                    class="vehicle-filter-button"
+                    onclick="toggleVehicleFilters()">
+                Status Filter
+                <span>⌄</span>
+            </button>
+
+            <button type="button"
+                    class="vehicle-filter-button"
+                    onclick="toggleVehicleFilters()">
+                Make/Brand Filter
+                <span>⌄</span>
+            </button>
+
+            <button type="button"
+                    class="vehicle-filter-primary"
+                    onclick="applyVehicleFilters()">
+                Filter
+            </button>
+
+            <button type="button"
+                    class="vehicle-clear-button"
+                    onclick="clearVehicleFilters()">
+                Clear
+            </button>
+
+        </div>
+
+        <div id="vehicleFilterPanel" class="vehicle-filter-panel">
+
+            <div class="vehicle-filter-field">
+                <label>Status</label>
+
+                <select id="vehicleStatusFilter">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                </select>
+            </div>
+
+            <div class="vehicle-filter-field">
+                <label>Make / Brand</label>
+
+                <input type="text"
+                       id="vehicleMakeFilter"
+                       placeholder="e.g. Toyota" />
+            </div>
+
+        </div>
+
+        <div class="vehicle-table-wrapper">
+
+            <table class="vehicle-table" id="vehicleTable">
+
+                <thead>
                     <tr>
-                        <td>
-                            <div>
-                                <strong>@item.Make @item.Model</strong>
-                                <small>@(item.Year.HasValue ? item.Year.ToString() : "—")</small>
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                <strong>@item.PlateNumber</strong>
-                                <small>@(string.IsNullOrEmpty(item.VIN) ? "No VIN" : item.VIN)</small>
-                            </div>
-                        </td>
-                        <td>
-                            @if (item.Customer != null)
-                            {
-                                <strong>@item.Customer.FirstName @item.Customer.LastName</strong>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td>
-                            @(item.Mileage.HasValue ? $"{item.Mileage:N0} km" : "—")
-                        </td>
-                        <td>
-                            <div>
-                                <strong>@(string.IsNullOrEmpty(item.Color) ? "—" : item.Color)</strong>
-                                <small>@(item.Year.HasValue ? item.Year.ToString() : "")</small>
-                            </div>
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="d-flex gap-1 justify-content-end">
-                                <a asp-action="Details" asp-route-id="@item.VehicleId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="View">👁</a>
-                                <a asp-action="Edit" asp-route-id="@item.VehicleId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="Edit">✎</a>
-                                <a asp-action="Delete" asp-route-id="@item.VehicleId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px; color:#dc2626;" title="Delete">🗑</a>
-                            </div>
-                        </td>
+                        <th>VEHICLE</th>
+                        <th>OWNER</th>
+                        <th>REGISTRATION</th>
+                        <th>DETAILS</th>
+                        <th>MILEAGE</th>
+                        <th>STATUS</th>
+                        <th>actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var item in Model)
+                    {
+                        var ownerName = item.Customer != null
+                            ? $"{item.Customer.FirstName} {item.Customer.LastName}"
+                            : "No owner";
+
+                        var searchText =
+                            $"{item.Make} {item.Model} {item.PlateNumber} {item.VIN} {ownerName}";
+
+                        <tr class="vehicle-row"
+                            data-search="@searchText"
+                            data-make="@item.Make"
+                            data-status="active"
+                            data-id="@item.VehicleId"
+                            data-customer-id="@item.CustomerId"
+                            data-customer="@ownerName"
+                            data-plate="@item.PlateNumber"
+                            data-vin="@item.VIN"
+                            data-make-value="@item.Make"
+                            data-model="@item.Model"
+                            data-year="@item.Year"
+                            data-color="@item.Color"
+                            data-mileage="@item.Mileage"
+                            data-image="@item.ImageUrl"
+                            data-created="@item.CreatedAt.ToString("MMM dd, yyyy HH:mm")"
+                            data-updated="@item.UpdatedAt.ToString("MMM dd, yyyy HH:mm")">
+
+                            <td>
+                                <div class="vehicle-main-cell">
+
+                                    <div class="vehicle-thumbnail">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl"
+                                                 alt="@item.Make @item.Model" />
+                                        }
+                                        else
+                                        {
+                                            <span>🚗</span>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <strong>@item.Make @item.Model</strong>
+
+                                        <small>
+                                            @(item.Year?.ToString() ?? "Year unknown")
+                                            ·
+                                            @(string.IsNullOrWhiteSpace(item.Color)
+                                                ? "Color not recorded"
+                                                : item.Color)
+                                        </small>
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="vehicle-owner-cell">
+
+                                    <div class="vehicle-owner-avatar">
+                                        @if (item.Customer != null)
+                                        {
+                                            @item.Customer.FirstName.Substring(0, 1)
+                                        }
+                                        else
+                                        {
+                                            <span>?</span>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        <strong>
+                                            @(item.Customer != null
+                                                ? $"{item.Customer.FirstName} {item.Customer.LastName}"
+                                                : "No owner")
+                                        </strong>
+
+                                        <small>
+                                            Customer
+                                        </small>
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="vehicle-registration">
+                                    <strong>@item.PlateNumber</strong>
+
+                                    <small>
+                                        VIN:
+                                        @(string.IsNullOrWhiteSpace(item.VIN)
+                                            ? "Not recorded"
+                                            : item.VIN)
+                                    </small>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="vehicle-detail-cell">
+
+                                    <strong>
+                                        @item.Make @item.Model
+                                    </strong>
+
+                                    <small>
+                                        @(item.Year?.ToString() ?? "Year unknown")
+                                        ·
+                                        @(string.IsNullOrWhiteSpace(item.Color)
+                                            ? "Color not recorded"
+                                            : item.Color)
+                                    </small>
+
+                                </div>
+                            </td>
+
+                            <td>
+                                @(item.Mileage.HasValue
+                                    ? $"{item.Mileage:N0} km"
+                                    : "—")
+                            </td>
+
+                            <td>
+                                <span class="vehicle-status active">
+                                    ACTIVE
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="vehicle-actions">
+
+                                    <button type="button"
+                                            class="vehicle-icon-button"
+                                            title="View"
+                                            onclick="openVehicleDrawer('details', this)">
+                                        ◉
+                                    </button>
+
+                                    <button type="button"
+                                            class="vehicle-icon-button"
+                                            title="Edit"
+                                            onclick="openVehicleDrawer('edit', this)">
+                                        ✎
+                                    </button>
+
+                                    <button type="button"
+                                            class="vehicle-icon-button archive"
+                                            title="Archive"
+                                            onclick="openArchiveModal(this)">
+                                        ▣
+                                    </button>
+
+                                </div>
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="vehicle-table-footer">
+
+            <span>
+                Showing
+                <strong id="vehicleVisibleCount">@Model.Count()</strong>
+                vehicles
+            </span>
+
+            <div class="vehicle-pagination">
+
+                <button type="button">‹</button>
+
+                <button type="button" class="active">1</button>
+
+                <button type="button">2</button>
+
+                <button type="button">3</button>
+
+                <span>...</span>
+
+                <button type="button">›</button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ADD / EDIT DRAWER -->
+
+<div id="vehicleDrawerOverlay"
+     class="vehicle-drawer-overlay"
+     onclick="closeVehicleDrawer(event)">
+
+    <aside id="vehicleDrawer"
+           class="vehicle-drawer"
+           onclick="event.stopPropagation()">
+
+        <div class="vehicle-drawer-header">
+
+            <div>
+                <h2 id="vehicleDrawerTitle">Add New Vehicle</h2>
+
+                <span id="vehicleDrawerSubtitle">
+                    FLEET REGISTRATION
+                </span>
+            </div>
+
+            <button type="button"
+                    class="vehicle-drawer-close"
+                    onclick="closeVehicleDrawer()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="vehicle-drawer-body">
+
+            <form id="vehicleForm"
+                  method="post"
+                  action="/Vehicles/Create">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       id="formVehicleId"
+                       name="VehicleId" />
+
+                <div class="vehicle-form-grid">
+
+                    <div class="vehicle-form-field">
+                        <label>MAKE</label>
+
+                        <input id="formMake"
+                               name="Make"
+                               required
+                               placeholder="e.g. Toyota" />
+                    </div>
+
+                    <div class="vehicle-form-field">
+                        <label>MODEL</label>
+
+                        <input id="formModel"
+                               name="Model"
+                               required
+                               placeholder="e.g. Model 3" />
+                    </div>
+
+                    <div class="vehicle-form-field">
+                        <label>YEAR</label>
+
+                        <input id="formYear"
+                               name="Year"
+                               type="number"
+                               placeholder="2024" />
+                    </div>
+
+                    <div class="vehicle-form-field">
+                        <label>COLOR</label>
+
+                        <input id="formColor"
+                               name="Color"
+                               placeholder="e.g. Midnight Silver" />
+                    </div>
+
+                </div>
+
+                <div class="vehicle-form-field full">
+                    <label>LICENSE PLATE</label>
+
+                    <input id="formPlate"
+                           name="PlateNumber"
+                           required
+                           placeholder="ENTER PLATE NUMBER" />
+                </div>
+
+                <div class="vehicle-form-field full">
+                    <label>VIN</label>
+
+                    <input id="formVin"
+                           name="VIN"
+                           placeholder="ENTER VEHICLE IDENTIFICATION NUMBER" />
+                </div>
+
+                <div class="vehicle-form-field full">
+                    <label>OWNER</label>
+
+                    <select id="formCustomer"
+                            name="CustomerId"
+                            required>
+
+                        <option value="">
+                            Search & Select Customer...
+                        </option>
+
+                        @foreach (var customer in (SelectList)ViewBag.CustomerId)
+                        {
+                            <option value="@customer.Value">
+                                @customer.Text
+                            </option>
+                        }
+
+                    </select>
+                </div>
+
+                <div class="vehicle-form-field full">
+                    <label>MILEAGE</label>
+
+                    <input id="formMileage"
+                           name="Mileage"
+                           type="number"
+                           placeholder="Current mileage" />
+                </div>
+
+                <div class="vehicle-form-field full">
+                    <label>IMAGE URL</label>
+
+                    <input id="formImage"
+                           name="ImageUrl"
+                           placeholder="Optional vehicle image URL" />
+                </div>
+
+                <div class="vehicle-drawer-footer">
+
+                    <button type="button"
+                            class="vehicle-cancel-button"
+                            onclick="closeVehicleDrawer()">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            id="vehicleSubmitButton"
+                            class="vehicle-save-button">
+                        Register Vehicle
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+<!-- VEHICLE SUMMARY DRAWER -->
+
+<div id="vehicleDetailsOverlay"
+     class="vehicle-drawer-overlay"
+     onclick="closeVehicleDetails(event)">
+
+    <aside id="vehicleDetailsDrawer"
+           class="vehicle-drawer vehicle-summary-drawer"
+           onclick="event.stopPropagation()">
+
+        <div class="vehicle-drawer-header">
+
+            <div>
+                <h2>Vehicle Summary</h2>
+
+                <span>VEHICLE RECORD</span>
+            </div>
+
+            <button type="button"
+                    class="vehicle-drawer-close"
+                    onclick="closeVehicleDetails()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="vehicle-summary-body">
+
+            <div id="summaryImage"
+                 class="vehicle-summary-image">
+                🚗
+            </div>
+
+            <div class="vehicle-summary-title">
+
+                <div>
+                    <h2 id="summaryName">Vehicle</h2>
+
+                    <p id="summarySubtitle">
+                        Vehicle information
+                    </p>
+                </div>
+
+                <span class="vehicle-status active">
+                    ACTIVE
+                </span>
+
+            </div>
+
+            <div class="vehicle-summary-stats">
+
+                <div>
+                    <span>PLATE NUMBER</span>
+                    <strong id="summaryPlate">—</strong>
+                </div>
+
+                <div>
+                    <span>ODOMETER</span>
+                    <strong id="summaryMileage">—</strong>
+                </div>
+
+            </div>
+
+            <div class="vehicle-summary-section">
+
+                <span class="vehicle-summary-label">
+                    VEHICLE INFORMATION
+                </span>
+
+                <div class="vehicle-summary-grid">
+
+                    <div>
+                        <span>Make</span>
+                        <strong id="summaryMake">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Model</span>
+                        <strong id="summaryModel">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Year</span>
+                        <strong id="summaryYear">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Color</span>
+                        <strong id="summaryColor">—</strong>
+                    </div>
+
+                    <div>
+                        <span>VIN</span>
+                        <strong id="summaryVin">—</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="vehicle-summary-section">
+
+                <span class="vehicle-summary-label">
+                    OWNER INFORMATION
+                </span>
+
+                <div class="vehicle-owner-card">
+
+                    <div class="vehicle-owner-avatar large">
+                        <span id="summaryOwnerInitial">?</span>
+                    </div>
+
+                    <div>
+                        <strong id="summaryOwner">
+                            No owner
+                        </strong>
+
+                        <small>
+                            AutoFlow Customer
+                        </small>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="vehicle-summary-section">
+
+                <span class="vehicle-summary-label">
+                    RECORD INFORMATION
+                </span>
+
+                <div class="vehicle-summary-record">
+
+                    <div>
+                        <span>Created</span>
+                        <strong id="summaryCreated">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Last Updated</span>
+                        <strong id="summaryUpdated">—</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="vehicle-summary-footer">
+
+                <button type="button"
+                        class="vehicle-secondary-large"
+                        onclick="closeVehicleDetails()">
+                    Close
+                </button>
+
+                <button type="button"
+                        class="vehicle-save-button"
+                        onclick="editFromSummary()">
+                    Edit Vehicle
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+<!-- ARCHIVE MODAL -->
+
+<div id="vehicleArchiveModal"
+     class="vehicle-modal-overlay"
+     onclick="closeArchiveModal(event)">
+
+    <div class="vehicle-archive-modal"
+         onclick="event.stopPropagation()">
+
+        <div class="vehicle-archive-icon">
+            ▰
+        </div>
+
+        <h2>Archive Vehicle?</h2>
+
+        <p>
+            This will remove
+            <strong id="archiveVehicleName">this vehicle</strong>
+            from the active records.
+            You can restore it later from Archived Vehicles.
+        </p>
+
+        <form id="archiveForm"
+              method="post"
+              action="/Vehicles/Delete">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   id="archiveVehicleId"
+                   name="id" />
+
+            <button type="submit"
+                    class="vehicle-archive-confirm">
+                Yes, Archive Vehicle
+            </button>
+
+        </form>
+
+        <button type="button"
+                class="vehicle-archive-cancel"
+                onclick="closeArchiveModal()">
+            No, Keep Active
+        </button>
+
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="text-center py-5 text-muted">
-            <p class="mb-2">No vehicles yet.</p>
-            <a asp-action="Create" class="af-button af-button-primary">Add your first vehicle</a>
-        </div>
-    }
 </div>
+
+
+@section Scripts {
+
+<script>
+    let selectedVehicle = null;
+
+    const drawerOverlay = document.getElementById("vehicleDrawerOverlay");
+    const detailsOverlay = document.getElementById("vehicleDetailsOverlay");
+    const archiveModal = document.getElementById("vehicleArchiveModal");
+
+    function getVehicleData(button) {
+        const row = button.closest(".vehicle-row");
+
+        return {
+            row: row,
+            id: row.dataset.id,
+            customerId: row.dataset.customerId,
+            customer: row.dataset.customer,
+            plate: row.dataset.plate,
+            vin: row.dataset.vin,
+            make: row.dataset.makeValue,
+            model: row.dataset.model,
+            year: row.dataset.year,
+            color: row.dataset.color,
+            mileage: row.dataset.mileage,
+            image: row.dataset.image,
+            created: row.dataset.created,
+            updated: row.dataset.updated
+        };
+    }
+
+    function openVehicleDrawer(mode, button) {
+
+        const form = document.getElementById("vehicleForm");
+
+        if (mode === "add") {
+
+            document.getElementById("vehicleDrawerTitle").textContent =
+                "Add New Vehicle";
+
+            document.getElementById("vehicleDrawerSubtitle").textContent =
+                "FLEET REGISTRATION";
+
+            document.getElementById("vehicleSubmitButton").textContent =
+                "Register Vehicle";
+
+            form.action = "/Vehicles/Create";
+
+            document.getElementById("formVehicleId").value = "";
+            document.getElementById("formMake").value = "";
+            document.getElementById("formModel").value = "";
+            document.getElementById("formYear").value = "";
+            document.getElementById("formColor").value = "";
+            document.getElementById("formPlate").value = "";
+            document.getElementById("formVin").value = "";
+            document.getElementById("formMileage").value = "";
+            document.getElementById("formImage").value = "";
+            document.getElementById("formCustomer").value = "";
+
+        } else if (mode === "edit") {
+
+            selectedVehicle = getVehicleData(button);
+
+            document.getElementById("vehicleDrawerTitle").textContent =
+                "Edit Vehicle";
+
+            document.getElementById("vehicleDrawerSubtitle").textContent =
+                "UPDATE FLEET RECORD";
+
+            document.getElementById("vehicleSubmitButton").textContent =
+                "Save Changes";
+
+            form.action = "/Vehicles/Edit/" + selectedVehicle.id;
+
+            document.getElementById("formVehicleId").value =
+                selectedVehicle.id;
+
+            document.getElementById("formMake").value =
+                selectedVehicle.make;
+
+            document.getElementById("formModel").value =
+                selectedVehicle.model;
+
+            document.getElementById("formYear").value =
+                selectedVehicle.year;
+
+            document.getElementById("formColor").value =
+                selectedVehicle.color;
+
+            document.getElementById("formPlate").value =
+                selectedVehicle.plate;
+
+            document.getElementById("formVin").value =
+                selectedVehicle.vin;
+
+            document.getElementById("formMileage").value =
+                selectedVehicle.mileage;
+
+            document.getElementById("formImage").value =
+                selectedVehicle.image;
+
+            document.getElementById("formCustomer").value =
+                selectedVehicle.customerId;
+        }
+
+        drawerOverlay.classList.add("open");
+        document.body.classList.add("drawer-open");
+    }
+
+    function closeVehicleDrawer(event) {
+
+        if (event && event.target !== drawerOverlay) {
+            return;
+        }
+
+        drawerOverlay.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+    }
+
+    function openVehicleDetails(button) {
+
+        selectedVehicle = getVehicleData(button);
+
+        document.getElementById("summaryName").textContent =
+            selectedVehicle.make + " " + selectedVehicle.model;
+
+        document.getElementById("summarySubtitle").textContent =
+            (selectedVehicle.year || "Year unknown") +
+            " · " +
+            selectedVehicle.color;
+
+        document.getElementById("summaryPlate").textContent =
+            selectedVehicle.plate || "—";
+
+        document.getElementById("summaryMileage").textContent =
+            selectedVehicle.mileage
+                ? Number(selectedVehicle.mileage).toLocaleString() + " km"
+                : "—";
+
+        document.getElementById("summaryMake").textContent =
+            selectedVehicle.make || "—";
+
+        document.getElementById("summaryModel").textContent =
+            selectedVehicle.model || "—";
+
+        document.getElementById("summaryYear").textContent =
+            selectedVehicle.year || "—";
+
+        document.getElementById("summaryColor").textContent =
+            selectedVehicle.color || "—";
+
+        document.getElementById("summaryVin").textContent =
+            selectedVehicle.vin || "Not recorded";
+
+        document.getElementById("summaryOwner").textContent =
+            selectedVehicle.customer || "No owner";
+
+        document.getElementById("summaryOwnerInitial").textContent =
+            selectedVehicle.customer &&
+            selectedVehicle.customer !== "No owner"
+                ? selectedVehicle.customer.charAt(0).toUpperCase()
+                : "?";
+
+        document.getElementById("summaryCreated").textContent =
+            selectedVehicle.created || "—";
+
+        document.getElementById("summaryUpdated").textContent =
+            selectedVehicle.updated || "—";
+
+        const imageContainer =
+            document.getElementById("summaryImage");
+
+        if (selectedVehicle.image) {
+
+            imageContainer.innerHTML =
+                '<img src="' +
+                selectedVehicle.image +
+                '" alt="Vehicle image">';
+
+        } else {
+
+            imageContainer.innerHTML = "🚗";
+        }
+
+        detailsOverlay.classList.add("open");
+        document.body.classList.add("drawer-open");
+    }
+
+    function closeVehicleDetails(event) {
+
+        if (event && event.target !== detailsOverlay) {
+            return;
+        }
+
+        detailsOverlay.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+    }
+
+    function editFromSummary() {
+
+        detailsOverlay.classList.remove("open");
+
+        if (!selectedVehicle) {
+            return;
+        }
+
+        const row = selectedVehicle.row;
+
+        setTimeout(function () {
+            openVehicleDrawer("edit", row.querySelector('[title="Edit"]'));
+        }, 150);
+    }
+
+    function openArchiveModal(button) {
+
+        selectedVehicle = getVehicleData(button);
+
+        document.getElementById("archiveVehicleId").value =
+            selectedVehicle.id;
+
+        document.getElementById("archiveVehicleName").textContent =
+            selectedVehicle.make +
+            " " +
+            selectedVehicle.model +
+            " (" +
+            selectedVehicle.plate +
+            ")";
+
+        archiveModal.classList.add("open");
+        document.body.classList.add("drawer-open");
+    }
+
+    function closeArchiveModal(event) {
+
+        if (event && event.target !== archiveModal) {
+            return;
+        }
+
+        archiveModal.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+    }
+
+    function toggleVehicleFilters() {
+
+        const panel =
+            document.getElementById("vehicleFilterPanel");
+
+        panel.classList.toggle("open");
+    }
+
+    function applyVehicleFilters() {
+
+        const search =
+            document.getElementById("vehicleSearch")
+                .value
+                .toLowerCase()
+                .trim();
+
+        const make =
+            document.getElementById("vehicleMakeFilter")
+                .value
+                .toLowerCase()
+                .trim();
+
+        const rows =
+            document.querySelectorAll(".vehicle-row");
+
+        let visible = 0;
+
+        rows.forEach(function (row) {
+
+            const rowSearch =
+                row.dataset.search.toLowerCase();
+
+            const rowMake =
+                row.dataset.make.toLowerCase();
+
+            const matchesSearch =
+                !search ||
+                rowSearch.includes(search);
+
+            const matchesMake =
+                !make ||
+                rowMake.includes(make);
+
+            const show =
+                matchesSearch &&
+                matchesMake;
+
+            row.style.display = show ? "" : "none";
+
+            if (show) {
+                visible++;
+            }
+        });
+
+        document.getElementById("vehicleVisibleCount")
+            .textContent = visible;
+    }
+
+    function clearVehicleFilters() {
+
+        document.getElementById("vehicleSearch").value = "";
+        document.getElementById("vehicleMakeFilter").value = "";
+        document.getElementById("vehicleStatusFilter").value = "";
+
+        document.querySelectorAll(".vehicle-row")
+            .forEach(function (row) {
+                row.style.display = "";
+            });
+
+        document.getElementById("vehicleVisibleCount")
+            .textContent =
+                document.querySelectorAll(".vehicle-row").length;
+    }
+
+    document.getElementById("vehicleSearch")
+        .addEventListener("input", applyVehicleFilters);
+
+    document.querySelectorAll(".vehicle-row").forEach(function (row) {
+
+        row.addEventListener("dblclick", function () {
+
+            const button =
+                row.querySelector('[title="View"]');
+
+            openVehicleDetails(button);
+        });
+
+    });
+
+    document.addEventListener("keydown", function (event) {
+
+        if (event.key === "Escape") {
+
+            drawerOverlay.classList.remove("open");
+            detailsOverlay.classList.remove("open");
+            archiveModal.classList.remove("open");
+
+            document.body.classList.remove("drawer-open");
+        }
+
+    });
+</script>
+
+}

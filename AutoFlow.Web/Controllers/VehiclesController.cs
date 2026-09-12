@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -19,14 +15,24 @@ namespace AutoFlow.Web.Controllers
             _context = context;
         }
 
-        // GET: Vehicles
         public async Task<IActionResult> Index()
         {
-            var autoFlowDbContext = _context.Vehicles.Include(v => v.Customer);
-            return View(await autoFlowDbContext.ToListAsync());
+            var vehicles = await _context.Vehicles
+                .Include(v => v.Customer)
+                .Where(v => !v.IsArchived)
+                .OrderBy(v => v.Make)
+                .ThenBy(v => v.Model)
+                .ToListAsync();
+
+            ViewData["CustomerId"] = new SelectList(
+                _context.Customers.Where(c => !c.IsArchived),
+                "CustomerId",
+                "FirstName"
+            );
+
+            return View(vehicles);
         }
 
-        // GET: Vehicles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -36,7 +42,10 @@ namespace AutoFlow.Web.Controllers
 
             var vehicle = await _context.Vehicles
                 .Include(v => v.Customer)
-                .FirstOrDefaultAsync(m => m.VehicleId == id);
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    !v.IsArchived);
+
             if (vehicle == null)
             {
                 return NotFound();
@@ -45,35 +54,45 @@ namespace AutoFlow.Web.Controllers
             return View(vehicle);
         }
 
-        // GET: Vehicles/Create
         public IActionResult Create()
         {
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "CustomerId", "FirstName");
+            ViewData["CustomerId"] = new SelectList(
+                _context.Customers.Where(c => !c.IsArchived),
+                "CustomerId",
+                "FirstName"
+            );
+
             return View();
         }
 
-        // POST: Vehicles/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CustomerId,PlateNumber,VIN,Make,Model,Year,Color,Mileage,ImageUrl")] Vehicle vehicle)
+        public async Task<IActionResult> Create(
+            [Bind("CustomerId,PlateNumber,VIN,Make,Model,Year,Color,Mileage,ImageUrl")]
+            Vehicle vehicle)
         {
             if (ModelState.IsValid)
             {
                 vehicle.CreatedAt = DateTime.UtcNow;
                 vehicle.UpdatedAt = DateTime.UtcNow;
+                vehicle.IsArchived = false;
 
                 _context.Add(vehicle);
                 await _context.SaveChangesAsync();
 
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "CustomerId", "FirstName", vehicle.CustomerId);
+
+            ViewData["CustomerId"] = new SelectList(
+                _context.Customers.Where(c => !c.IsArchived),
+                "CustomerId",
+                "FirstName",
+                vehicle.CustomerId
+            );
+
             return View(vehicle);
         }
 
-        // GET: Vehicles/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -81,24 +100,32 @@ namespace AutoFlow.Web.Controllers
                 return NotFound();
             }
 
-            var vehicle = await _context.Vehicles.FindAsync(id);
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    !v.IsArchived);
+
             if (vehicle == null)
             {
                 return NotFound();
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "CustomerId", "FirstName", vehicle.CustomerId);
+
+            ViewData["CustomerId"] = new SelectList(
+                _context.Customers.Where(c => !c.IsArchived),
+                "CustomerId",
+                "FirstName",
+                vehicle.CustomerId
+            );
+
             return View(vehicle);
         }
 
-        // POST: Vehicles/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        // POST: Vehicles/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int id,
-            [Bind("VehicleId,CustomerId,PlateNumber,VIN,Make,Model,Year,Color,Mileage,ImageUrl")] Vehicle vehicle)
+            [Bind("VehicleId,CustomerId,PlateNumber,VIN,Make,Model,Year,Color,Mileage,ImageUrl")]
+            Vehicle vehicle)
         {
             if (id != vehicle.VehicleId)
             {
@@ -109,7 +136,10 @@ namespace AutoFlow.Web.Controllers
             {
                 try
                 {
-                    var existingVehicle = await _context.Vehicles.FindAsync(id);
+                    var existingVehicle = await _context.Vehicles
+                        .FirstOrDefaultAsync(v =>
+                            v.VehicleId == id &&
+                            !v.IsArchived);
 
                     if (existingVehicle == null)
                     {
@@ -125,7 +155,6 @@ namespace AutoFlow.Web.Controllers
                     existingVehicle.Color = vehicle.Color;
                     existingVehicle.Mileage = vehicle.Mileage;
                     existingVehicle.ImageUrl = vehicle.ImageUrl;
-
                     existingVehicle.UpdatedAt = DateTime.UtcNow;
 
                     await _context.SaveChangesAsync();
@@ -144,15 +173,15 @@ namespace AutoFlow.Web.Controllers
             }
 
             ViewData["CustomerId"] = new SelectList(
-                _context.Customers,
+                _context.Customers.Where(c => !c.IsArchived),
                 "CustomerId",
                 "FirstName",
-                vehicle.CustomerId);
+                vehicle.CustomerId
+            );
 
             return View(vehicle);
         }
 
-        // GET: Vehicles/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -162,7 +191,10 @@ namespace AutoFlow.Web.Controllers
 
             var vehicle = await _context.Vehicles
                 .Include(v => v.Customer)
-                .FirstOrDefaultAsync(m => m.VehicleId == id);
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    !v.IsArchived);
+
             if (vehicle == null)
             {
                 return NotFound();
@@ -171,24 +203,85 @@ namespace AutoFlow.Web.Controllers
             return View(vehicle);
         }
 
-        // POST: Vehicles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var vehicle = await _context.Vehicles.FindAsync(id);
-            if (vehicle != null)
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    !v.IsArchived);
+
+            if (vehicle == null)
             {
-                _context.Vehicles.Remove(vehicle);
+                return NotFound();
             }
 
+            vehicle.IsArchived = true;
+            vehicle.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Archived()
+        {
+            var vehicles = await _context.Vehicles
+                .Include(v => v.Customer)
+                .Where(v => v.IsArchived)
+                .OrderByDescending(v => v.UpdatedAt)
+                .ToListAsync();
+
+            return View(vehicles);
+        }
+
+        public async Task<IActionResult> ArchivedDetails(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var vehicle = await _context.Vehicles
+                .Include(v => v.Customer)
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    v.IsArchived);
+
+            if (vehicle == null)
+            {
+                return NotFound();
+            }
+
+            return View(vehicle);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Restore(int id)
+        {
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v =>
+                    v.VehicleId == id &&
+                    v.IsArchived);
+
+            if (vehicle == null)
+            {
+                return NotFound();
+            }
+
+            vehicle.IsArchived = false;
+            vehicle.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
         private bool VehicleExists(int id)
         {
-            return _context.Vehicles.Any(e => e.VehicleId == id);
+            return _context.Vehicles.Any(v => v.VehicleId == id);
         }
     }
 }

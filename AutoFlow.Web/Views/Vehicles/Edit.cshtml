@@ -4,75 +4,167 @@
     ViewData["Title"] = "Edit Vehicle";
 }
 
-<div class="page-header">
-    <div>
-        <h1>Edit Vehicle</h1>
-        <p>Update vehicle information.</p>
+<div class="customer-form-page">
+
+    <div class="customer-form-header">
+        <div>
+            <a asp-action="Index" class="customer-back-link">
+                ← Back to Vehicles
+            </a>
+
+            <h1>Edit Vehicle</h1>
+            <p>Update the vehicle's registered information.</p>
+        </div>
+    </div>
+
+    <div class="customer-form-card">
+
+        <form asp-action="Edit" method="post">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <input type="hidden" asp-for="VehicleId" />
+
+            <div class="customer-form-section">
+
+                <div class="customer-form-section-header">
+                    <div>
+                        <h3>Vehicle Information</h3>
+                        <p>Update the core information for this vehicle.</p>
+                    </div>
+                </div>
+
+                <div class="customer-form-row">
+
+                    <div class="customer-field">
+                        <label asp-for="CustomerId">Customer</label>
+
+                        <select asp-for="CustomerId"
+                                class="form-select"
+                                asp-items="ViewBag.CustomerId">
+                            <option value="">-- Select Customer --</option>
+                        </select>
+
+                        <span asp-validation-for="CustomerId" class="text-danger"></span>
+                    </div>
+
+                    <div class="customer-field">
+                        <label asp-for="PlateNumber">Plate Number</label>
+
+                        <input asp-for="PlateNumber"
+                               class="form-control"
+                               placeholder="Enter plate number" />
+
+                        <span asp-validation-for="PlateNumber" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="customer-form-row">
+
+                    <div class="customer-field">
+                        <label asp-for="Make">Make</label>
+
+                        <input asp-for="Make"
+                               class="form-control"
+                               placeholder="e.g. Toyota" />
+
+                        <span asp-validation-for="Make" class="text-danger"></span>
+                    </div>
+
+                    <div class="customer-field">
+                        <label asp-for="Model">Model</label>
+
+                        <input asp-for="Model"
+                               class="form-control"
+                               placeholder="e.g. Vios" />
+
+                        <span asp-validation-for="Model" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="customer-form-row">
+
+                    <div class="customer-field">
+                        <label asp-for="Year">Year</label>
+
+                        <input asp-for="Year"
+                               class="form-control"
+                               placeholder="e.g. 2024" />
+
+                        <span asp-validation-for="Year" class="text-danger"></span>
+                    </div>
+
+                    <div class="customer-field">
+                        <label asp-for="Color">Color</label>
+
+                        <input asp-for="Color"
+                               class="form-control"
+                               placeholder="e.g. Black" />
+
+                        <span asp-validation-for="Color" class="text-danger"></span>
+                    </div>
+
+                    <div class="customer-field">
+                        <label asp-for="Mileage">Mileage</label>
+
+                        <input asp-for="Mileage"
+                               class="form-control"
+                               placeholder="e.g. 25000" />
+
+                        <span asp-validation-for="Mileage" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="customer-form-row">
+
+                    <div class="customer-field">
+                        <label asp-for="VIN">VIN</label>
+
+                        <input asp-for="VIN"
+                               class="form-control"
+                               placeholder="Enter VIN if available" />
+
+                        <span asp-validation-for="VIN" class="text-danger"></span>
+                    </div>
+
+                    <div class="customer-field">
+                        <label asp-for="ImageUrl">Image URL</label>
+
+                        <input asp-for="ImageUrl"
+                               class="form-control"
+                               placeholder="Optional vehicle image URL" />
+
+                        <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="customer-form-footer">
+
+                <a asp-action="Index"
+                   class="af-button af-button-secondary">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="af-button af-button-primary">
+                    Save Changes
+                </button>
+
+            </div>
+
+        </form>
+
     </div>
 </div>
 
-<div class="af-card" style="max-width: 780px; padding: 28px;">
-    <form asp-action="Edit" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-        <input type="hidden" asp-for="VehicleId" />
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label asp-for="CustomerId" class="form-label fw-semibold">Customer</label>
-                <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.CustomerId">
-                    <option value="">-- Select Customer --</option>
-                </select>
-                <span asp-validation-for="CustomerId" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="PlateNumber" class="form-label fw-semibold">Plate Number</label>
-                <input asp-for="PlateNumber" class="form-control" />
-                <span asp-validation-for="PlateNumber" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Make" class="form-label fw-semibold">Make</label>
-                <input asp-for="Make" class="form-control" />
-                <span asp-validation-for="Make" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Model" class="form-label fw-semibold">Model</label>
-                <input asp-for="Model" class="form-control" />
-                <span asp-validation-for="Model" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Year" class="form-label fw-semibold">Year</label>
-                <input asp-for="Year" class="form-control" />
-                <span asp-validation-for="Year" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Color" class="form-label fw-semibold">Color</label>
-                <input asp-for="Color" class="form-control" />
-                <span asp-validation-for="Color" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Mileage" class="form-label fw-semibold">Mileage</label>
-                <input asp-for="Mileage" class="form-control" />
-                <span asp-validation-for="Mileage" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="VIN" class="form-label fw-semibold">VIN</label>
-                <input asp-for="VIN" class="form-control" />
-                <span asp-validation-for="VIN" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="ImageUrl" class="form-label fw-semibold">Image URL (optional)</label>
-                <input asp-for="ImageUrl" class="form-control" />
-                <span asp-validation-for="ImageUrl" class="text-danger"></span>
-            </div>
-        </div>
-
-        <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="af-button af-button-primary">Save Changes</button>
-            <a asp-action="Index" class="af-button af-button-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

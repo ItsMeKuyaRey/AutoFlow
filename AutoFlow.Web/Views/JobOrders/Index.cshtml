@@ -1,389 +1,1785 @@
 @model IEnumerable<AutoFlow.Web.Models.JobOrder>
 
 @{
-    ViewData["Title"] = "Repair Jobs";
+    ViewData["Title"] = "Repair Job Orders";
 
     var jobs = Model.ToList();
 
-    var totalJobs = jobs.Count;
-    var openJobs = jobs.Count(x => x.Status == "Open");
-    var inProgressJobs = jobs.Count(x => x.Status == "In Progress");
-    var completedJobs = jobs.Count(x => x.Status == "Completed");
-    var cancelledJobs = jobs.Count(x => x.Status == "Cancelled");
-    var totalValue = jobs.Sum(x => x.TotalCost);
+    var initialOpen = ViewData["Open"]?.ToString() ?? "";
+    var initialOpenId = ViewData["OpenId"]?.ToString() ?? "";
+
+    var vehicleOptions = ViewBag.VehicleId as SelectList;
+    var appointmentOptions = ViewBag.AppointmentId as SelectList;
+    var partOptions = ViewBag.PartId as SelectList;
 }
 
-<style>
-    .job-page {
-        padding-bottom: 40px;
-    }
+<div class="job-workspace">
 
-    .job-stat-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    .job-stat-card {
-        background: var(--af-surface);
-        border: 1px solid var(--af-border);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: var(--af-shadow);
-    }
-
-    .job-stat-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-    }
-
-    .job-stat-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--af-bg);
-        font-size: 19px;
-    }
-
-    .job-stat-label {
-        color: var(--af-text-secondary);
-        font-size: 0.82rem;
-        margin-bottom: 5px;
-    }
-
-    .job-stat-value {
-        font-size: 1.55rem;
-        font-weight: 700;
-        line-height: 1.1;
-    }
-
-    .job-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        padding: 18px 22px;
-        border-bottom: 1px solid var(--af-border);
-    }
-
-    .job-toolbar-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .job-toolbar-title h2 {
-        font-size: 1rem;
-        font-weight: 650;
-        margin: 0;
-    }
-
-    .job-count {
-        background: var(--af-bg);
-        color: var(--af-text-secondary);
-        border: 1px solid var(--af-border);
-        border-radius: 999px;
-        padding: 3px 9px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .job-empty {
-        text-align: center;
-        padding: 64px 24px;
-    }
-
-    .job-empty-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        margin: 0 auto 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--af-bg);
-        font-size: 28px;
-    }
-
-    .job-empty h3 {
-        font-size: 1.1rem;
-        margin-bottom: 8px;
-    }
-
-    .job-empty p {
-        color: var(--af-text-secondary);
-        max-width: 480px;
-        margin: 0 auto 22px;
-    }
-
-    .job-table-title {
-        font-weight: 650;
-    }
-
-    .job-table-sub {
-        display: block;
-        color: var(--af-text-muted);
-        font-size: 0.78rem;
-        margin-top: 3px;
-    }
-
-    .job-action-group {
-        display: flex;
-        gap: 7px;
-        white-space: nowrap;
-    }
-
-    .job-action {
-        padding: 6px 10px !important;
-        font-size: 12px !important;
-    }
-
-    .job-status-dot {
-        display: inline-block;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        margin-right: 5px;
-        background: currentColor;
-    }
-
-    .job-revenue {
-        font-weight: 700;
-    }
-
-    @@media (max-width: 1100px) {
-        .job-stat-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .job-stat-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .job-toolbar {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .job-toolbar .af-button {
-            width: 100%;
-        }
-
-        .job-action-group {
-            flex-wrap: wrap;
-        }
-    }
-</style>
-
-<div class="dashboard-page job-page">
-
-    <div class="page-header">
+    <div class="job-workspace-header">
         <div>
             <h1>Repair Job Orders</h1>
             <p>Manage repair work, track service progress, parts usage, and job costs.</p>
         </div>
 
-        <div class="page-header-actions">
-            <a asp-action="Create" class="af-button af-button-primary">
-                + New Job Order
-            </a>
-        </div>
+        <button type="button"
+                class="job-primary-button"
+                id="openCreateJob">
+            <span class="job-button-plus">+</span>
+            New Job Order
+        </button>
     </div>
 
-    <div class="job-stat-grid">
+    <div class="job-filter-card">
 
-        <div class="job-stat-card">
-            <div class="job-stat-top">
-                <div class="job-stat-icon">🔧</div>
-            </div>
-            <div class="job-stat-label">Total Job Orders</div>
-            <div class="job-stat-value">@totalJobs</div>
+        <div class="job-search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-4-4"></path>
+            </svg>
+
+            <input type="text"
+                   id="jobSearch"
+                   placeholder="Search by job order, vehicle, plate, or customer..." />
         </div>
 
-        <div class="job-stat-card">
-            <div class="job-stat-top">
-                <div class="job-stat-icon">⚙️</div>
-            </div>
-            <div class="job-stat-label">Open / In Progress</div>
-            <div class="job-stat-value">@(openJobs + inProgressJobs)</div>
-        </div>
+        <select id="jobStatusFilter" class="job-filter-control">
+            <option value="">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
 
-        <div class="job-stat-card">
-            <div class="job-stat-top">
-                <div class="job-stat-icon">✓</div>
-            </div>
-            <div class="job-stat-label">Completed Jobs</div>
-            <div class="job-stat-value">@completedJobs</div>
-        </div>
+        <select id="jobDateFilter" class="job-filter-control">
+            <option value="">All Dates</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+        </select>
 
-        <div class="job-stat-card">
-            <div class="job-stat-top">
-                <div class="job-stat-icon">₱</div>
-            </div>
-            <div class="job-stat-label">Total Job Value</div>
-            <div class="job-stat-value">@totalValue.ToString("C")</div>
-        </div>
+        <button type="button"
+                class="job-filter-button"
+                id="applyJobFilters">
+            Filter
+        </button>
+
+        <button type="button"
+                class="job-clear-button"
+                id="clearJobFilters">
+            Clear
+        </button>
 
     </div>
 
-    <div class="af-card">
+    <div class="job-table-card">
 
-        <div class="job-toolbar">
-            <div class="job-toolbar-title">
-                <h2>Repair Job Orders</h2>
-                <span class="job-count">@totalJobs total</span>
+        <div class="job-table-top">
+            <div>
+                <h2>Repair Jobs</h2>
+                <span id="jobResultSummary"></span>
             </div>
 
-            <div style="font-size:0.82rem; color:var(--af-text-secondary);">
-                @openJobs open · @inProgressJobs in progress · @completedJobs completed · @cancelledJobs cancelled
+            <div class="job-table-meta">
+                <span class="job-status-summary">
+                    <span class="job-summary-dot job-summary-open"></span>
+                    <span id="openCount">0</span> open
+                </span>
+
+                <span class="job-status-summary">
+                    <span class="job-summary-dot job-summary-progress"></span>
+                    <span id="progressCount">0</span> in progress
+                </span>
+
+                <span class="job-status-summary">
+                    <span class="job-summary-dot job-summary-completed"></span>
+                    <span id="completedCount">0</span> completed
+                </span>
             </div>
         </div>
 
-        @if (!jobs.Any())
-        {
-            <div class="job-empty">
-                <div class="job-empty-icon">🔧</div>
+        <div class="job-table-wrapper">
 
-                <h3>No Job Orders Found</h3>
+            <table class="job-modern-table">
 
-                <p>
-                    Create a repair job order to begin tracking a customer's vehicle service,
-                    labor, parts, and repair progress.
-                </p>
+                <thead>
+                    <tr>
+                        <th>JOB ORDER</th>
+                        <th>VEHICLE</th>
+                        <th>OWNER</th>
+                        <th>DATE</th>
+                        <th>STATUS</th>
+                        <th>JOB VALUE</th>
+                        <th class="job-action-column">ACTIONS</th>
+                    </tr>
+                </thead>
 
-                <a asp-action="Create" class="af-button af-button-primary">
-                    + Create First Job Order
-                </a>
-            </div>
-        }
-        else
-        {
-            <div class="af-table-wrapper">
-                <table class="af-table">
-                    <thead>
-                        <tr>
-                            <th>Job Order</th>
-                            <th>Vehicle</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Job Value</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
+                <tbody id="jobTableBody">
 
-                    <tbody>
-                        @foreach (var item in jobs)
-                        {
-                            var badgeClass = item.Status switch
+                    @foreach (var item in jobs)
+                    {
+                        var ownerName =
+                            item.Vehicle?.Customer == null
+                                ? "No customer"
+                                : $"{item.Vehicle.Customer.FirstName} {item.Vehicle.Customer.LastName}";
+
+                        var vehicleName =
+                            item.Vehicle == null
+                                ? "No vehicle"
+                                : $"{item.Vehicle.Make} {item.Vehicle.Model}";
+
+                        var plate =
+                            item.Vehicle?.PlateNumber ?? "—";
+
+                        var appointmentText =
+                            item.Appointment == null
+                                ? "No appointment"
+                                : item.Appointment.AppointmentDate
+                                    .ToString("MMM dd, yyyy hh:mm tt");
+
+                        var badgeClass =
+                            item.Status switch
                             {
-                                "Open" => "badge-blue",
-                                "In Progress" => "badge-orange",
-                                "Completed" => "badge-green",
-                                "Cancelled" => "badge-red",
-                                _ => "badge-blue"
+                                "Open" => "job-badge-blue",
+                                "In Progress" => "job-badge-orange",
+                                "Completed" => "job-badge-green",
+                                "Cancelled" => "job-badge-red",
+                                _ => "job-badge-blue"
                             };
 
-                            <tr>
-                                <td>
-                                    <span class="job-table-title">#@item.JobOrderId</span>
-                                    <span class="job-table-sub">
+                        <tr class="job-data-row"
+                            data-id="@item.JobOrderId"
+                            data-status="@item.Status"
+                            data-date="@item.JobOrderDate.ToString("yyyy-MM-dd")"
+                            data-search="@($"#{item.JobOrderId} {vehicleName} {plate} {ownerName}")"
+                            data-vehicle-id="@item.VehicleId"
+                            data-vehicle="@vehicleName"
+                            data-plate="@plate"
+                            data-owner="@ownerName"
+                            data-appointment-id="@(item.AppointmentId?.ToString() ?? "")"
+                            data-appointment="@appointmentText"
+                            data-job-date="@item.JobOrderDate.ToString("yyyy-MM-ddTHH:mm")"
+                            data-labor="@item.LaborCost.ToString("0.00")"
+                            data-description="@(item.Description ?? "")"
+                            data-diagnosis="@(item.Diagnosis ?? "")"
+                            data-notes="@(item.Notes ?? "")"
+                            data-total="@item.TotalCost.ToString("0.00")">
+
+                            <td>
+                                <div class="job-primary-cell">
+                                    <strong>#@item.JobOrderId</strong>
+                                    <span>
                                         @item.JobOrderDate.ToString("MMM dd, yyyy")
                                     </span>
-                                </td>
+                                </div>
+                            </td>
 
-                                <td>
-                                    @if (item.Vehicle != null)
-                                    {
-                                        <span class="job-table-title">
-                                            @item.Vehicle.Make @item.Vehicle.Model
-                                        </span>
+                            <td>
+                                <div class="job-vehicle-cell">
+                                    <div class="job-vehicle-icon">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M5 17h14"></path>
+                                            <path d="M6 17l1-5h10l1 5"></path>
+                                            <path d="M8 12l1.5-4h5L16 12"></path>
+                                            <circle cx="8" cy="17" r="1.5"></circle>
+                                            <circle cx="16" cy="17" r="1.5"></circle>
+                                        </svg>
+                                    </div>
 
-                                        <span class="job-table-sub">
-                                            @item.Vehicle.PlateNumber
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span style="color:var(--af-text-muted);">
-                                            No vehicle
-                                        </span>
-                                    }
-                                </td>
+                                    <div>
+                                        <strong>@vehicleName</strong>
+                                        <span>@plate</span>
+                                    </div>
+                                </div>
+                            </td>
 
-                                <td>
-                                    @if (item.Vehicle?.Customer != null)
-                                    {
-                                        <span class="job-table-title">
-                                            @item.Vehicle.Customer.FirstName
-                                            @item.Vehicle.Customer.LastName
-                                        </span>
+                            <td>
+                                <div class="job-owner-cell">
+                                    <div class="job-owner-avatar">
+                                        @(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                    </div>
 
-                                        @if (!string.IsNullOrWhiteSpace(item.Vehicle.Customer.Phone))
+                                    <div>
+                                        <strong>@ownerName</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Vehicle?.Customer?.Phone))
                                         {
-                                            <span class="job-table-sub">
-                                                @item.Vehicle.Customer.Phone
-                                            </span>
+                                            <span>@item.Vehicle.Customer.Phone</span>
                                         }
-                                    }
-                                    else
-                                    {
-                                        <span style="color:var(--af-text-muted);">
-                                            No customer
-                                        </span>
-                                    }
-                                </td>
+                                        else
+                                        {
+                                            <span>Customer record</span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
 
-                                <td>
-                                    <span>@item.JobOrderDate.ToString("MMM dd, yyyy")</span>
-                                    <span class="job-table-sub">
+                            <td>
+                                <div class="job-date-cell">
+                                    <strong>
+                                        @item.JobOrderDate.ToString("MMM dd, yyyy")
+                                    </strong>
+
+                                    <span>
                                         @item.JobOrderDate.ToString("hh:mm tt")
                                     </span>
-                                </td>
+                                </div>
+                            </td>
 
-                                <td>
-                                    <span class="af-badge @badgeClass">
-                                        <span class="job-status-dot"></span>
-                                        @item.Status
-                                    </span>
-                                </td>
+                            <td>
+                                <span class="job-status-badge @badgeClass">
+                                    <span></span>
+                                    @item.Status
+                                </span>
+                            </td>
 
-                                <td>
-                                    <span class="job-revenue">
-                                        @item.TotalCost.ToString("C")
-                                    </span>
-                                </td>
+                            <td>
+                                <strong class="job-value">
+                                    ₱@item.TotalCost.ToString("N2")
+                                </strong>
 
-                                <td>
-                                    <div class="job-action-group">
-                                        <a asp-action="Details"
-                                           asp-route-id="@item.JobOrderId"
-                                           class="af-button af-button-secondary job-action">
-                                            View
-                                        </a>
+                                <span class="job-value-sub">
+                                    Labor ₱@item.LaborCost.ToString("N2")
+                                </span>
+                            </td>
 
-                                        <a asp-action="Edit"
-                                           asp-route-id="@item.JobOrderId"
-                                           class="af-button af-button-secondary job-action">
-                                            Edit
-                                        </a>
+                            <td>
+                                <div class="job-row-actions">
+
+                                    <button type="button"
+                                            class="job-icon-button"
+                                            data-job-action="view"
+                                            title="View Job Order">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"></path>
+                                            <circle cx="12" cy="12" r="2.5"></circle>
+                                        </svg>
+                                    </button>
+
+                                    <button type="button"
+                                            class="job-icon-button"
+                                            data-job-action="edit"
+                                            title="Edit Job Order">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M12 20h9"></path>
+                                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"></path>
+                                        </svg>
+                                    </button>
+
+                                    <button type="button"
+                                            class="job-icon-button job-icon-danger"
+                                            data-job-action="delete"
+                                            title="Delete Job Order">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M4 7h16"></path>
+                                            <path d="M10 11v6"></path>
+                                            <path d="M14 11v6"></path>
+                                            <path d="M6 7l1 14h10l1-14"></path>
+                                            <path d="M9 7V4h6v3"></path>
+                                        </svg>
+                                    </button>
+
+                                </div>
+                            </td>
+                        </tr>
+
+                        <template id="job-details-@item.JobOrderId">
+
+                            <div class="job-detail-section">
+
+                                <div class="job-detail-section-title">
+                                    Job Information
+                                </div>
+
+                                <div class="job-detail-grid">
+
+                                    <div>
+                                        <span>Job Order</span>
+                                        <strong>#@item.JobOrderId</strong>
                                     </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+
+                                    <div>
+                                        <span>Status</span>
+                                        <strong>@item.Status</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Job Date</span>
+                                        <strong>
+                                            @item.JobOrderDate.ToString("MMM dd, yyyy hh:mm tt")
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Appointment</span>
+                                        <strong>@appointmentText</strong>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="job-detail-section">
+
+                                <div class="job-detail-section-title">
+                                    Vehicle & Customer
+                                </div>
+
+                                <div class="job-detail-owner-card">
+
+                                    <div class="job-owner-avatar job-owner-avatar-large">
+                                        @(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                    </div>
+
+                                    <div>
+                                        <strong>@ownerName</strong>
+                                        <span>@vehicleName</span>
+                                        <span>@plate</span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="job-detail-section">
+
+                                <div class="job-detail-section-title">
+                                    Repair Details
+                                </div>
+
+                                <div class="job-detail-text-card">
+
+                                    <div>
+                                        <span>Description</span>
+                                        <p>
+                                            @(string.IsNullOrWhiteSpace(item.Description)
+                                                ? "No repair description recorded."
+                                                : item.Description)
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <span>Diagnosis</span>
+                                        <p>
+                                            @(string.IsNullOrWhiteSpace(item.Diagnosis)
+                                                ? "No diagnosis recorded."
+                                                : item.Diagnosis)
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <span>Notes</span>
+                                        <p>
+                                            @(string.IsNullOrWhiteSpace(item.Notes)
+                                                ? "No additional notes."
+                                                : item.Notes)
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="job-detail-section">
+
+                                <div class="job-detail-section-title">
+                                    Parts Used
+                                </div>
+
+                                @if (item.JobOrderParts.Any())
+                                {
+                                    <div class="job-parts-list">
+
+                                        @foreach (var jobPart in item.JobOrderParts)
+                                        {
+                                            <div class="job-part-row">
+
+                                                <div>
+                                                    <strong>
+                                                        @(jobPart.Part?.Name ?? "Unknown Part")
+                                                    </strong>
+
+                                                    <span>
+                                                        Qty @jobPart.Quantity ×
+                                                        ₱@jobPart.UnitPriceAtTimeOfUse.ToString("N2")
+                                                    </span>
+                                                </div>
+
+                                                <div class="job-part-actions">
+
+                                                    <strong>
+                                                        ₱@((jobPart.Quantity * jobPart.UnitPriceAtTimeOfUse).ToString("N2"))
+                                                    </strong>
+
+                                                    <form asp-action="RemovePart"
+                                                          method="post">
+
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden"
+                                                               name="jobOrderPartId"
+                                                               value="@jobPart.JobOrderPartId" />
+
+                                                        <input type="hidden"
+                                                               name="jobOrderId"
+                                                               value="@item.JobOrderId" />
+
+                                                        <button type="submit"
+                                                                class="job-part-remove"
+                                                                title="Remove Part">
+                                                            ×
+                                                        </button>
+
+                                                    </form>
+
+                                                </div>
+
+                                            </div>
+                                        }
+
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="job-no-parts">
+                                        No parts have been added to this job order yet.
+                                    </div>
+                                }
+
+                            </div>
+
+                            <div class="job-cost-summary">
+
+                                <div>
+                                    <span>Labor Cost</span>
+                                    <strong>₱@item.LaborCost.ToString("N2")</strong>
+                                </div>
+
+                                <div>
+                                    <span>Parts Cost</span>
+                                    <strong>₱@item.PartsCost.ToString("N2")</strong>
+                                </div>
+
+                                <div class="job-total-cost">
+                                    <span>Total Job Value</span>
+                                    <strong>₱@item.TotalCost.ToString("N2")</strong>
+                                </div>
+
+                            </div>
+
+                        </template>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div id="jobEmptyState"
+             class="job-empty-state"
+             style="display:none;">
+
+            <div class="job-empty-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 17h14"></path>
+                    <path d="M6 17l1-5h10l1 5"></path>
+                    <path d="M8 12l1.5-4h5L16 12"></path>
+                    <circle cx="8" cy="17" r="1.5"></circle>
+                    <circle cx="16" cy="17" r="1.5"></circle>
+                </svg>
             </div>
-        }
+
+            <h3>No Job Orders Found</h3>
+            <p>
+                No repair jobs match your current search or filters.
+            </p>
+
+        </div>
+
+        <div class="job-table-footer">
+
+            <span id="jobPaginationText">
+                Showing 0–0 of 0 job orders
+            </span>
+
+            <div class="job-pagination"
+                 id="jobPagination">
+            </div>
+
+        </div>
 
     </div>
 
 </div>
+
+
+<div class="job-drawer"
+     id="jobCreateDrawer">
+
+    <div class="job-drawer-header">
+
+        <div>
+            <span class="job-drawer-kicker">REPAIR MANAGEMENT</span>
+            <h2>New Job Order</h2>
+            <p>Create a repair job and connect it to a customer's vehicle.</p>
+        </div>
+
+        <button type="button"
+                class="job-drawer-close"
+                data-close-drawer>
+            ×
+        </button>
+
+    </div>
+
+    <form asp-action="Create"
+          method="post"
+          id="jobCreateForm"
+          class="job-drawer-form">
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="text-danger mb-3"></div>
+
+        <div class="job-form-section-title">
+            Job Information
+        </div>
+
+        <div class="job-form-grid">
+
+            <div class="job-field job-field-full">
+                <label>Vehicle</label>
+
+                <select name="VehicleId"
+                        required>
+                    <option value="">Select vehicle</option>
+
+                    @if (vehicleOptions != null)
+                    {
+                        foreach (var option in vehicleOptions)
+                        {
+                            <option value="@option.Value">
+                                @option.Text
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="job-field job-field-full">
+                <label>Appointment</label>
+
+                <select name="AppointmentId">
+                    <option value="">No appointment</option>
+
+                    @if (appointmentOptions != null)
+                    {
+                        foreach (var option in appointmentOptions)
+                        {
+                            <option value="@option.Value">
+                                @option.Text
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="job-field">
+                <label>Job Order Date</label>
+                <input type="datetime-local"
+                       name="JobOrderDate"
+                       value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+                       required />
+            </div>
+
+            <div class="job-field">
+                <label>Status</label>
+
+                <select name="Status">
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+
+            <div class="job-field job-field-full">
+                <label>Labor Cost</label>
+
+                <div class="job-money-input">
+                    <span>₱</span>
+                    <input type="number"
+                           name="LaborCost"
+                           value="0"
+                           min="0"
+                           step="0.01" />
+                </div>
+            </div>
+
+        </div>
+
+        <div class="job-form-section-title">
+            Repair Details
+        </div>
+
+        <div class="job-field">
+            <label>Repair Description</label>
+
+            <textarea name="Description"
+                      rows="4"
+                      placeholder="Describe the customer's repair request or reported problem..."></textarea>
+        </div>
+
+        <div class="job-field">
+            <label>Diagnosis</label>
+
+            <textarea name="Diagnosis"
+                      rows="4"
+                      placeholder="Enter the technician's diagnosis or findings..."></textarea>
+        </div>
+
+        <div class="job-field">
+            <label>Additional Notes</label>
+
+            <textarea name="Notes"
+                      rows="3"
+                      placeholder="Add instructions, observations, or other important notes..."></textarea>
+        </div>
+
+        <div class="job-drawer-footer">
+
+            <button type="button"
+                    class="job-secondary-button"
+                    data-close-drawer>
+                Cancel
+            </button>
+
+            <button type="submit"
+                    class="job-primary-button">
+                Create Job Order
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<div class="job-drawer"
+     id="jobEditDrawer">
+
+    <div class="job-drawer-header">
+
+        <div>
+            <span class="job-drawer-kicker">REPAIR MANAGEMENT</span>
+            <h2>Edit Job Order</h2>
+            <p>Update repair progress, costs, and service information.</p>
+        </div>
+
+        <button type="button"
+                class="job-drawer-close"
+                data-close-drawer>
+            ×
+        </button>
+
+    </div>
+
+    <form method="post"
+          id="jobEditForm"
+          class="job-drawer-form">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               name="JobOrderId"
+               id="editJobOrderId" />
+
+        <div class="job-form-section-title">
+            Job Information
+        </div>
+
+        <div class="job-form-grid">
+
+            <div class="job-field job-field-full">
+                <label>Vehicle</label>
+
+                <select name="VehicleId"
+                        id="editVehicleId"
+                        required>
+
+                    <option value="">Select vehicle</option>
+
+                    @if (vehicleOptions != null)
+                    {
+                        foreach (var option in vehicleOptions)
+                        {
+                            <option value="@option.Value">
+                                @option.Text
+                            </option>
+                        }
+                    }
+
+                </select>
+            </div>
+
+            <div class="job-field job-field-full">
+                <label>Appointment</label>
+
+                <select name="AppointmentId"
+                        id="editAppointmentId">
+
+                    <option value="">No appointment</option>
+
+                    @if (appointmentOptions != null)
+                    {
+                        foreach (var option in appointmentOptions)
+                        {
+                            <option value="@option.Value">
+                                @option.Text
+                            </option>
+                        }
+                    }
+
+                </select>
+            </div>
+
+            <div class="job-field">
+                <label>Job Order Date</label>
+
+                <input type="datetime-local"
+                       name="JobOrderDate"
+                       id="editJobOrderDate"
+                       required />
+            </div>
+
+            <div class="job-field">
+                <label>Status</label>
+
+                <select name="Status"
+                        id="editStatus">
+
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+
+                </select>
+            </div>
+
+            <div class="job-field job-field-full">
+                <label>Labor Cost</label>
+
+                <div class="job-money-input">
+                    <span>₱</span>
+
+                    <input type="number"
+                           name="LaborCost"
+                           id="editLaborCost"
+                           min="0"
+                           step="0.01" />
+                </div>
+            </div>
+
+        </div>
+
+        <div class="job-form-section-title">
+            Repair Details
+        </div>
+
+        <div class="job-field">
+            <label>Repair Description</label>
+
+            <textarea name="Description"
+                      id="editDescription"
+                      rows="4"></textarea>
+        </div>
+
+        <div class="job-field">
+            <label>Diagnosis</label>
+
+            <textarea name="Diagnosis"
+                      id="editDiagnosis"
+                      rows="4"></textarea>
+        </div>
+
+        <div class="job-field">
+            <label>Additional Notes</label>
+
+            <textarea name="Notes"
+                      id="editNotes"
+                      rows="3"></textarea>
+        </div>
+
+        <div class="job-drawer-footer">
+
+            <button type="button"
+                    class="job-secondary-button"
+                    data-close-drawer>
+                Cancel
+            </button>
+
+            <button type="submit"
+                    class="job-primary-button">
+                Save Changes
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<div class="job-drawer"
+     id="jobDetailsDrawer">
+
+    <div class="job-drawer-header">
+
+        <div>
+            <span class="job-drawer-kicker">JOB ORDER SUMMARY</span>
+            <h2 id="detailsJobTitle">Job Order</h2>
+            <p id="detailsJobSubtitle">Repair information</p>
+        </div>
+
+        <button type="button"
+                class="job-drawer-close"
+                data-close-drawer>
+            ×
+        </button>
+
+    </div>
+
+    <div class="job-details-body">
+
+        <div class="job-detail-status-line">
+            <span id="detailsStatusBadge"
+                  class="job-status-badge job-badge-blue">
+                <span></span>
+                Open
+            </span>
+        </div>
+
+        <div id="detailsContent"></div>
+
+        <div class="job-detail-actions">
+
+            <button type="button"
+                    class="job-secondary-button"
+                    id="detailsAddPart">
+                Add Part
+            </button>
+
+            <button type="button"
+                    class="job-primary-button"
+                    id="detailsEdit">
+                Edit Job
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="job-drawer"
+     id="jobPartDrawer">
+
+    <div class="job-drawer-header">
+
+        <div>
+            <span class="job-drawer-kicker">PARTS INVENTORY</span>
+            <h2>Add Part</h2>
+            <p>Add a part to this repair job and update inventory.</p>
+        </div>
+
+        <button type="button"
+                class="job-drawer-close"
+                data-close-drawer>
+            ×
+        </button>
+
+    </div>
+
+    <form method="post"
+          id="jobPartForm"
+          class="job-drawer-form">
+
+        @Html.AntiForgeryToken()
+
+        <div class="job-field">
+            <label>Part</label>
+
+            <select name="partId"
+                    required>
+
+                <option value="">Select part</option>
+
+                @if (partOptions != null)
+                {
+                    foreach (var option in partOptions)
+                    {
+                        <option value="@option.Value">
+                            @option.Text
+                        </option>
+                    }
+                }
+
+            </select>
+        </div>
+
+        <div class="job-field">
+            <label>Quantity</label>
+
+            <input type="number"
+                   name="quantity"
+                   value="1"
+                   min="1"
+                   required />
+        </div>
+
+        <div class="job-inventory-note">
+            Adding a part will automatically deduct the selected quantity
+            from Parts Inventory.
+        </div>
+
+        <div class="job-drawer-footer">
+
+            <button type="button"
+                    class="job-secondary-button"
+                    data-close-drawer>
+                Cancel
+            </button>
+
+            <button type="submit"
+                    class="job-primary-button">
+                Add Part
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<div class="job-modal-backdrop"
+     id="jobDeleteModal">
+
+    <div class="job-confirm-modal">
+
+        <div class="job-confirm-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M6 7l1 14h10l1-14"></path>
+                <path d="M9 7V4h6v3"></path>
+            </svg>
+        </div>
+
+        <h2>Delete Job Order?</h2>
+
+        <p>
+            This will permanently remove
+            <strong id="deleteJobName">this job order</strong>
+            from the repair records.
+        </p>
+
+        <form asp-action="Delete"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   name="id"
+                   id="deleteJobId" />
+
+            <div class="job-confirm-actions">
+
+                <button type="button"
+                        class="job-secondary-button"
+                        id="cancelDelete">
+                    No, Keep Job
+                </button>
+
+                <button type="submit"
+                        class="job-danger-button">
+                    Yes, Delete Job
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const rows = Array.from(
+        document.querySelectorAll(".job-data-row")
+    );
+
+    const searchInput =
+        document.getElementById("jobSearch");
+
+    const statusFilter =
+        document.getElementById("jobStatusFilter");
+
+    const dateFilter =
+        document.getElementById("jobDateFilter");
+
+    const tableBody =
+        document.getElementById("jobTableBody");
+
+    const emptyState =
+        document.getElementById("jobEmptyState");
+
+    const pagination =
+        document.getElementById("jobPagination");
+
+    const paginationText =
+        document.getElementById("jobPaginationText");
+
+    const resultSummary =
+        document.getElementById("jobResultSummary");
+
+    const createDrawer =
+        document.getElementById("jobCreateDrawer");
+
+    const editDrawer =
+        document.getElementById("jobEditDrawer");
+
+    const detailsDrawer =
+        document.getElementById("jobDetailsDrawer");
+
+    const partDrawer =
+        document.getElementById("jobPartDrawer");
+
+    const deleteModal =
+        document.getElementById("jobDeleteModal");
+
+    const detailsContent =
+        document.getElementById("detailsContent");
+
+    const pageSize = 10;
+
+    let currentPage = 1;
+    let filteredRows = [...rows];
+    let selectedJobId = null;
+    let selectedRow = null;
+
+    function formatMoney(value) {
+        return Number(value || 0)
+            .toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+    }
+
+    function formatDate(value) {
+        if (!value) return "—";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return date.toLocaleString("en-PH", {
+            month: "short",
+            day: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function statusClass(status) {
+        switch (status) {
+            case "Open":
+                return "job-badge-blue";
+
+            case "In Progress":
+                return "job-badge-orange";
+
+            case "Completed":
+                return "job-badge-green";
+
+            case "Cancelled":
+                return "job-badge-red";
+
+            default:
+                return "job-badge-blue";
+        }
+    }
+
+    function applyFilters() {
+
+        const query =
+            searchInput.value
+                .trim()
+                .toLowerCase();
+
+        const status =
+            statusFilter.value;
+
+        const date =
+            dateFilter.value;
+
+        const now = new Date();
+
+        filteredRows = rows.filter(row => {
+
+            const searchValue =
+                (row.dataset.search || "")
+                    .toLowerCase();
+
+            if (
+                query &&
+                !searchValue.includes(query)
+            ) {
+                return false;
+            }
+
+            if (
+                status &&
+                row.dataset.status !== status
+            ) {
+                return false;
+            }
+
+            if (date) {
+
+                const rowDate =
+                    new Date(row.dataset.date);
+
+                if (Number.isNaN(rowDate.getTime())) {
+                    return false;
+                }
+
+                if (date === "today") {
+
+                    if (
+                        rowDate.toDateString() !==
+                        now.toDateString()
+                    ) {
+                        return false;
+                    }
+                }
+
+                if (date === "week") {
+
+                    const sevenDaysAgo =
+                        new Date(now);
+
+                    sevenDaysAgo.setDate(
+                        now.getDate() - 7
+                    );
+
+                    if (rowDate < sevenDaysAgo) {
+                        return false;
+                    }
+                }
+
+                if (date === "month") {
+
+                    if (
+                        rowDate.getMonth() !==
+                        now.getMonth() ||
+                        rowDate.getFullYear() !==
+                        now.getFullYear()
+                    ) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        });
+
+        currentPage = 1;
+
+        renderTable();
+    }
+
+    function renderTable() {
+
+        rows.forEach(row => {
+            row.style.display = "none";
+        });
+
+        const total =
+            filteredRows.length;
+
+        const totalPages =
+            Math.max(
+                1,
+                Math.ceil(total / pageSize)
+            );
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        const start =
+            (currentPage - 1) * pageSize;
+
+        const visibleRows =
+            filteredRows.slice(
+                start,
+                start + pageSize
+            );
+
+        visibleRows.forEach(row => {
+            row.style.display = "";
+        });
+
+        emptyState.style.display =
+            total === 0
+                ? "block"
+                : "none";
+
+        if (total === 0) {
+            paginationText.textContent =
+                "Showing 0–0 of 0 job orders";
+        }
+        else {
+            const end =
+                Math.min(
+                    start + pageSize,
+                    total
+                );
+
+            paginationText.textContent =
+                `Showing ${start + 1}–${end} of ${total} job orders`;
+        }
+
+        resultSummary.textContent =
+            `${total} job order${total === 1 ? "" : "s"}`;
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+
+        pagination.innerHTML = "";
+
+        if (filteredRows.length === 0) {
+            return;
+        }
+
+        const previous =
+            document.createElement("button");
+
+        previous.type = "button";
+        previous.className =
+            "job-page-button";
+
+        previous.textContent = "‹";
+        previous.disabled =
+            currentPage === 1;
+
+        previous.addEventListener(
+            "click",
+            function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            }
+        );
+
+        pagination.appendChild(previous);
+
+        for (
+            let page = 1;
+            page <= totalPages;
+            page++
+        ) {
+
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.className =
+                "job-page-button" +
+                (page === currentPage
+                    ? " active"
+                    : "");
+
+            button.textContent = page;
+
+            button.addEventListener(
+                "click",
+                function () {
+                    currentPage = page;
+                    renderTable();
+                }
+            );
+
+            pagination.appendChild(button);
+        }
+
+        const next =
+            document.createElement("button");
+
+        next.type = "button";
+        next.className =
+            "job-page-button";
+
+        next.textContent = "›";
+        next.disabled =
+            currentPage === totalPages;
+
+        next.addEventListener(
+            "click",
+            function () {
+                if (
+                    currentPage <
+                    totalPages
+                ) {
+                    currentPage++;
+                    renderTable();
+                }
+            }
+        );
+
+        pagination.appendChild(next);
+    }
+
+    function updateStatusCounts() {
+
+        let open = 0;
+        let progress = 0;
+        let completed = 0;
+
+        rows.forEach(row => {
+
+            switch (row.dataset.status) {
+
+                case "Open":
+                    open++;
+                    break;
+
+                case "In Progress":
+                    progress++;
+                    break;
+
+                case "Completed":
+                    completed++;
+                    break;
+            }
+        });
+
+        document.getElementById("openCount")
+            .textContent = open;
+
+        document.getElementById("progressCount")
+            .textContent = progress;
+
+        document.getElementById("completedCount")
+            .textContent = completed;
+    }
+
+    function closeDrawers() {
+
+        document
+            .querySelectorAll(".job-drawer")
+            .forEach(drawer => {
+                drawer.classList.remove("open");
+            });
+
+        document.body.classList.remove(
+            "job-drawer-active"
+        );
+    }
+
+    function openDrawer(drawer) {
+
+        closeDrawers();
+
+        drawer.classList.add("open");
+
+        document.body.classList.add(
+            "job-drawer-active"
+        );
+    }
+
+    function openCreate() {
+
+        const form =
+            document.getElementById(
+                "jobCreateForm"
+            );
+
+        form.reset();
+
+        document.querySelector(
+            '#jobCreateForm select[name="Status"]'
+        ).value = "Open";
+
+        document.querySelector(
+            '#jobCreateForm input[name="LaborCost"]'
+        ).value = "0";
+
+        openDrawer(createDrawer);
+    }
+
+    function openEdit(row) {
+
+        selectedRow = row;
+        selectedJobId = row.dataset.id;
+
+        document.getElementById(
+            "editJobOrderId"
+        ).value = row.dataset.id;
+
+        document.getElementById(
+            "editVehicleId"
+        ).value = row.dataset.vehicleId;
+
+        document.getElementById(
+            "editAppointmentId"
+        ).value =
+            row.dataset.appointmentId;
+
+        document.getElementById(
+            "editJobOrderDate"
+        ).value =
+            row.dataset.jobDate;
+
+        document.getElementById(
+            "editStatus"
+        ).value =
+            row.dataset.status;
+
+        document.getElementById(
+            "editLaborCost"
+        ).value =
+            row.dataset.labor;
+
+        document.getElementById(
+            "editDescription"
+        ).value =
+            row.dataset.description;
+
+        document.getElementById(
+            "editDiagnosis"
+        ).value =
+            row.dataset.diagnosis;
+
+        document.getElementById(
+            "editNotes"
+        ).value =
+            row.dataset.notes;
+
+        document.getElementById(
+            "jobEditForm"
+        ).action =
+            `/JobOrders/Edit/${encodeURIComponent(row.dataset.id)}`;
+
+        openDrawer(editDrawer);
+    }
+
+    function openDetails(row) {
+
+        selectedRow = row;
+        selectedJobId = row.dataset.id;
+
+        const status =
+            row.dataset.status;
+
+        document.getElementById(
+            "detailsJobTitle"
+        ).textContent =
+            `Job Order #${row.dataset.id}`;
+
+        document.getElementById(
+            "detailsJobSubtitle"
+        ).textContent =
+            `${row.dataset.vehicle} · ${row.dataset.plate}`;
+
+        const badge =
+            document.getElementById(
+                "detailsStatusBadge"
+            );
+
+        badge.className =
+            `job-status-badge ${statusClass(status)}`;
+
+        badge.innerHTML =
+            `<span></span>${status}`;
+
+        const template =
+            document.getElementById(
+                `job-details-${row.dataset.id}`
+            );
+
+        detailsContent.innerHTML = "";
+
+        if (template) {
+
+            const clone =
+                template.content.cloneNode(true);
+
+            detailsContent.appendChild(clone);
+        }
+
+        openDrawer(detailsDrawer);
+    }
+
+    function openParts(row) {
+
+        selectedRow = row;
+        selectedJobId = row.dataset.id;
+
+        document.getElementById(
+            "jobPartForm"
+        ).action =
+            `/JobOrders/AddPart/${encodeURIComponent(row.dataset.id)}`;
+
+        openDrawer(partDrawer);
+    }
+
+    function openDelete(row) {
+
+        selectedRow = row;
+        selectedJobId = row.dataset.id;
+
+        document.getElementById(
+            "deleteJobId"
+        ).value =
+            row.dataset.id;
+
+        document.getElementById(
+            "deleteJobName"
+        ).textContent =
+            `Job Order #${row.dataset.id}`;
+
+        deleteModal.classList.add("open");
+
+        document.body.classList.add(
+            "job-modal-active"
+        );
+    }
+
+    function closeDelete() {
+
+        deleteModal.classList.remove("open");
+
+        document.body.classList.remove(
+            "job-modal-active"
+        );
+    }
+
+    document.getElementById(
+        "openCreateJob"
+    ).addEventListener(
+        "click",
+        openCreate
+    );
+
+    document.getElementById(
+        "applyJobFilters"
+    ).addEventListener(
+        "click",
+        applyFilters
+    );
+
+    document.getElementById(
+        "clearJobFilters"
+    ).addEventListener(
+        "click",
+        function () {
+
+            searchInput.value = "";
+            statusFilter.value = "";
+            dateFilter.value = "";
+
+            applyFilters();
+        }
+    );
+
+    searchInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+                applyFilters();
+            }
+        }
+    );
+
+    document
+        .querySelectorAll("[data-close-drawer]")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                closeDrawers
+            );
+        });
+
+    document
+        .querySelectorAll(".job-drawer-close")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                closeDrawers
+            );
+        });
+
+    document
+        .querySelectorAll(".job-data-row")
+        .forEach(row => {
+
+            row.addEventListener(
+                "dblclick",
+                function () {
+                    openDetails(row);
+                }
+            );
+
+            row
+                .querySelectorAll(
+                    "[data-job-action]"
+                )
+                .forEach(button => {
+
+                    button.addEventListener(
+                        "click",
+                        function (event) {
+
+                            event.stopPropagation();
+
+                            const action =
+                                button.dataset.jobAction;
+
+                            if (action === "view") {
+                                openDetails(row);
+                            }
+
+                            if (action === "edit") {
+                                openEdit(row);
+                            }
+
+                            if (action === "delete") {
+                                openDelete(row);
+                            }
+                        }
+                    );
+                });
+        });
+
+    document.getElementById(
+        "detailsEdit"
+    ).addEventListener(
+        "click",
+        function () {
+
+            if (selectedRow) {
+                openEdit(selectedRow);
+            }
+        }
+    );
+
+    document.getElementById(
+        "detailsAddPart"
+    ).addEventListener(
+        "click",
+        function () {
+
+            if (selectedRow) {
+                openParts(selectedRow);
+            }
+        }
+    );
+
+    document.getElementById(
+        "cancelDelete"
+    ).addEventListener(
+        "click",
+        closeDelete
+    );
+
+    deleteModal.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                event.target ===
+                deleteModal
+            ) {
+                closeDelete();
+            }
+        }
+    );
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Escape") {
+
+                closeDrawers();
+                closeDelete();
+            }
+        }
+    );
+
+    updateStatusCounts();
+    applyFilters();
+
+    const initialOpen =
+        "@initialOpen";
+
+    const initialOpenId =
+        "@initialOpenId";
+
+    if (initialOpen === "create") {
+        openCreate();
+    }
+
+    if (initialOpenId) {
+
+        const initialRow =
+            rows.find(
+                row =>
+                    row.dataset.id ===
+                    initialOpenId
+            );
+
+        if (initialRow) {
+
+            if (initialOpen === "details") {
+                openDetails(initialRow);
+            }
+
+            if (initialOpen === "edit") {
+                openEdit(initialRow);
+            }
+
+            if (initialOpen === "delete") {
+                openDelete(initialRow);
+            }
+
+            if (initialOpen === "addpart") {
+                openParts(initialRow);
+            }
+        }
+    }
+});
+</script>
+
+}

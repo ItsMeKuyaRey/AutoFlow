@@ -14,20 +14,26 @@ public class JobOrdersController : Controller
     {
         _context = context;
     }
-    // GET: JobOrders
-    public async Task<IActionResult> Index()
+
+    public async Task<IActionResult> Index(string? open = null, int? id = null)
     {
         var jobOrders = await _context.JobOrders
             .Include(j => j.Vehicle)
                 .ThenInclude(v => v!.Customer)
             .Include(j => j.Appointment)
+            .Include(j => j.JobOrderParts)
+                .ThenInclude(jp => jp.Part)
             .OrderByDescending(j => j.JobOrderDate)
             .ToListAsync();
+
+        await LoadDropdowns();
+
+        ViewData["Open"] = open ?? string.Empty;
+        ViewData["OpenId"] = id?.ToString() ?? string.Empty;
 
         return View(jobOrders);
     }
 
-    // GET: JobOrders/Details/5
     public async Task<IActionResult> Details(int? id)
     {
         if (id == null)
@@ -35,23 +41,19 @@ public class JobOrdersController : Controller
             return NotFound();
         }
 
-        var jobOrder = await _context.JobOrders
-            .Include(j => j.Vehicle)
-                .ThenInclude(v => v!.Customer)
-            .Include(j => j.Appointment)
-            .Include(j => j.JobOrderParts)
-                .ThenInclude(jp => jp.Part)
-            .FirstOrDefaultAsync(j => j.JobOrderId == id);
+        var exists = await _context.JobOrders
+            .AnyAsync(j => j.JobOrderId == id);
 
-        if (jobOrder == null)
+        if (!exists)
         {
             return NotFound();
         }
 
-        return View(jobOrder);
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "details", id });
     }
 
-    // GET: JobOrders/AddPart/5
     [HttpGet]
     public async Task<IActionResult> AddPart(int? id)
     {
@@ -60,30 +62,19 @@ public class JobOrdersController : Controller
             return NotFound();
         }
 
-        var jobOrder = await _context.JobOrders.FindAsync(id);
+        var jobOrder = await _context.JobOrders
+            .AnyAsync(j => j.JobOrderId == id);
 
-        if (jobOrder == null)
+        if (!jobOrder)
         {
             return NotFound();
         }
 
-        var parts = await _context.Parts
-            .OrderBy(p => p.Name)
-            .Select(p => new
-            {
-                p.PartId,
-                DisplayName = p.Name + " (" + p.StockQuantity +
-                              " in stock — $" + p.UnitPrice + ")"
-            })
-            .ToListAsync();
-
-        ViewData["PartId"] = new SelectList(parts, "PartId", "DisplayName");
-        ViewBag.JobOrderId = jobOrder.JobOrderId;
-
-        return View();
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "addpart", id });
     }
 
-    // POST: JobOrders/AddPart/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddPart(int id, int partId, int quantity)
@@ -112,22 +103,11 @@ public class JobOrdersController : Controller
 
         if (!ModelState.IsValid)
         {
-            var parts = await _context.Parts
-                .OrderBy(p => p.Name)
-                .Select(p => new
-                {
-                    p.PartId,
-                    DisplayName = p.Name + " (" + p.StockQuantity +
-                                  " in stock — $" + p.UnitPrice + ")"
-                })
-                .ToListAsync();
+            await LoadDropdowns();
+            ViewData["Open"] = "addpart";
+            ViewData["OpenId"] = id.ToString();
 
-            ViewData["PartId"] =
-                new SelectList(parts, "PartId", "DisplayName", partId);
-
-            ViewBag.JobOrderId = jobOrder.JobOrderId;
-
-            return View();
+            return View("Index", await GetJobOrdersAsync());
         }
 
         using var transaction =
@@ -145,7 +125,6 @@ public class JobOrdersController : Controller
 
             part.StockQuantity -= quantity;
             part.UpdatedAt = DateTime.UtcNow;
-
             jobOrder.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -158,11 +137,10 @@ public class JobOrdersController : Controller
         }
 
         return RedirectToAction(
-            nameof(Details),
-            new { id = jobOrder.JobOrderId });
+            nameof(Index),
+            new { open = "details", id = jobOrder.JobOrderId });
     }
 
-    // POST: JobOrders/RemovePart/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemovePart(
@@ -194,6 +172,14 @@ public class JobOrdersController : Controller
 
             _context.JobOrderParts.Remove(jobOrderPart);
 
+            var jobOrder = await _context.JobOrders
+                .FindAsync(jobOrderId);
+
+            if (jobOrder != null)
+            {
+                jobOrder.UpdatedAt = DateTime.UtcNow;
+            }
+
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
         }
@@ -204,20 +190,20 @@ public class JobOrdersController : Controller
         }
 
         return RedirectToAction(
-            nameof(Details),
-            new { id = jobOrderId });
+            nameof(Index),
+            new { open = "details", id = jobOrderId });
     }
 
-    // GET: JobOrders/Create
     [HttpGet]
     public async Task<IActionResult> Create()
     {
         await LoadDropdowns();
 
-        return View();
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "create" });
     }
 
-    // POST: JobOrders/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -248,7 +234,6 @@ public class JobOrdersController : Controller
         return View(jobOrder);
     }
 
-    // GET: JobOrders/Edit/5
     [HttpGet]
     public async Task<IActionResult> Edit(int? id)
     {
@@ -257,21 +242,19 @@ public class JobOrdersController : Controller
             return NotFound();
         }
 
-        var jobOrder = await _context.JobOrders.FindAsync(id);
+        var jobOrder = await _context.JobOrders
+            .FirstOrDefaultAsync(j => j.JobOrderId == id);
 
         if (jobOrder == null)
         {
             return NotFound();
         }
 
-        await LoadDropdowns(
-            jobOrder.VehicleId,
-            jobOrder.AppointmentId);
-
-        return View(jobOrder);
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "edit", id });
     }
 
-    // POST: JobOrders/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -296,22 +279,37 @@ public class JobOrdersController : Controller
                     return NotFound();
                 }
 
-                var previousStatus = existingJobOrder.Status;
+                var previousStatus =
+                    existingJobOrder.Status;
 
-                existingJobOrder.VehicleId = jobOrder.VehicleId;
-                existingJobOrder.AppointmentId = jobOrder.AppointmentId;
+                existingJobOrder.VehicleId =
+                    jobOrder.VehicleId;
+
+                existingJobOrder.AppointmentId =
+                    jobOrder.AppointmentId;
 
                 existingJobOrder.JobOrderDate =
                     DateTime.SpecifyKind(
                         jobOrder.JobOrderDate,
                         DateTimeKind.Utc);
 
-                existingJobOrder.Status = jobOrder.Status;
-                existingJobOrder.LaborCost = jobOrder.LaborCost;
-                existingJobOrder.Description = jobOrder.Description;
-                existingJobOrder.Diagnosis = jobOrder.Diagnosis;
-                existingJobOrder.Notes = jobOrder.Notes;
-                existingJobOrder.UpdatedAt = DateTime.UtcNow;
+                existingJobOrder.Status =
+                    jobOrder.Status;
+
+                existingJobOrder.LaborCost =
+                    jobOrder.LaborCost;
+
+                existingJobOrder.Description =
+                    jobOrder.Description;
+
+                existingJobOrder.Diagnosis =
+                    jobOrder.Diagnosis;
+
+                existingJobOrder.Notes =
+                    jobOrder.Notes;
+
+                existingJobOrder.UpdatedAt =
+                    DateTime.UtcNow;
 
                 bool justCompleted =
                     previousStatus != "Completed" &&
@@ -323,37 +321,55 @@ public class JobOrdersController : Controller
                         await _context.Billings
                             .AsNoTracking()
                             .FirstOrDefaultAsync(
-                                b => b.JobOrderId == existingJobOrder.JobOrderId);
+                                b =>
+                                    b.JobOrderId ==
+                                    existingJobOrder.JobOrderId);
 
                     if (existingBilling == null)
                     {
                         var partsCost =
                             await _context.JobOrderParts
-                                .Where(jp =>
-                                    jp.JobOrderId ==
-                                    existingJobOrder.JobOrderId)
-                                .SumAsync(jp =>
-                                    jp.Quantity *
-                                    jp.UnitPriceAtTimeOfUse);
+                                .Where(
+                                    jp =>
+                                        jp.JobOrderId ==
+                                        existingJobOrder.JobOrderId)
+                                .SumAsync(
+                                    jp =>
+                                        jp.Quantity *
+                                        jp.UnitPriceAtTimeOfUse);
 
                         var invoiceNumber =
                             await GenerateInvoiceNumberAsync();
 
                         var billing = new Billing
                         {
-                            JobOrderId = existingJobOrder.JobOrderId,
-                            InvoiceNumber = invoiceNumber,
-                            LaborCost = existingJobOrder.LaborCost,
-                            PartsCost = partsCost,
+                            JobOrderId =
+                                existingJobOrder.JobOrderId,
+
+                            InvoiceNumber =
+                                invoiceNumber,
+
+                            LaborCost =
+                                existingJobOrder.LaborCost,
+
+                            PartsCost =
+                                partsCost,
+
                             DiscountAmount = 0,
                             TaxAmount = 0,
+
                             TotalAmount =
                                 existingJobOrder.LaborCost +
                                 partsCost,
+
                             AmountPaid = 0,
                             Status = "Unpaid",
-                            IssuedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
+
+                            IssuedAt =
+                                DateTime.UtcNow,
+
+                            UpdatedAt =
+                                DateTime.UtcNow
                         };
 
                         _context.Billings.Add(billing);
@@ -364,9 +380,11 @@ public class JobOrdersController : Controller
 
                     var serviceRecordExists =
                         await _context.ServiceRecords
-                            .AnyAsync(sr =>
-                                sr.Notes != null &&
-                                sr.Notes.StartsWith(serviceRecordMarker));
+                            .AnyAsync(
+                                sr =>
+                                    sr.Notes != null &&
+                                    sr.Notes.StartsWith(
+                                        serviceRecordMarker));
 
                     if (!serviceRecordExists)
                     {
@@ -374,7 +392,9 @@ public class JobOrdersController : Controller
                             await _context.Vehicles
                                 .AsNoTracking()
                                 .FirstOrDefaultAsync(
-                                    v => v.VehicleId == existingJobOrder.VehicleId);
+                                    v =>
+                                        v.VehicleId ==
+                                        existingJobOrder.VehicleId);
 
                         if (vehicle == null)
                         {
@@ -382,26 +402,45 @@ public class JobOrdersController : Controller
                         }
 
                         var serviceNotes =
-                            string.IsNullOrWhiteSpace(existingJobOrder.Notes)
+                            string.IsNullOrWhiteSpace(
+                                existingJobOrder.Notes)
                                 ? serviceRecordMarker
                                 : $"{serviceRecordMarker} {existingJobOrder.Notes.Trim()}";
 
-                        var serviceRecord = new ServiceRecord
-                        {
-                            VehicleId = existingJobOrder.VehicleId,
-                            ServiceDate = DateTime.SpecifyKind(
-                                existingJobOrder.JobOrderDate,
-                                DateTimeKind.Unspecified),
-                            Mileage = vehicle.Mileage,
-                            Complaint = existingJobOrder.Description,
-                            Diagnosis = existingJobOrder.Diagnosis,
-                            Status = "Completed",
-                            Notes = serviceNotes,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
+                        var serviceRecord =
+                            new ServiceRecord
+                            {
+                                VehicleId =
+                                    existingJobOrder.VehicleId,
 
-                        _context.ServiceRecords.Add(serviceRecord);
+                                ServiceDate =
+                                    DateTime.SpecifyKind(
+                                        existingJobOrder.JobOrderDate,
+                                        DateTimeKind.Unspecified),
+
+                                Mileage =
+                                    vehicle.Mileage,
+
+                                Complaint =
+                                    existingJobOrder.Description,
+
+                                Diagnosis =
+                                    existingJobOrder.Diagnosis,
+
+                                Status = "Completed",
+
+                                Notes =
+                                    serviceNotes,
+
+                                CreatedAt =
+                                    DateTime.UtcNow,
+
+                                UpdatedAt =
+                                    DateTime.UtcNow
+                            };
+
+                        _context.ServiceRecords.Add(
+                            serviceRecord);
                     }
                 }
 
@@ -427,7 +466,6 @@ public class JobOrdersController : Controller
         return View(jobOrder);
     }
 
-    // GET: JobOrders/Delete/5
     [HttpGet]
     public async Task<IActionResult> Delete(int? id)
     {
@@ -436,34 +474,47 @@ public class JobOrdersController : Controller
             return NotFound();
         }
 
-        var jobOrder = await _context.JobOrders
-            .Include(j => j.Vehicle)
-            .Include(j => j.Appointment)
-            .FirstOrDefaultAsync(
-                j => j.JobOrderId == id);
+        var exists =
+            await _context.JobOrders
+                .AnyAsync(j => j.JobOrderId == id);
 
-        if (jobOrder == null)
+        if (!exists)
         {
             return NotFound();
         }
 
-        return View(jobOrder);
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "delete", id });
     }
 
-    // POST: JobOrders/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var jobOrder = await _context.JobOrders.FindAsync(id);
+        var jobOrder =
+            await _context.JobOrders.FindAsync(id);
 
         if (jobOrder != null)
         {
             _context.JobOrders.Remove(jobOrder);
+
             await _context.SaveChangesAsync();
-        }
+        }   
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<List<JobOrder>> GetJobOrdersAsync()
+    {
+        return await _context.JobOrders
+            .Include(j => j.Vehicle)
+                .ThenInclude(v => v!.Customer)
+            .Include(j => j.Appointment)
+            .Include(j => j.JobOrderParts)
+                .ThenInclude(jp => jp.Part)
+            .OrderByDescending(j => j.JobOrderDate)
+            .ToListAsync();
     }
 
     private async Task LoadDropdowns(
@@ -477,40 +528,71 @@ public class JobOrdersController : Controller
             {
                 v.VehicleId,
                 DisplayName =
-                    v.PlateNumber + " — " +
-                    v.Make + " " +
+                    v.PlateNumber +
+                    " — " +
+                    v.Make +
+                    " " +
                     v.Model
             })
             .ToListAsync();
 
-        ViewData["VehicleId"] = new SelectList(
-            vehicles,
-            "VehicleId",
-            "DisplayName",
-            selectedVehicleId);
+        ViewData["VehicleId"] =
+            new SelectList(
+                vehicles,
+                "VehicleId",
+                "DisplayName",
+                selectedVehicleId);
 
-        var appointments = await _context.Appointments
-            .Include(a => a.Vehicle)
-            .OrderByDescending(a => a.AppointmentDate)
-            .Select(a => new
-            {
-                a.AppointmentId,
-                DisplayName =
-                    a.AppointmentDate.ToString("yyyy-MM-dd HH:mm")
-                    + " — "
-                    + a.Vehicle!.PlateNumber
-                    + " — "
-                    + a.Vehicle.Make
-                    + " "
-                    + a.Vehicle.Model
-            })
-            .ToListAsync();
+        var appointments =
+            await _context.Appointments
+                .Include(a => a.Vehicle)
+                .OrderByDescending(
+                    a => a.AppointmentDate)
+                .Select(a => new
+                {
+                    a.AppointmentId,
 
-        ViewData["AppointmentId"] = new SelectList(
-            appointments,
-            "AppointmentId",
-            "DisplayName",
-            selectedAppointmentId);
+                    DisplayName =
+                        a.AppointmentDate
+                            .ToString("yyyy-MM-dd HH:mm")
+                        + " — "
+                        + a.Vehicle!.PlateNumber
+                        + " — "
+                        + a.Vehicle.Make
+                        + " "
+                        + a.Vehicle.Model
+                })
+                .ToListAsync();
+
+        ViewData["AppointmentId"] =
+            new SelectList(
+                appointments,
+                "AppointmentId",
+                "DisplayName",
+                selectedAppointmentId);
+
+        var parts =
+            await _context.Parts
+                .OrderBy(p => p.Name)
+                .Select(p => new
+                {
+                    p.PartId,
+
+                    DisplayName =
+                        p.Name +
+                        " (" +
+                        p.StockQuantity +
+                        " in stock — ₱" +
+                        p.UnitPrice.ToString("N2") +
+                        ")"
+                })
+                .ToListAsync();
+
+        ViewData["PartId"] =
+            new SelectList(
+                parts,
+                "PartId",
+                "DisplayName");
     }
 
     private bool JobOrderExists(int id)
@@ -526,10 +608,14 @@ public class JobOrdersController : Controller
 
         var lastInvoice =
             await _context.Billings
-                .Where(b =>
-                    b.InvoiceNumber.StartsWith(prefix))
-                .OrderByDescending(b => b.InvoiceNumber)
-                .Select(b => b.InvoiceNumber)
+                .Where(
+                    b =>
+                        b.InvoiceNumber
+                            .StartsWith(prefix))
+                .OrderByDescending(
+                    b => b.InvoiceNumber)
+                .Select(
+                    b => b.InvoiceNumber)
                 .FirstOrDefaultAsync();
 
         int nextNumber = 1;

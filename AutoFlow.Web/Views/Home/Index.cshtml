@@ -987,82 +987,529 @@
             overflow-x: auto;
         }
     }
+
+    /* Premium Dashboard 2026 — scoped to Home/Index only */
+    .admin-dashboard {
+        gap: 20px;
+        max-width: 1560px;
+        margin: 0 auto;
+    }
+
+    .ad-hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1.02fr) minmax(520px, .98fr);
+        min-height: 310px;
+        overflow: hidden;
+        border: 1px solid rgba(226, 232, 240, .95);
+        border-radius: 22px;
+        background:
+            radial-gradient(circle at 0% 0%, rgba(124, 58, 237, .12), transparent 42%),
+            linear-gradient(135deg, #ffffff 0%, #fbfbff 48%, #f5f3ff 100%);
+        box-shadow:
+            0 18px 50px rgba(15, 23, 42, .07),
+            0 2px 8px rgba(15, 23, 42, .025);
+    }
+
+    .ad-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(124, 58, 237, .035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(124, 58, 237, .035) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: linear-gradient(to right, black 0%, transparent 70%);
+    }
+
+    .ad-hero-copy {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 38px 38px 34px;
+    }
+
+    .ad-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        gap: 8px;
+        padding: 7px 10px;
+        border: 1px solid #e9e2ff;
+        border-radius: 999px;
+        background: rgba(255,255,255,.78);
+        color: #6d28d9;
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: .11em;
+        text-transform: uppercase;
+        backdrop-filter: blur(12px);
+    }
+
+    .ad-eyebrow-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #8b5cf6;
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, .12);
+    }
+
+    .ad-hero h1 {
+        margin: 20px 0 0;
+        max-width: 640px;
+        color: #0f172a;
+        font-size: clamp(30px, 3vw, 44px);
+        font-weight: 900;
+        line-height: 1.02;
+        letter-spacing: -.055em;
+    }
+
+    .ad-hero-copy > p {
+        max-width: 620px;
+        margin: 14px 0 0;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.75;
+    }
+
+    .ad-hero .ad-top-actions {
+        margin-top: 24px;
+    }
+
+    .ad-plus {
+        display: inline-grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        background: rgba(255,255,255,.16);
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .ad-hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 26px;
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(226,232,240,.9);
+    }
+
+    .ad-hero-meta > div {
+        min-width: 135px;
+    }
+
+    .ad-hero-meta span {
+        display: block;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+    }
+
+    .ad-hero-meta strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 5px;
+        color: #334155;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .ad-live-inline .ad-live-dot {
+        width: 6px;
+        height: 6px;
+    }
+
+    .ad-automotive-gallery {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(135px, .72fr);
+        gap: 8px;
+        min-width: 0;
+        padding: 10px 10px 10px 0;
+    }
+
+    .ad-car-stack {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        gap: 8px;
+        min-height: 0;
+    }
+
+    .ad-car-photo {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        border-radius: 15px;
+        background: #0f172a;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+
+    .ad-car-photo-main {
+        border-radius: 16px 8px 8px 16px;
+    }
+
+    .ad-car-photo img {
+        width: 100%;
+        height: 100%;
+        min-height: 140px;
+        object-fit: cover;
+        transform: scale(1.015);
+        transition: transform .65s cubic-bezier(.2,.7,.2,1), filter .4s ease;
+        filter: saturate(.92) contrast(1.03);
+    }
+
+    .ad-car-photo:hover img {
+        transform: scale(1.07);
+        filter: saturate(1.08) contrast(1.05);
+    }
+
+    .ad-car-photo::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent 42%, rgba(2,6,23,.54) 100%);
+    }
+
+    .ad-photo-overlay {
+        position: absolute;
+        z-index: 2;
+        left: 20px;
+        right: 20px;
+        bottom: 18px;
+        color: #fff;
+    }
+
+    .ad-photo-overlay span {
+        display: block;
+        margin-bottom: 5px;
+        color: rgba(255,255,255,.72);
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: .11em;
+        text-transform: uppercase;
+    }
+
+    .ad-photo-overlay strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 850;
+        letter-spacing: -.02em;
+    }
+
+    .ad-menu-icon,
+    .ad-kpi-icon svg,
+    .ad-flow-icon svg {
+        display: inline-grid;
+        place-items: center;
+    }
+
+    .ad-menu-icon {
+        width: 20px;
+        height: 20px;
+        color: #7c3aed;
+    }
+
+    .ad-menu-icon svg,
+    .ad-kpi-icon svg,
+    .ad-flow-icon svg {
+        width: 17px;
+        height: 17px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .ad-kpi-grid {
+        gap: 12px;
+    }
+
+    .ad-kpi {
+        min-height: 152px;
+        border-color: #e9edf3;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .035);
+    }
+
+    .ad-kpi::after {
+        content: "";
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 0;
+        height: 2px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #7c3aed, #a78bfa);
+        opacity: 0;
+        transform: scaleX(.35);
+        transition: .25s ease;
+    }
+
+    .ad-kpi:hover::after {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+
+    .ad-kpi-icon {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #ece7ff;
+        background: linear-gradient(145deg, #faf9ff, #f1edff);
+        color: #7c3aed;
+        box-shadow: 0 5px 14px rgba(124,58,237,.08);
+    }
+
+    .ad-kpi-badge {
+        border: 1px solid #ece7ff;
+        background: #faf8ff;
+    }
+
+    .ad-card {
+        border-color: #e9edf3;
+        border-radius: 17px;
+        box-shadow: 0 8px 26px rgba(15, 23, 42, .035);
+    }
+
+    .ad-card-head {
+        padding: 19px 21px;
+    }
+
+    .ad-card-title h2 {
+        font-size: 14px;
+        letter-spacing: -.015em;
+    }
+
+    .ad-workflow {
+        padding-top: 26px;
+        padding-bottom: 27px;
+    }
+
+    .ad-flow-icon {
+        width: 46px;
+        height: 46px;
+        border-color: #e8ebf0;
+        border-radius: 13px;
+        box-shadow: 0 6px 17px rgba(15,23,42,.045);
+    }
+
+    .ad-flow-node:hover .ad-flow-action {
+        color: #6d28d9;
+    }
+
+    .ad-arrow-icon {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vertical-align: -2px;
+        transition: transform .18s ease;
+    }
+
+    a:hover .ad-arrow-icon {
+        transform: translateX(3px);
+    }
+
+    .ad-note-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        margin-right: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        vertical-align: 1px;
+    }
+
+    .ad-mini-stat-link {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .ad-mini-stat-link strong {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .ad-job-row,
+    .ad-follow-item,
+    .ad-mini-stat,
+    .ad-record {
+        transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .ad-job-row:hover,
+    .ad-follow-item:hover,
+    .ad-mini-stat:hover,
+    .ad-record:hover {
+        border-color: #ddd6fe;
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(15,23,42,.045);
+        transform: translateY(-1px);
+    }
+
+    @@media (max-width: 1180px) {
+        .ad-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .ad-automotive-gallery {
+            min-height: 300px;
+            padding: 0 10px 10px;
+        }
+
+        .ad-car-photo-main {
+            border-radius: 14px;
+        }
+    }
+
+    @@media (max-width: 720px) {
+        .ad-hero-copy {
+            padding: 28px 22px 24px;
+        }
+
+        .ad-automotive-gallery {
+            grid-template-columns: 1fr;
+            min-height: auto;
+        }
+
+        .ad-car-stack {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: none;
+        }
+
+        .ad-car-photo-main {
+            min-height: 250px;
+        }
+
+        .ad-car-stack .ad-car-photo {
+            min-height: 130px;
+        }
+
+        .ad-photo-overlay {
+            left: 15px;
+            bottom: 14px;
+        }
+    }
+
 </style>
 
 <div class="admin-dashboard">
 
-    <!-- Dashboard header -->
-    <section class="ad-header">
-
-        <div class="ad-heading">
+    <!-- Premium automotive command header -->
+    <section class="ad-hero">
+        <div class="ad-hero-copy">
+            <div class="ad-eyebrow">
+                <span class="ad-eyebrow-dot"></span>
+                AutoFlow Operations Command Center
+            </div>
 
             <h1>Good morning, Administrator.</h1>
 
             <p>
-                Here's your current AutoFlow operational overview.
+                Monitor appointments, repairs, inventory, billing and customer care from one live automotive workspace.
             </p>
 
             <div class="ad-top-actions">
-
                 <details class="ad-quick-actions">
-
                     <summary class="ad-button ad-button-primary">
-                        + Quick Action
+                        <span class="ad-plus">+</span>
+                        Quick Action
                     </summary>
 
                     <div class="ad-quick-menu">
-
                         <a asp-controller="Customers" asp-action="Create">
-                            👤 Add Customer
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                            Add Customer
                         </a>
 
                         <a asp-controller="Vehicles" asp-action="Create">
-                            🚗 Register Vehicle
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14M6.5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM17.5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM3 16l1.6-5.1A3 3 0 0 1 7.5 9h9a3 3 0 0 1 2.9 1.9L21 16v2h-1.5M4.5 18H3v-2h18"/></svg></span>
+                            Register Vehicle
                         </a>
 
                         <a asp-controller="Appointments" asp-action="Create">
-                            📅 New Appointment
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v3M17 2v3M3.5 9h17M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M8 13h3v3H8z"/></svg></span>
+                            New Appointment
                         </a>
 
                         <a asp-controller="JobOrders" asp-action="Create">
-                            🔧 New Repair Job
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 6.2a5 5 0 0 0-6.4 6.4L3 17.4 6.6 21l4.8-4.8a5 5 0 0 0 6.4-6.4l-3.2 3.2-3.4-.8-.8-3.4 3.2-3.2Z"/></svg></span>
+                            New Repair Job
                         </a>
 
                         <a asp-controller="Parts" asp-action="Create">
-                            📦 Add Inventory Part
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="M4.5 7.5 12 12l7.5-4.5M12 12v9"/></svg></span>
+                            Add Inventory Part
                         </a>
 
                         <a asp-controller="Suppliers" asp-action="Create">
-                            🚚 Add Supplier
+                            <span class="ad-menu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="M4.5 7.5 12 12l7.5-4.5M12 12v9"/></svg></span>
+                            Add Supplier
                         </a>
-
                     </div>
-
                 </details>
-
-                <a asp-controller="Appointments"
-                   asp-action="Index"
-                   class="ad-button">
-                    View Schedule
-                </a>
-
             </div>
 
+            <div class="ad-hero-meta">
+                <div>
+                    <span>Date</span>
+                    <strong>@today.ToString("MMMM dd, yyyy")</strong>
+                </div>
+
+                <div>
+                    <span>Status</span>
+                    <strong class="ad-live-inline">
+                        <span class="ad-live-dot"></span>
+                        Live database
+                    </strong>
+                </div>
+            </div>
         </div>
 
-        <div class="ad-heading-meta">
-
-            <div class="ad-date">
-                @today.ToString("MMMM dd, yyyy")
+        <div class="ad-automotive-gallery" aria-label="Premium automotive visual">
+            <div class="ad-car-photo ad-car-photo-main">
+                <img
+                    src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=86"
+                    alt="Premium sports car"
+                    loading="eager" />
+                <div class="ad-photo-overlay">
+                    <span>Automotive Operations</span>
+                    <strong>Precision. Performance. Control.</strong>
+                </div>
             </div>
 
-            <div class="ad-live">
-                <span class="ad-live-dot"></span>
-                Live database information
-            </div>
+            <div class="ad-car-stack">
+                <div class="ad-car-photo">
+                    <img
+                        src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=700&q=82"
+                        alt="Modern performance car"
+                        loading="lazy" />
+                </div>
 
+                <div class="ad-car-photo">
+                    <img
+                        src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=700&q=82"
+                        alt="Luxury sports car"
+                        loading="lazy" />
+                </div>
+            </div>
         </div>
-
     </section>
 
 
@@ -1075,7 +1522,7 @@
 
             <div class="ad-kpi-head">
 
-                <div class="ad-kpi-icon">▣</div>
+                <div class="ad-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v3M17 2v3M3.5 9h17M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M8 13h3v3H8z"/></svg></div>
 
                 <span class="ad-kpi-badge">
                     Today
@@ -1092,7 +1539,7 @@
             </div>
 
             <div class="ad-kpi-note ad-note-positive">
-                ● @Model.ScheduledThisWeek scheduled next 7 days
+                <span class="ad-note-dot" aria-hidden="true"></span>@Model.ScheduledThisWeek scheduled next 7 days
             </div>
 
         </a>
@@ -1104,7 +1551,7 @@
 
             <div class="ad-kpi-head">
 
-                <div class="ad-kpi-icon">🔧</div>
+                <div class="ad-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 6.2a5 5 0 0 0-6.4 6.4L3 17.4 6.6 21l4.8-4.8a5 5 0 0 0 6.4-6.4l-3.2 3.2-3.4-.8-.8-3.4 3.2-3.2Z"/></svg></div>
 
                 <span class="ad-kpi-badge">
                     Active
@@ -1133,7 +1580,7 @@
 
             <div class="ad-kpi-head">
 
-                <div class="ad-kpi-icon">₱</div>
+                <div class="ad-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h6.5a4 4 0 1 1 0 8H7M7 8h9M7 12h5M7 4v16"/></svg></div>
 
                 <span class="ad-kpi-badge">
                     Unpaid
@@ -1150,19 +1597,19 @@
             </div>
 
             <div class="ad-kpi-note ad-note-danger">
-                ● @Model.OutstandingInvoiceCount outstanding invoice(s)
+                <span class="ad-note-dot" aria-hidden="true"></span>@Model.OutstandingInvoiceCount outstanding invoice(s)
             </div>
 
         </a>
 
 
-        <a asp-controller="Appointments"
+        <a asp-controller="CustomerFollowUps"
            asp-action="Index"
            class="ad-kpi">
 
             <div class="ad-kpi-head">
 
-                <div class="ad-kpi-icon">↻</div>
+                <div class="ad-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7L20 19"/><path d="M20 14v5h-5"/></svg></div>
 
                 <span class="ad-kpi-badge">
                     Queue
@@ -1171,7 +1618,7 @@
             </div>
 
             <div class="ad-kpi-label">
-                Follow-up Queue
+                Follow-ups Due
             </div>
 
             <div class="ad-kpi-value">
@@ -1179,7 +1626,7 @@
             </div>
 
             <div class="ad-kpi-note">
-                Appointment-based customer follow-ups
+                Customer care actions requiring attention
             </div>
 
         </a>
@@ -1191,7 +1638,7 @@
 
             <div class="ad-kpi-head">
 
-                <div class="ad-kpi-icon">♟</div>
+                <div class="ad-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
 
                 <span class="ad-kpi-badge">
                     Records
@@ -1208,7 +1655,7 @@
             </div>
 
             <div class="ad-kpi-note ad-note-positive">
-                ● Centralized customer directory
+                <span class="ad-note-dot" aria-hidden="true"></span>Centralized customer directory
             </div>
 
         </a>
@@ -1248,7 +1695,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">👥</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalCustomerCount
@@ -1259,7 +1706,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Customer Directory →
+                        Customer Directory <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1269,7 +1716,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">🚗</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14M6.5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM17.5 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM3 16l1.6-5.1A3 3 0 0 1 7.5 9h9a3 3 0 0 1 2.9 1.9L21 16v2h-1.5M4.5 18H3v-2h18"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalVehicleCount
@@ -1280,7 +1727,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Garage Workspace →
+                        Garage Workspace <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1290,7 +1737,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">▣</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v3M17 2v3M3.5 9h17M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M8 13h3v3H8z"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalAppointmentCount
@@ -1301,7 +1748,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Scheduling →
+                        Scheduling <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1311,7 +1758,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">🔧</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 6.2a5 5 0 0 0-6.4 6.4L3 17.4 6.6 21l4.8-4.8a5 5 0 0 0 6.4-6.4l-3.2 3.2-3.4-.8-.8-3.4 3.2-3.2Z"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalJobCount
@@ -1322,7 +1769,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Repair Workflow →
+                        Repair Workflow <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1332,7 +1779,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">▦</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="M4.5 7.5 12 12l7.5-4.5M12 12v9"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalPartCount
@@ -1343,7 +1790,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Inventory Control →
+                        Inventory Control <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1353,7 +1800,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">₱</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h6.5a4 4 0 1 1 0 8H7M7 8h9M7 12h5M7 4v16"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalBillingCount
@@ -1364,7 +1811,7 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Financial Workspace →
+                        Financial Workspace <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
@@ -1374,7 +1821,7 @@
                    asp-action="Index"
                    class="ad-flow-node">
 
-                    <div class="ad-flow-icon">↶</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.TotalServiceRecordCount
@@ -1385,15 +1832,17 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Service Timeline →
+                        Service Timeline <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
                 </a>
 
 
-                <div class="ad-flow-node ad-flow-disabled">
+                <a asp-controller="CustomerFollowUps"
+                   asp-action="Index"
+                   class="ad-flow-node">
 
-                    <div class="ad-flow-icon">☏</div>
+                    <div class="ad-flow-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7A2 2 0 0 1 22 16.9Z"/></svg></div>
 
                     <div class="ad-flow-count">
                         @Model.FollowUps.Count
@@ -1404,10 +1853,10 @@
                     </div>
 
                     <div class="ad-flow-action">
-                        Dedicated CRM next
+                        CRM Workspace <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </div>
 
-                </div>
+                </a>
 
             </div>
 
@@ -1438,7 +1887,7 @@
                 <a asp-controller="Appointments"
                    asp-action="Index"
                    class="ad-link">
-                    View All Appointments →
+                    View All Appointments <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
 
             </div>
@@ -1556,7 +2005,7 @@
                 <a asp-controller="JobOrders"
                    asp-action="Index"
                    class="ad-link">
-                    View Repair Job Orders →
+                    View Repair Job Orders <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
 
             </div>
@@ -1746,7 +2195,7 @@
                 <a asp-controller="Parts"
                    asp-action="Index"
                    class="ad-footer-link">
-                    View Parts Inventory →
+                    View Parts Inventory <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
 
             </div>
@@ -1826,7 +2275,7 @@
                 <a asp-controller="Billings"
                    asp-action="Index"
                    class="ad-footer-link">
-                    View Billing & Payments →
+                    View Billing & Payments <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
 
             </div>
@@ -1845,7 +2294,7 @@
                     </h2>
 
                     <p>
-                        Appointment-based queue until dedicated CRM is implemented.
+                        Customer care queue from the AutoFlow CRM module.
                     </p>
 
                 </div>
@@ -1888,16 +2337,16 @@
                     else
                     {
                         <div class="ad-empty">
-                            No customers currently require appointment-based follow-up.
+                            No customer follow-ups are currently due.
                         </div>
                     }
 
                 </div>
 
-                <a asp-controller="Appointments"
+                <a asp-controller="CustomerFollowUps"
                    asp-action="Index"
                    class="ad-footer-link">
-                    View Follow-up Source Appointments →
+                    View CRM Follow-ups <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </a>
 
             </div>
@@ -2101,10 +2550,14 @@
 
                 </div>
 
-                <div class="ad-footer-link"
-                     style="color:#94a3b8;">
-                    Reports module will use these same database sources
-                </div>
+                <a asp-controller="Reports"
+                   asp-action="Index"
+                   class="ad-footer-link">
+                    Open Reports Workspace
+                    <svg class="ad-arrow-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                </a>
 
             </div>
 

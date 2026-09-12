@@ -4,60 +4,137 @@
     ViewData["Title"] = "Vehicle Details";
 }
 
-<div class="page-header">
-    <div>
-        <h1>Vehicle Details</h1>
-        <p>View vehicle specifications and owner information.</p>
-    </div>
-    <div class="page-header-actions">
-        <a asp-action="Edit" asp-route-id="@Model.VehicleId" class="af-button af-button-primary">Edit</a>
-        <a asp-action="Index" class="af-button af-button-secondary">Back to List</a>
-    </div>
-</div>
+<div class="customer-detail-page">
 
-<div class="af-card" style="max-width: 780px; padding: 28px;">
-    <div class="mb-4">
-        <h2 class="mb-1" style="font-size: 22px;">@Model.Make @Model.Model</h2>
-        <small class="text-muted">@(Model.Year.HasValue ? Model.Year.ToString() : "Year unknown") · @Model.PlateNumber</small>
+    <div class="customer-detail-header">
+        <div>
+            <a asp-action="Index" class="customer-back-link">
+                ← Back to Vehicles
+            </a>
+
+            <h1>Vehicle Details</h1>
+            <p>View vehicle specifications, ownership, and record information.</p>
+        </div>
+
+        <div class="page-header-actions">
+            <a asp-action="Edit"
+               asp-route-id="@Model.VehicleId"
+               class="af-button af-button-primary">
+                Edit Vehicle
+            </a>
+
+            <a asp-action="Delete"
+               asp-route-id="@Model.VehicleId"
+               class="af-button af-button-secondary">
+                Archive
+            </a>
+        </div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Owner</label>
-            <div class="fw-semibold">
-                @if (Model.Customer != null)
-                {
-                    @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
-                }
-                else
-                {
-                    <span>—</span>
-                }
+    <div class="customer-profile-card">
+
+        <div class="customer-profile-main">
+            <div class="customer-large-avatar">
+                🚗
+            </div>
+
+            <div>
+                <span class="customer-status-badge">
+                    Active
+                </span>
+
+                <h2>@Model.Make @Model.Model</h2>
+
+                <p>
+                    @(Model.Year.HasValue ? Model.Year.ToString() : "Year unknown")
+                    · @Model.PlateNumber
+                </p>
             </div>
         </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">VIN</label>
-            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.VIN) ? "—" : Model.VIN)</div>
+
+        <div class="customer-information-grid">
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Owner</span>
+
+                <strong>
+                    @if (Model.Customer != null)
+                    {
+                        @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
+                    }
+                    else
+                    {
+                        <span>Not assigned</span>
+                    }
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Plate Number</span>
+                <strong>@Model.PlateNumber</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">VIN</span>
+
+                <strong>
+                    @(string.IsNullOrWhiteSpace(Model.VIN) ? "Not recorded" : Model.VIN)
+                </strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Make</span>
+                <strong>@Model.Make</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Model</span>
+                <strong>@Model.Model</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Year</span>
+                <strong>@(Model.Year?.ToString() ?? "—")</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Color</span>
+                <strong>@(string.IsNullOrWhiteSpace(Model.Color) ? "—" : Model.Color)</strong>
+            </div>
+
+            <div class="customer-info-card">
+                <span class="customer-info-label">Mileage</span>
+                <strong>@(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "—")</strong>
+            </div>
+
         </div>
-        <div class="col-md-4">
-            <label class="form-label text-muted small">Color</label>
-            <div class="fw-semibold">@(string.IsNullOrEmpty(Model.Color) ? "—" : Model.Color)</div>
+
+        <div class="customer-form-section">
+            <div class="customer-form-section-header">
+                <div>
+                    <h3>Record Information</h3>
+                    <p>System timestamps for this vehicle record.</p>
+                </div>
+            </div>
+
+            <div class="customer-information-grid">
+
+                <div class="customer-info-card">
+                    <span class="customer-info-label">Created</span>
+                    <strong>
+                        @Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                    </strong>
+                </div>
+
+                <div class="customer-info-card">
+                    <span class="customer-info-label">Last Updated</span>
+                    <strong>
+                        @Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")
+                    </strong>
+                </div>
+
+            </div>
         </div>
-        <div class="col-md-4">
-            <label class="form-label text-muted small">Mileage</label>
-            <div class="fw-semibold">@(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "—")</div>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label text-muted small">Year</label>
-            <div class="fw-semibold">@(Model.Year.HasValue ? Model.Year.ToString() : "—")</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Created</label>
-            <div class="fw-semibold">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label text-muted small">Last Updated</label>
-            <div class="fw-semibold">@Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</div>
-        </div>
+
     </div>
 </div>
