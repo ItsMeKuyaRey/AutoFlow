@@ -4,10 +4,20 @@
     ViewData["Title"] = "Parts Inventory";
 
     var parts = Model.ToList();
+
+    var suppliers = ViewData["SupplierOptions"] as IEnumerable<string>
+        ?? Enumerable.Empty<string>();
+
+    var supplierSelectList = ViewData["SupplierId"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList
+        ?? new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>());
+
     var totalParts = parts.Count;
-    var totalStock = parts.Sum(p => p.StockQuantity);
-    var lowStockCount = parts.Count(p => p.StockQuantity > 0 && p.StockQuantity <= 5);
-    var outOfStockCount = parts.Count(p => p.StockQuantity <= 0);
+    var activePartsCount = parts.Count(p => !p.IsArchived);
+    var archivedPartsCount = parts.Count(p => p.IsArchived);
+    var archivedParts = parts.Where(p => p.IsArchived).ToList();
+
+    var notification = TempData["PartNotification"]?.ToString();
+    var notificationError = TempData["PartNotificationError"]?.ToString();
 }
 
 <style>
@@ -35,7 +45,7 @@
         align-items: flex-end;
         justify-content: space-between;
         gap: 20px;
-        margin-bottom: 25px;
+        margin-bottom: 24px;
     }
 
     .parts-title {
@@ -52,32 +62,10 @@
         font-size: 13px;
     }
 
-    .parts-header-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .parts-live {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        color: #687082;
-        font-size: 11px;
-        font-weight: 650;
-    }
-
-    .parts-live-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #18b981;
-        box-shadow: 0 0 0 4px #e8faf3;
-    }
-
     .parts-add-button {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         padding: 10px 15px;
         border: 0;
@@ -97,100 +85,8 @@
         transform: translateY(-1px);
     }
 
-    .parts-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin-bottom: 22px;
-    }
-
-    .parts-summary-card {
-        position: relative;
-        min-height: 132px;
-        padding: 19px;
-        overflow: hidden;
-        background: #ffffff;
-        border: 1px solid #e5e8ee;
-        border-radius: 13px;
-        box-shadow: 0 2px 8px rgba(24, 31, 45, 0.025);
-    }
-
-    .parts-summary-card::after {
-        content: "";
-        position: absolute;
-        right: -25px;
-        bottom: -30px;
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: #f8f5ff;
-    }
-
-    .parts-card-top {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .parts-card-icon {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 11px;
-        background: #f0ebff;
-        color: #7544f5;
-        font-size: 17px;
-    }
-
-    .parts-card-label {
-        position: relative;
-        z-index: 1;
-        margin-top: 13px;
-        color: #777f91;
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-    }
-
-    .parts-card-value {
-        position: relative;
-        z-index: 1;
-        margin-top: 4px;
-        color: #171b26;
-        font-size: 25px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-    }
-
-    .parts-card-note {
-        position: relative;
-        z-index: 1;
-        margin-top: 4px;
-        color: #9aa1af;
-        font-size: 10px;
-    }
-
-    .parts-card-alert .parts-card-icon {
-        background: #fff5e8;
-        color: #c97916;
-    }
-
-    .parts-card-danger .parts-card-icon {
-        background: #fff0f1;
-        color: #dc5962;
-    }
-
-    .parts-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-        padding: 13px 16px;
+    .parts-filter-panel {
+        padding: 16px;
         margin-bottom: 18px;
         background: #ffffff;
         border: 1px solid #e5e8ee;
@@ -198,80 +94,135 @@
         box-shadow: 0 2px 8px rgba(24, 31, 45, 0.025);
     }
 
-    .parts-toolbar-title {
+    .parts-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(240px, 1.6fr) minmax(170px, 1fr) minmax(150px, 1fr) auto auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .parts-filter-field {
+        min-width: 0;
+    }
+
+    .parts-filter-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #747c8c;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.55px;
+    }
+
+    .parts-search-wrap {
+        position: relative;
+    }
+
+    .parts-search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9aa1af;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .parts-input,
+    .parts-select {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        outline: none;
+        background: #ffffff;
+        color: #343b4a;
+        font-size: 12px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .parts-search-input {
+        padding-left: 35px;
+    }
+
+    .parts-input:focus,
+    .parts-select:focus {
+        border-color: #9a7bf7;
+        box-shadow: 0 0 0 3px rgba(117, 68, 245, 0.08);
+    }
+
+    .parts-filter-button,
+    .parts-clear-button {
+        height: 40px;
+        padding: 0 14px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: all 0.18s ease;
+    }
+
+    .parts-filter-button {
+        border: 1px solid #7544f5;
+        background: #7544f5;
+        color: #ffffff;
+    }
+
+    .parts-filter-button:hover {
+        background: #6336dc;
+    }
+
+    .parts-clear-button {
+        border: 1px solid #dfe3ea;
+        background: #ffffff;
+        color: #626b7b;
+    }
+
+    .parts-clear-button:hover {
+        background: #f7f8fa;
+        border-color: #cfd4dd;
+    }
+
+    .parts-results-bar {
         display: flex;
         align-items: center;
-        gap: 9px;
-        color: #303746;
-        font-size: 12px;
-        font-weight: 750;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 10px;
     }
 
-    .parts-toolbar-title i {
-        color: #7544f5;
-        font-size: 14px;
+    .parts-results-text {
+        color: #8a91a0;
+        font-size: 11px;
     }
 
-    .parts-toolbar-note {
-        color: #959cab;
-        font-size: 10px;
+    .parts-results-text strong {
+        color: #4b5362;
     }
 
-    .parts-panel {
-        overflow: hidden;
+    .parts-table-panel {
+        overflow: visible;
         background: #ffffff;
         border: 1px solid #e5e8ee;
         border-radius: 13px;
         box-shadow: 0 2px 8px rgba(24, 31, 45, 0.025);
     }
 
-    .parts-panel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-        padding: 19px 20px;
-        border-bottom: 1px solid #edf0f4;
-    }
-
-    .parts-panel-title {
-        margin: 0;
-        color: #1b2030;
-        font-size: 15px;
-        font-weight: 800;
-    }
-
-    .parts-panel-subtitle {
-        margin-top: 4px;
-        color: #9299a8;
-        font-size: 11px;
-    }
-
-    .parts-count-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 6px 9px;
-        border-radius: 7px;
-        background: #f1edff;
-        color: #7544f5;
-        font-size: 9px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-
     .parts-table-wrap {
         overflow-x: auto;
+        border-radius: 13px 13px 0 0;
     }
 
     .parts-table {
         width: 100%;
+        min-width: 850px;
         border-collapse: collapse;
     }
 
     .parts-table th {
-        padding: 11px 20px;
+        padding: 12px 18px;
         background: #fafbfc;
         color: #8a91a0;
         font-size: 9px;
@@ -282,46 +233,105 @@
         white-space: nowrap;
     }
 
+    .parts-table th:last-child {
+        text-align: center;
+    }
+
     .parts-table td {
-        padding: 15px 20px;
+        padding: 14px 18px;
         border-top: 1px solid #eef0f4;
         color: #3e4656;
         font-size: 12px;
         vertical-align: middle;
     }
 
-    .parts-table tr:hover td {
+    .parts-table tbody tr:hover td {
         background: #fcfbff;
     }
 
     .part-identity {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 10px;
     }
 
     .part-avatar {
-        width: 38px;
-        height: 38px;
-        flex: 0 0 38px;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 10px;
+        border-radius: 9px;
         background: #f3efff;
         color: #7544f5;
-        font-size: 15px;
+        font-size: 14px;
+    }
+
+    .part-avatar img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: inherit;
+        object-fit: contain;
+        background: #ffffff;
+    }
+
+    /* Keep part details images compact and fully visible */
+    .part-detail-image-wrap {
+        width: 180px;
+        height: 120px;
+        margin: 0 auto 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid #e7e9ef;
+        border-radius: 11px;
+        background: #f8f7ff;
+    }
+
+    .part-detail-image-wrap img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        object-position: center;
+    }
+
+    .part-detail-image-placeholder {
+        width: 58px;
+        height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        background: #f0ebff;
+        color: #7544f5;
+        font-size: 22px;
     }
 
     .part-name {
         color: #1c2230;
         font-weight: 750;
+        white-space: nowrap;
     }
 
     .part-number {
         margin-top: 3px;
         color: #959cab;
         font-size: 10px;
+    }
+
+    .stock-quantity {
+        color: #303746;
+        font-weight: 750;
+    }
+
+    .part-price {
+        color: #1c2230;
+        font-weight: 750;
+        white-space: nowrap;
     }
 
     .supplier-name {
@@ -333,53 +343,11 @@
         color: #a0a6b2;
     }
 
-    .part-price {
-        color: #1c2230;
-        font-weight: 750;
-        white-space: nowrap;
-    }
-
-    .stock-cell {
-        min-width: 150px;
-    }
-
-    .stock-number {
-        margin-bottom: 5px;
-        color: #303746;
-        font-size: 11px;
-        font-weight: 750;
-    }
-
-    .stock-track {
-        width: 100%;
-        max-width: 110px;
-        height: 5px;
-        overflow: hidden;
-        border-radius: 99px;
-        background: #edf0f4;
-    }
-
-    .stock-fill {
-        height: 100%;
-        border-radius: inherit;
-        background: #7544f5;
-    }
-
-    .stock-fill.low {
-        background: #e6a23c;
-    }
-
-    .stock-fill.empty {
-        background: #dc5962;
-        width: 3px !important;
-    }
-
     .stock-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        margin-top: 6px;
-        padding: 4px 7px;
+        padding: 5px 8px;
         border-radius: 6px;
         font-size: 8px;
         font-weight: 800;
@@ -401,50 +369,116 @@
         color: #dc5962;
     }
 
+    /*PART ACTION BUTTONS*/
+
     .part-actions {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
+        justify-content: center;
+        gap: 8px;
     }
 
-    .part-action {
-        min-width: 72px;
-        height: 32px;
+    .part-action-button {
+        width: 30px;
+        height: 30px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        padding: 0 9px;
+        padding: 0;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #6d7585;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        box-sizing: border-box;
+    }
+
+    .part-action-button i {
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    .part-action-button:hover {
+        border-color: #cfc4fb;
+        background: #f8f6ff;
+        color: #7544f5;
+        box-shadow: 0 3px 10px rgba(117, 68, 245, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .part-action-button:focus-visible {
+        outline: 2px solid rgba(117, 68, 245, 0.28);
+        outline-offset: 2px;
+    }
+
+    .part-action-button.danger {
+        color: #7b828f;
+    }
+
+    .part-action-button.danger:hover {
+        border-color: #efc9ce;
+        background: #fff5f6;
+        color: #d34f5a;
+        box-shadow: 0 3px 10px rgba(211, 79, 90, 0.08);
+    }
+
+    .parts-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 13px 16px;
+        border-top: 1px solid #eef0f4;
+    }
+
+    .parts-pagination-info {
+        color: #9198a7;
+        font-size: 10px;
+    }
+
+    .parts-pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .parts-page-button {
+        min-width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 8px;
+        border: 1px solid #e1e4ea;
         border-radius: 7px;
         background: #ffffff;
+        color: #687182;
         font-size: 10px;
         font-weight: 700;
-        text-decoration: none;
-        transition: all 0.18s ease;
+        cursor: pointer;
     }
 
-    .part-action.edit {
-        border: 1px solid #ddd5ff;
+    .parts-page-button:hover:not(:disabled) {
+        border-color: #cfc5fb;
         color: #7544f5;
+        background: #faf8ff;
     }
 
-    .part-action.delete {
-        border: 1px solid #f2d7da;
-        color: #dc5962;
+    .parts-page-button.active {
+        border-color: #7544f5;
+        background: #7544f5;
+        color: #ffffff;
     }
 
-    .part-action.edit:hover {
-        background: #f5f2ff;
-        transform: translateY(-1px);
-    }
-
-    .part-action.delete:hover {
-        background: #fff5f6;
-        transform: translateY(-1px);
+    .parts-page-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
     }
 
     .parts-empty {
-        padding: 65px 20px;
+        padding: 70px 20px;
         text-align: center;
     }
 
@@ -475,46 +509,801 @@
         line-height: 1.55;
     }
 
-    @@media (max-width: 1100px) {
-        .parts-summary-grid {
+    .parts-empty-action {
+        margin-top: 16px;
+    }
+
+    .parts-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: none;
+        background: rgba(15, 19, 29, 0.42);
+        backdrop-filter: blur(2px);
+    }
+
+    .parts-drawer-backdrop.show {
+        display: block;
+    }
+
+    .parts-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 1001;
+        width: min(460px, 94vw);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        box-shadow: -12px 0 35px rgba(20, 24, 35, 0.16);
+        transform: translateX(100%);
+        transition: transform 0.22s ease;
+    }
+
+    .parts-drawer.show {
+        transform: translateX(0);
+    }
+
+    .parts-drawer-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 22px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .parts-drawer-kicker {
+        margin-bottom: 5px;
+        color: #7544f5;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .parts-drawer-title {
+        margin: 0;
+        color: #1b2030;
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .parts-drawer-subtitle {
+        margin-top: 5px;
+        color: #9299a8;
+        font-size: 11px;
+    }
+
+    .parts-drawer-close {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e1e4ea;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #70798a;
+        cursor: pointer;
+    }
+
+    .parts-drawer-close:hover {
+        background: #f7f8fa;
+        color: #3e4656;
+    }
+
+    .parts-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 22px;
+    }
+
+    .part-detail-card {
+        padding: 17px;
+        margin-bottom: 15px;
+        border: 1px solid #e7e9ef;
+        border-radius: 11px;
+        background: #fbfbfd;
+    }
+
+    .part-detail-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .part-detail-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #f0ebff;
+        color: #7544f5;
+        font-size: 17px;
+    }
+
+    .part-detail-name {
+        color: #1c2230;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .part-detail-number {
+        margin-top: 3px;
+        color: #9299a8;
+        font-size: 10px;
+    }
+
+    .part-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .part-detail-item {
+        padding: 11px;
+        border: 1px solid #e8eaf0;
+        border-radius: 8px;
+        background: #ffffff;
+    }
+
+    .part-detail-label {
+        color: #9299a8;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .part-detail-value {
+        margin-top: 4px;
+        color: #303746;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .parts-adjust-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .parts-adjust-option input {
+        display: none;
+    }
+
+    .parts-adjust-option label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        height: 42px;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        color: #626b7b;
+        background: #ffffff;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-adjust-option input:checked + label {
+        border-color: #7544f5;
+        background: #f6f3ff;
+        color: #7544f5;
+    }
+
+    .parts-adjust-field {
+        margin-bottom: 15px;
+    }
+
+    .parts-adjust-field label {
+        display: block;
+        margin-bottom: 6px;
+        color: #596273;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .parts-adjust-field input {
+        width: 100%;
+        height: 42px;
+        padding: 0 12px;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        outline: none;
+        font-size: 12px;
+        box-sizing: border-box;
+    }
+
+    .parts-adjust-field input:focus {
+        border-color: #9a7bf7;
+        box-shadow: 0 0 0 3px rgba(117, 68, 245, 0.08);
+    }
+
+    .parts-drawer-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 16px 22px;
+        border-top: 1px solid #edf0f4;
+    }
+
+    .parts-secondary-button,
+    .parts-primary-button {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-secondary-button {
+        border: 1px solid #dfe3ea;
+        background: #ffffff;
+        color: #626b7b;
+    }
+
+    .parts-primary-button {
+        border: 1px solid #7544f5;
+        background: #7544f5;
+        color: #ffffff;
+    }
+
+    .parts-primary-button:hover {
+        background: #6336dc;
+    }
+
+    .parts-notification {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 11px 14px;
+        margin-bottom: 16px;
+        border: 1px solid #ccefe1;
+        border-radius: 9px;
+        background: #effbf6;
+        color: #17835f;
+        font-size: 11px;
+        font-weight: 650;
+    }
+
+    .parts-notification.error {
+        border-color: #f1d0d4;
+        background: #fff5f6;
+        color: #c84d58;
+    }
+
+    .parts-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .parts-archive-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 40px;
+        padding: 0 13px;
+        border: 1px solid #dfe3ea;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #596273;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-archive-button:hover {
+        border-color: #cfc4fb;
+        background: #faf9ff;
+        color: #7544f5;
+    }
+
+    .parts-header-count {
+        min-width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #f0f2f6;
+        color: #737b8b;
+        font-size: 9px;
+        font-weight: 800;
+    }
+
+    .parts-results-separator {
+        margin: 0 5px;
+        color: #c0c5cf;
+    }
+
+    .stock-archived {
+        background: #f0f2f6;
+        color: #687181;
+    }
+
+    .part-inline-form {
+        display: inline-flex;
+        margin: 0;
+    }
+
+    .part-action-button.restore {
+        color: #1b9a70;
+        border-color: #ccefe1;
+        background: #f2fcf8;
+    }
+
+    .part-action-button.restore:hover {
+        color: #14815d;
+        background: #e9faf4;
+    }
+
+    .parts-confirm-drawer {
+        height: auto;
+        min-height: 340px;
+        top: 50%;
+        transform: translate(100%, -50%);
+        border-radius: 14px 0 0 14px;
+    }
+
+    .parts-confirm-drawer.show {
+        transform: translate(0, -50%);
+    }
+
+    .parts-confirm-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .parts-confirm-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        background: #f3efff;
+        color: #7544f5;
+        font-size: 18px;
+    }
+
+    .parts-confirm-title {
+        margin: 0;
+        color: #1b2030;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .parts-confirm-text {
+        max-width: 330px;
+        margin: 7px 0 0;
+        color: #9299a8;
+        font-size: 11px;
+        line-height: 1.55;
+    }
+
+    .parts-archive-submit {
+        flex: 1;
+        height: 34px;
+        border: 1px solid #7544f5;
+        border-radius: 8px;
+        background: #7544f5;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-archive-submit:hover {
+        background: #6336dc;
+    }
+
+    .archived-part-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 9px;
+        border: 1px solid #e7e9ef;
+        border-radius: 9px;
+        background: #fbfbfd;
+    }
+
+    .archived-part-card > div {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .archived-part-identity {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .archived-part-identity .part-avatar {
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+    }
+
+    .archived-part-card strong {
+        color: #303746;
+        font-size: 11px;
+    }
+
+    .archived-part-card span,
+    .archived-part-card small {
+        color: #9299a8;
+        font-size: 9px;
+    }
+
+    .parts-restore-button {
+        flex: 0 0 auto;
+        height: 30px;
+        padding: 0 10px;
+        border: 1px solid #ccefe1;
+        border-radius: 7px;
+        background: #f2fcf8;
+        color: #17835f;
+        font-size: 9px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-create-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        display: none;
+        background: rgba(15, 19, 29, 0.28);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .parts-create-backdrop.show {
+        display: block;
+    }
+
+    .parts-create-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 1101;
+        width: min(430px, 94vw);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        box-shadow: -14px 0 38px rgba(20, 24, 35, 0.16);
+        transform: translateX(100%);
+        transition: transform 0.22s ease;
+    }
+
+    .parts-create-drawer.show {
+        transform: translateX(0);
+    }
+
+    .parts-create-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 14px 15px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .parts-create-title {
+        margin: 0;
+        color: #1b2030;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .parts-create-subtitle {
+        margin-top: 3px;
+        color: #9299a8;
+        font-size: 9px;
+    }
+
+    .parts-create-close {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        background: transparent;
+        color: #8a92a1;
+        cursor: pointer;
+    }
+
+    .parts-create-close:hover {
+        color: #303746;
+    }
+
+    .parts-create-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 17px 14px;
+    }
+
+    .parts-create-field {
+        margin-bottom: 14px;
+    }
+
+    .parts-create-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .parts-create-field label {
+        display: block;
+        margin-bottom: 6px;
+        color: #596273;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.45px;
+    }
+
+    .parts-create-field label .required {
+        color: #7544f5;
+    }
+
+    .parts-create-field input,
+    .parts-create-field select {
+        width: 100%;
+        height: 36px;
+        padding: 0 10px;
+        box-sizing: border-box;
+        border: 1px solid #dfe3ea;
+        border-radius: 8px;
+        outline: none;
+        background: #ffffff;
+        color: #303746;
+        font-size: 10px;
+    }
+
+    .parts-create-field input::placeholder {
+        color: #b0b6c2;
+    }
+
+    .parts-create-field input:focus,
+    .parts-create-field select:focus {
+        border-color: #9a7bf7;
+        box-shadow: 0 0 0 3px rgba(117, 68, 245, 0.08);
+    }
+
+    .parts-create-validation {
+        margin-top: 5px;
+        color: #c84d58;
+        font-size: 9px;
+    }
+
+    .parts-create-footer {
+        display: flex;
+        gap: 8px;
+        padding: 13px 14px;
+        border-top: 1px solid #edf0f4;
+        background: #ffffff;
+    }
+
+    .parts-create-footer button {
+        flex: 1;
+        height: 34px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .parts-create-cancel {
+        border: 1px solid #dfe3ea;
+        background: #ffffff;
+        color: #596273;
+    }
+
+    .parts-create-submit {
+        border: 1px solid #7544f5;
+        background: #7544f5;
+        color: #ffffff;
+    }
+
+    .parts-create-submit:hover {
+        background: #6336dc;
+    }
+
+    .parts-image-picker {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 10px;
+        border: 1px solid #e7e9ef;
+        border-radius: 10px;
+        background: #fbfbfd;
+    }
+
+    .parts-image-preview {
+        width: 58px;
+        height: 58px;
+        flex: 0 0 58px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 10px;
+        background: #f0ebff;
+        color: #7544f5;
+    }
+
+    .parts-image-preview img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        background: #ffffff;
+    }
+
+    .parts-image-picker-copy {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .parts-image-picker-copy strong {
+        display: block;
+        color: #343b4a;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .parts-image-picker-copy small {
+        display: block;
+        margin-top: 3px;
+        color: #9299a8;
+        font-size: 8px;
+        line-height: 1.35;
+    }
+
+    .parts-image-picker-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #7544f5;
+        border-radius: 8px;
+        background: #7544f5;
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 750;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .parts-image-picker-button:hover {
+        background: #6336dc;
+    }
+
+    .parts-image-change-message {
+        display: none;
+        align-items: center;
+        gap: 5px;
+        margin-top: 6px;
+        color: #17835f;
+        font-size: 8px;
+        font-weight: 750;
+    }
+
+    .parts-image-change-message.show {
+        display: inline-flex;
+    }
+
+    .parts-image-input {
+        display: none;
+    }
+
+    .parts-toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 1500;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 250px;
+        max-width: min(360px, calc(100vw - 32px));
+        padding: 12px 14px;
+        border: 1px solid #ccefe1;
+        border-radius: 10px;
+        background: #effbf6;
+        color: #17835f;
+        box-shadow: 0 10px 28px rgba(20, 24, 35, 0.12);
+        font-size: 10px;
+        font-weight: 750;
+        opacity: 0;
+        transform: translateY(10px);
+        pointer-events: none;
+        transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .parts-toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .parts-toast i {
+        font-size: 15px;
+    }
+
+    @@media (max-width: 1050px) {
+        .parts-filter-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
-    @@media (max-width: 720px) {
+    @@media (max-width: 700px) {
         .parts-header {
             align-items: flex-start;
             flex-direction: column;
         }
 
-        .parts-header-right {
+        .parts-add-button {
             width: 100%;
-            justify-content: space-between;
         }
 
-        .parts-summary-grid {
+        .parts-filter-grid {
             grid-template-columns: 1fr;
         }
 
-        .parts-toolbar {
+        .parts-results-bar {
             align-items: flex-start;
             flex-direction: column;
         }
 
-        .parts-table th,
-        .parts-table td {
-            padding-left: 13px;
-            padding-right: 13px;
+        .parts-pagination {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
-        .part-action {
-            min-width: 34px;
+        .parts-pagination-controls {
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .part-detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .part-actions {
+            gap: 6px;
+        }
+
+        .part-action-button {
             width: 34px;
-            padding: 0;
-        }
-
-        .part-action span {
-            display: none;
+            height: 34px;
         }
     }
 </style>
@@ -528,156 +1317,176 @@
     </div>
 
     <div class="parts-header">
-
         <div>
             <h1 class="parts-title">Parts Inventory</h1>
 
             <p class="parts-subtitle">
-                Monitor parts stock, pricing, suppliers, and availability.
+                Manage parts stock, pricing, suppliers, and availability.
             </p>
         </div>
 
-        <div class="parts-header-right">
+        <div class="parts-header-actions">
+            <button type="button"
+                    class="parts-archive-button"
+                    onclick="openArchivedPartsDrawer()"
+                    aria-label="View archived parts">
+                <i class="bi bi-archive"></i>
+                Archived
+                <span class="parts-header-count">@archivedPartsCount</span>
+            </button>
 
-            <div class="parts-live">
-                <span class="parts-live-dot"></span>
-                Live inventory
-            </div>
-
-            <a asp-action="Create" class="parts-add-button">
+            <button type="button"
+                    class="parts-add-button"
+                    onclick="openCreatePartDrawer()">
                 <i class="bi bi-plus-lg"></i>
                 Add Part
-            </a>
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(notification))
+    {
+        <div class="parts-notification">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>@notification</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(notificationError))
+    {
+        <div class="parts-notification error">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            <span>@notificationError</span>
+        </div>
+    }
+
+    <div class="parts-filter-panel">
+
+        <div class="parts-filter-grid">
+
+            <div class="parts-filter-field">
+
+                <label class="parts-filter-label"
+                       for="partSearch">
+                    Search
+                </label>
+
+                <div class="parts-search-wrap">
+
+                    <i class="bi bi-search parts-search-icon"></i>
+
+                    <input id="partSearch"
+                           class="parts-input parts-search-input"
+                           type="search"
+                           placeholder="Search by part name or part number..."
+                           autocomplete="off" />
+
+                </div>
+
+            </div>
+
+            <div class="parts-filter-field">
+
+                <label class="parts-filter-label"
+                       for="supplierFilter">
+                    Supplier
+                </label>
+
+                <select id="supplierFilter"
+                        class="parts-select">
+
+                    <option value="">
+                        All Suppliers
+                    </option>
+
+                    @foreach (var supplier in suppliers)
+                    {
+                        <option value="@supplier">
+                            @supplier
+                        </option>
+                    }
+
+                </select>
+
+            </div>
+
+            <div class="parts-filter-field">
+
+                <label class="parts-filter-label"
+                       for="statusFilter">
+                    Status
+                </label>
+
+                <select id="statusFilter"
+                        class="parts-select">
+
+                    <option value="">
+                        All Status
+                    </option>
+
+                    <option value="in stock">
+                        In Stock
+                    </option>
+
+                    <option value="low stock">
+                        Low Stock
+                    </option>
+
+                    <option value="out of stock">
+                        Out of Stock
+                    </option>
+
+                    <option value="archived">
+                        Archived
+                    </option>
+
+                </select>
+
+            </div>
+
+            <button type="button"
+                    id="filterButton"
+                    class="parts-filter-button">
+
+                <i class="bi bi-funnel-fill"></i>
+                Filter
+
+            </button>
+
+            <button type="button"
+                    id="clearButton"
+                    class="parts-clear-button">
+
+                <i class="bi bi-x-lg"></i>
+                Clear
+
+            </button>
 
         </div>
 
     </div>
 
-    <div class="parts-summary-grid">
+    <div class="parts-results-bar">
 
-        <div class="parts-summary-card">
-
-            <div class="parts-card-top">
-                <div class="parts-card-icon">
-                    <i class="bi bi-box-seam"></i>
-                </div>
-            </div>
-
-            <div class="parts-card-label">
-                Parts Items
-            </div>
-
-            <div class="parts-card-value">
-                @totalParts
-            </div>
-
-            <div class="parts-card-note">
-                Registered inventory items
-            </div>
-
+        <div class="parts-results-text">
+            Showing
+            <strong id="resultsRange">0–0</strong>
+            of
+            <strong id="resultsTotal">0</strong>
+            parts
         </div>
 
-        <div class="parts-summary-card">
-
-            <div class="parts-card-top">
-                <div class="parts-card-icon">
-                    <i class="bi bi-stack"></i>
-                </div>
-            </div>
-
-            <div class="parts-card-label">
-                Total Stock
-            </div>
-
-            <div class="parts-card-value">
-                @totalStock.ToString("N0")
-            </div>
-
-            <div class="parts-card-note">
-                Units currently recorded
-            </div>
-
-        </div>
-
-        <div class="parts-summary-card parts-card-alert">
-
-            <div class="parts-card-top">
-                <div class="parts-card-icon">
-                    <i class="bi bi-exclamation-triangle"></i>
-                </div>
-            </div>
-
-            <div class="parts-card-label">
-                Low Stock
-            </div>
-
-            <div class="parts-card-value">
-                @lowStockCount
-            </div>
-
-            <div class="parts-card-note">
-                Items with 1–5 units
-            </div>
-
-        </div>
-
-        <div class="parts-summary-card parts-card-danger">
-
-            <div class="parts-card-top">
-                <div class="parts-card-icon">
-                    <i class="bi bi-x-circle"></i>
-                </div>
-            </div>
-
-            <div class="parts-card-label">
-                Out of Stock
-            </div>
-
-            <div class="parts-card-value">
-                @outOfStockCount
-            </div>
-
-            <div class="parts-card-note">
-                Items requiring replenishment
-            </div>
-
+        <div class="parts-results-text">
+            <strong>@activePartsCount</strong>
+            active inventory items
+            <span class="parts-results-separator">•</span>
+            <strong>@archivedPartsCount</strong>
+            archived
         </div>
 
     </div>
 
-    <div class="parts-toolbar">
-
-        <div class="parts-toolbar-title">
-            <i class="bi bi-clipboard-data"></i>
-            Inventory Overview
-        </div>
-
-        <div class="parts-toolbar-note">
-            Review stock levels before assigning parts to repair jobs.
-        </div>
-
-    </div>
-
-    <section class="parts-panel">
-
-        <div class="parts-panel-header">
-
-            <div>
-                <h2 class="parts-panel-title">
-                    Inventory Items
-                </h2>
-
-                <div class="parts-panel-subtitle">
-                    Current parts, suppliers, pricing, and stock levels.
-                </div>
-            </div>
-
-            <span class="parts-count-badge">
-                <i class="bi bi-box"></i>
-                @totalParts items
-            </span>
-
-        </div>
+    <section class="parts-table-panel">
 
         @if (!parts.Any())
         {
@@ -696,12 +1505,16 @@
                     Add a part to begin managing your available stock.
                 </div>
 
-                <div class="mt-3">
+                <div class="parts-empty-action">
 
-                    <a asp-action="Create" class="parts-add-button">
+                    <button type="button"
+                            class="parts-add-button"
+                            onclick="openCreatePartDrawer()">
+
                         <i class="bi bi-plus-lg"></i>
                         Add Your First Part
-                    </a>
+
+                    </button>
 
                 </div>
 
@@ -715,31 +1528,72 @@
 
                     <thead>
                         <tr>
-                            <th>Part</th>
-                            <th>Supplier</th>
+                            <th>Part / Part Number</th>
+                            <th>Stock Quantity</th>
                             <th>Unit Price</th>
-                            <th>Stock Status</th>
-                            <th class="text-end">Actions</th>
+                            <th>Supplier</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
 
-                    <tbody>
+                    <tbody id="partsTableBody">
 
                     @foreach (var item in parts)
                     {
-                        var stockPercent = Math.Min(item.StockQuantity * 10, 100);
+                        var status =
+                            item.IsArchived
+                                ? "Archived"
+                                : item.StockQuantity <= 0
+                                    ? "Out of Stock"
+                                    : item.StockQuantity <= 5
+                                        ? "Low Stock"
+                                        : "In Stock";
 
-                        <tr>
+                        var statusClass =
+                            item.IsArchived
+                                ? "stock-archived"
+                                : item.StockQuantity <= 0
+                                    ? "stock-empty"
+                                    : item.StockQuantity <= 5
+                                        ? "stock-low"
+                                        : "stock-good";
+
+                        var statusIcon =
+                            item.IsArchived
+                                ? "bi-archive-fill"
+                                : item.StockQuantity <= 0
+                                    ? "bi-x-circle-fill"
+                                    : item.StockQuantity <= 5
+                                        ? "bi-exclamation-circle-fill"
+                                        : "bi-check-circle-fill";
+
+                        <tr class="part-row"
+                            data-part-name="@item.Name"
+                            data-part-number="@(item.PartNumber ?? "")"
+                            data-supplier="@(item.Supplier?.Name ?? "")"
+                            data-status="@status.ToLowerInvariant()"
+                            data-archived="@item.IsArchived.ToString().ToLowerInvariant()"
+                            data-part-id="@item.PartId"
+                            data-stock="@item.StockQuantity">
 
                             <td>
 
                                 <div class="part-identity">
 
                                     <div class="part-avatar">
-                                        <i class="bi bi-gear-wide-connected"></i>
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.Name" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-gear-wide-connected"></i>
+                                        }
                                     </div>
 
                                     <div>
+
                                         <div class="part-name">
                                             @item.Name
                                         </div>
@@ -747,9 +1601,28 @@
                                         <div class="part-number">
                                             @(item.PartNumber ?? "No part number")
                                         </div>
+
                                     </div>
 
                                 </div>
+
+                            </td>
+
+                            <td>
+                                <span class="stock-quantity">
+                                    @item.StockQuantity
+                                </span>
+
+                                <span class="muted-value">
+                                    units
+                                </span>
+                            </td>
+
+                            <td>
+
+                                <span class="part-price">
+                                    @item.UnitPrice.ToString("C")
+                                </span>
 
                             </td>
 
@@ -771,85 +1644,76 @@
                             </td>
 
                             <td>
-                                <span class="part-price">
-                                    @item.UnitPrice.ToString("C")
+
+                                <span class="stock-badge @statusClass">
+
+                                    <i class="bi @statusIcon"></i>
+
+                                    @status
+
                                 </span>
-                            </td>
-
-                            <td class="stock-cell">
-
-                                <div class="stock-number">
-                                    @item.StockQuantity units
-                                </div>
-
-                                <div class="stock-track">
-
-                                    @if (item.StockQuantity <= 0)
-                                    {
-                                        <div class="stock-fill empty"></div>
-                                    }
-                                    else if (item.StockQuantity <= 5)
-                                    {
-                                        <div class="stock-fill low"
-                                             style="width:@Math.Max(stockPercent, 12)%;">
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="stock-fill"
-                                             style="width:@Math.Max(stockPercent, 25)%;">
-                                        </div>
-                                    }
-
-                                </div>
-
-                                @if (item.StockQuantity <= 0)
-                                {
-                                    <span class="stock-badge stock-empty">
-                                        <i class="bi bi-x-circle-fill"></i>
-                                        Out of Stock
-                                    </span>
-                                }
-                                else if (item.StockQuantity <= 5)
-                                {
-                                    <span class="stock-badge stock-low">
-                                        <i class="bi bi-exclamation-circle-fill"></i>
-                                        Low Stock
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="stock-badge stock-good">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        Available
-                                    </span>
-                                }
 
                             </td>
 
-                            <td class="text-end">
+                            <td class="text-center">
 
                                 <div class="part-actions">
 
-                                    <a asp-action="Edit"
-                                       asp-route-id="@item.PartId"
-                                       class="part-action edit"
-                                       title="Edit Part">
+                                    <button type="button"
+                                            class="part-action-button"
+                                            aria-label="View details for @item.Name"
+                                            title="View Details"
+                                            onclick="openPartDetails(this)"
+                                            data-name="@item.Name"
+                                            data-number="@(item.PartNumber ?? "No part number")"
+                                            data-stock="@item.StockQuantity"
+                                            data-price="@item.UnitPrice.ToString("C")"
+                                            data-supplier="@(item.Supplier?.Name ?? "No supplier assigned")"
+                                            data-status="@status"
+                                            data-image="@(item.ImageUrl ?? "")">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
 
-                                        <i class="bi bi-pencil-square"></i>
-                                        <span>Edit</span>
+                                    @if (!item.IsArchived)
+                                    {
+                                        <button type="button"
+                                                class="part-action-button"
+                                                aria-label="Edit @item.Name"
+                                                title="Edit Part"
+                                                onclick="openEditPart(this)"
+                                                data-id="@item.PartId"
+                                                data-name="@item.Name"
+                                                data-number="@(item.PartNumber ?? "")"
+                                                data-stock="@item.StockQuantity"
+                                                data-price="@item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-supplier-id="@(item.SupplierId?.ToString() ?? "")"
+                                                data-image="@(item.ImageUrl ?? "")">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
 
-                                    </a>
-
-                                    <a asp-action="Delete"
-                                       asp-route-id="@item.PartId"
-                                       class="part-action delete"
-                                       title="Delete Part">
-
-                                        <i class="bi bi-trash3"></i>
-                                        <span>Delete</span>
-
-                                    </a>
+                                        <button type="button"
+                                                class="part-action-button danger"
+                                                aria-label="Archive @item.Name"
+                                                title="Archive Part"
+                                                onclick="openArchivePart(this)"
+                                                data-id="@item.PartId"
+                                                data-name="@item.Name">
+                                            <i class="bi bi-archive"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Restore" method="post" class="part-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.PartId" />
+                                            <button type="submit"
+                                                    class="part-action-button restore"
+                                                    aria-label="Restore @item.Name"
+                                                    title="Restore Part">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    }
 
                                 </div>
 
@@ -863,8 +1727,1308 @@
                 </table>
 
             </div>
+
+            <div class="parts-pagination">
+
+                <div class="parts-pagination-info">
+
+                    Showing
+                    <strong id="paginationStart">0</strong>
+                    –
+                    <strong id="paginationEnd">0</strong>
+                    of
+                    <strong id="paginationTotal">0</strong>
+
+                </div>
+
+                <div id="paginationControls"
+                     class="parts-pagination-controls">
+                </div>
+
+            </div>
         }
 
     </section>
 
 </div>
+
+<div id="partImageToast" class="parts-toast">
+    <i class="bi bi-image-fill"></i>
+    <span>Part image changed successfully.</span>
+</div>
+
+<div id="createPartBackdrop"
+     class="parts-create-backdrop">
+</div>
+
+<aside id="createPartDrawer"
+       class="parts-create-drawer"
+       aria-hidden="true">
+
+    <div class="parts-create-header">
+
+        <div>
+            <h2 class="parts-create-title">
+                Add New Part
+            </h2>
+
+            <div class="parts-create-subtitle">
+                Add a part to the shop inventory.
+            </div>
+        </div>
+
+        <button type="button"
+                class="parts-create-close"
+                onclick="closeCreatePartDrawer()"
+                aria-label="Close Add New Part">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+    </div>
+
+    <form asp-action="Create"
+          method="post"
+          enctype="multipart/form-data">
+
+        @Html.AntiForgeryToken()
+
+        <div class="parts-create-body">
+
+            <div class="parts-create-field">
+                <label for="createPartName">
+                    Part Name <span class="required">*</span>
+                </label>
+                <input id="createPartName"
+                       name="Name"
+                       type="text"
+                       maxlength="150"
+                       required
+                       placeholder="e.g. Brake Pad Set" />
+            </div>
+
+            <div class="parts-create-field">
+                <label for="createPartNumber">
+                    Part Number
+                </label>
+                <input id="createPartNumber"
+                       name="PartNumber"
+                       type="text"
+                       maxlength="50"
+                       placeholder="e.g. BP-001" />
+            </div>
+
+            <div class="parts-create-grid">
+
+                <div class="parts-create-field">
+                    <label for="createUnitPrice">
+                        Unit Price <span class="required">*</span>
+                    </label>
+                    <input id="createUnitPrice"
+                           name="UnitPrice"
+                           type="number"
+                           min="0"
+                           step="0.01"
+                           value="0.00"
+                           required
+                           placeholder="₱ 0.00" />
+                </div>
+
+                <div class="parts-create-field">
+                    <label for="createStockQuantity">
+                        Initial Stock <span class="required">*</span>
+                    </label>
+                    <input id="createStockQuantity"
+                           name="StockQuantity"
+                           type="number"
+                           min="0"
+                           step="1"
+                           value="0"
+                           required
+                           placeholder="0" />
+                </div>
+
+            </div>
+
+            <div class="parts-create-field">
+                <label for="createSupplierId">
+                    Supplier
+                </label>
+                <select id="createSupplierId"
+                        name="SupplierId">
+                    <option value="">
+                        Select a supplier
+                    </option>
+                    @foreach (var supplier in supplierSelectList)
+                    {
+                        <option value="@supplier.Value">
+                            @supplier.Text
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="parts-create-field">
+                <label>Part Image</label>
+                <div class="parts-image-picker">
+                    <div id="createPartImagePreview" class="parts-image-preview">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div class="parts-image-picker-copy">
+                        <strong id="createPartImageName">No image selected</strong>
+                        <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                        <span id="createPartImageMessage" class="parts-image-change-message">
+                            <i class="bi bi-check-circle-fill"></i> Image changed
+                        </span>
+                    </div>
+                    <input id="createPartImage" name="profileImage" class="parts-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                    <button type="button" class="parts-image-picker-button" onclick="document.getElementById('createPartImage').click()">
+                        <i class="bi bi-image"></i> Choose Image
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="parts-create-footer">
+
+            <button type="button"
+                    class="parts-create-cancel"
+                    onclick="closeCreatePartDrawer()">
+                Cancel
+            </button>
+
+            <button type="submit"
+                    class="parts-create-submit">
+                Add Part
+            </button>
+
+        </div>
+
+    </form>
+
+</aside>
+
+<div id="editPartBackdrop"
+     class="parts-create-backdrop">
+</div>
+
+<aside id="editPartDrawer"
+       class="parts-create-drawer"
+       aria-hidden="true">
+
+    <div class="parts-create-header">
+        <div>
+            <h2 class="parts-create-title">Edit Part</h2>
+            <div class="parts-create-subtitle">Update the part information used by inventory.</div>
+        </div>
+
+        <button type="button"
+                class="parts-create-close"
+                onclick="closePartDrawers()"
+                aria-label="Close Edit Part">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="editPartId" name="id" />
+        <input type="hidden" id="editPartModelId" name="PartId" />
+
+        <div class="parts-create-body">
+            <div class="parts-create-field">
+                <label for="editPartName">Part Name <span class="required">*</span></label>
+                <input id="editPartName" name="Name" type="text" maxlength="150" required />
+            </div>
+
+            <div class="parts-create-field">
+                <label for="editPartNumber">Part Number</label>
+                <input id="editPartNumber" name="PartNumber" type="text" maxlength="50" />
+            </div>
+
+            <div class="parts-create-grid">
+                <div class="parts-create-field">
+                    <label for="editUnitPrice">Unit Price <span class="required">*</span></label>
+                    <input id="editUnitPrice" name="UnitPrice" type="number" min="0" step="0.01" required />
+                </div>
+
+                <div class="parts-create-field">
+                    <label for="editStockQuantity">Stock Quantity <span class="required">*</span></label>
+                    <input id="editStockQuantity" name="StockQuantity" type="number" min="0" step="1" required />
+                </div>
+            </div>
+
+            <div class="parts-create-field">
+                <label for="editSupplierId">Supplier</label>
+                <select id="editSupplierId" name="SupplierId">
+                    <option value="">Select a supplier</option>
+                    @foreach (var supplier in supplierSelectList)
+                    {
+                        <option value="@supplier.Value">@supplier.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div class="parts-create-field">
+                <label>Part Image</label>
+                <div class="parts-image-picker">
+                    <div id="editPartImagePreview" class="parts-image-preview">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div class="parts-image-picker-copy">
+                        <strong id="editPartImageName">No image selected</strong>
+                        <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                        <span id="editPartImageMessage" class="parts-image-change-message">
+                            <i class="bi bi-check-circle-fill"></i> Image changed
+                        </span>
+                    </div>
+                    <input id="editPartImage" name="profileImage" class="parts-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                    <button type="button" class="parts-image-picker-button" onclick="document.getElementById('editPartImage').click()">
+                        <i class="bi bi-image"></i> Choose Image
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="parts-create-footer">
+            <button type="button" class="parts-create-cancel" onclick="closePartDrawers()">Cancel</button>
+            <button type="submit" class="parts-create-submit">Save Changes</button>
+        </div>
+    </form>
+</aside>
+
+<div id="archivePartBackdrop" class="parts-create-backdrop"></div>
+
+<aside id="archivePartDrawer" class="parts-create-drawer parts-confirm-drawer" aria-hidden="true">
+    <div class="parts-create-header">
+        <div>
+            <h2 class="parts-create-title">Archive Part</h2>
+            <div class="parts-create-subtitle">Remove this part from the active inventory list.</div>
+        </div>
+        <button type="button" class="parts-create-close" onclick="closePartDrawers()" aria-label="Close Archive Part">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <form asp-action="Archive" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="archivePartId" name="id" />
+        <div class="parts-create-body parts-confirm-body">
+            <div class="parts-confirm-icon"><i class="bi bi-archive"></i></div>
+            <h3 id="archivePartName" class="parts-confirm-title">Part</h3>
+            <p class="parts-confirm-text">Are you sure you want to archive this part? The record will be preserved and can be restored later.</p>
+        </div>
+        <div class="parts-create-footer">
+            <button type="button" class="parts-create-cancel" onclick="closePartDrawers()">Cancel</button>
+            <button type="submit" class="parts-archive-submit">Archive Part</button>
+        </div>
+    </form>
+</aside>
+
+<div id="archivedPartsBackdrop" class="parts-create-backdrop"></div>
+
+<aside id="archivedPartsDrawer" class="parts-create-drawer" aria-hidden="true">
+    <div class="parts-create-header">
+        <div>
+            <h2 class="parts-create-title">Archived Parts</h2>
+            <div class="parts-create-subtitle">@archivedPartsCount archived inventory records.</div>
+        </div>
+        <button type="button" class="parts-create-close" onclick="closePartDrawers()" aria-label="Close Archived Parts">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="parts-create-body archived-parts-list">
+        @if (archivedParts.Any())
+        {
+            @foreach (var archivedPart in archivedParts)
+            {
+                <div class="archived-part-card">
+                    <div class="archived-part-identity">
+                        <div class="part-avatar">
+                            @if (!string.IsNullOrWhiteSpace(archivedPart.ImageUrl))
+                            {
+                                <img src="@archivedPart.ImageUrl" alt="@archivedPart.Name" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-gear-wide-connected"></i>
+                            }
+                        </div>
+                        <div>
+                            <strong>@archivedPart.Name</strong>
+                            <span>@(archivedPart.PartNumber ?? "No part number")</span>
+                            <small>@archivedPart.StockQuantity units • @(archivedPart.Supplier?.Name ?? "No supplier assigned")</small>
+                        </div>
+                    </div>
+                    <form asp-action="Restore" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@archivedPart.PartId" />
+                        <button type="submit" class="parts-restore-button">Restore</button>
+                    </form>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="parts-confirm-body">
+                <div class="parts-confirm-icon"><i class="bi bi-archive"></i></div>
+                <h3 class="parts-confirm-title">No Archived Parts</h3>
+                <p class="parts-confirm-text">Archived parts will appear here.</p>
+            </div>
+        }
+    </div>
+</aside>
+
+<div id="partDetailsBackdrop"
+     class="parts-drawer-backdrop">
+</div>
+
+<aside id="partDetailsDrawer"
+       class="parts-drawer">
+
+    <div class="parts-drawer-header">
+
+        <div>
+
+            <div class="parts-drawer-kicker">
+                Part Details
+            </div>
+
+            <h2 id="detailsName"
+                class="parts-drawer-title">
+                Part
+            </h2>
+
+            <div id="detailsNumber"
+                 class="parts-drawer-subtitle">
+                Part Number
+            </div>
+
+        </div>
+
+        <button type="button"
+                class="parts-drawer-close"
+                onclick="closePartDrawers()">
+
+            <i class="bi bi-x-lg"></i>
+
+        </button>
+
+    </div>
+
+    <div class="parts-drawer-body">
+
+        <div id="detailsImageWrap" class="part-detail-image-wrap">
+            <img id="detailsImage" src="" alt="Part image" style="display:none;" />
+            <div id="detailsImagePlaceholder" class="part-detail-image-placeholder">
+                <i class="bi bi-image"></i>
+            </div>
+        </div>
+
+        <div class="part-detail-card">
+
+            <div class="part-detail-top">
+
+                <div class="part-detail-icon">
+                    <i class="bi bi-gear-wide-connected"></i>
+                </div>
+
+                <div>
+
+                    <div id="detailsCardName"
+                         class="part-detail-name">
+                        Part
+                    </div>
+
+                    <div id="detailsCardNumber"
+                         class="part-detail-number">
+                        Part Number
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="part-detail-grid">
+
+                <div class="part-detail-item">
+
+                    <div class="part-detail-label">
+                        Stock Quantity
+                    </div>
+
+                    <div id="detailsStock"
+                         class="part-detail-value">
+                        0 units
+                    </div>
+
+                </div>
+
+                <div class="part-detail-item">
+
+                    <div class="part-detail-label">
+                        Unit Price
+                    </div>
+
+                    <div id="detailsPrice"
+                         class="part-detail-value">
+                        ₱0.00
+                    </div>
+
+                </div>
+
+                <div class="part-detail-item">
+
+                    <div class="part-detail-label">
+                        Supplier
+                    </div>
+
+                    <div id="detailsSupplier"
+                         class="part-detail-value">
+                        No supplier assigned
+                    </div>
+
+                </div>
+
+                <div class="part-detail-item">
+
+                    <div class="part-detail-label">
+                        Status
+                    </div>
+
+                    <div id="detailsStatus"
+                         class="part-detail-value">
+                        In Stock
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="parts-drawer-footer">
+
+        <button type="button"
+                class="parts-secondary-button"
+                onclick="closePartDrawers()">
+
+            Close
+
+        </button>
+
+    </div>
+
+</aside>
+
+<div id="adjustStockBackdrop"
+     class="parts-drawer-backdrop">
+</div>
+
+<aside id="adjustStockDrawer"
+       class="parts-drawer">
+
+    <div class="parts-drawer-header">
+
+        <div>
+
+            <div class="parts-drawer-kicker">
+                Inventory Adjustment
+            </div>
+
+            <h2 class="parts-drawer-title">
+                Adjust Stock
+            </h2>
+
+            <div id="adjustStockSubtitle"
+                 class="parts-drawer-subtitle">
+                Update the current quantity for this part.
+            </div>
+
+        </div>
+
+        <button type="button"
+                class="parts-drawer-close"
+                onclick="closePartDrawers()">
+
+            <i class="bi bi-x-lg"></i>
+
+        </button>
+
+    </div>
+
+    <form asp-action="AdjustStock"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               id="adjustPartId"
+               name="partId" />
+
+        <div class="parts-drawer-body">
+
+            <div class="part-detail-card">
+
+                <div class="part-detail-top">
+
+                    <div class="part-detail-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+
+                    <div>
+
+                        <div id="adjustPartName"
+                             class="part-detail-name">
+                            Part
+                        </div>
+
+                        <div id="adjustCurrentStock"
+                             class="part-detail-number">
+                            Current stock: 0 units
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="parts-adjust-options">
+
+                <div class="parts-adjust-option">
+
+                    <input type="radio"
+                           id="adjustAdd"
+                           name="adjustmentType"
+                           value="add"
+                           checked />
+
+                    <label for="adjustAdd">
+
+                        <i class="bi bi-plus-circle-fill"></i>
+
+                        Add Stock
+
+                    </label>
+
+                </div>
+
+                <div class="parts-adjust-option">
+
+                    <input type="radio"
+                           id="adjustRemove"
+                           name="adjustmentType"
+                           value="remove" />
+
+                    <label for="adjustRemove">
+
+                        <i class="bi bi-dash-circle-fill"></i>
+
+                        Remove Stock
+
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="parts-adjust-field">
+
+                <label for="adjustQuantity">
+                    Quantity
+                </label>
+
+                <input id="adjustQuantity"
+                       name="quantity"
+                       type="number"
+                       min="1"
+                       step="1"
+                       required
+                       placeholder="Enter quantity" />
+
+            </div>
+
+        </div>
+
+        <div class="parts-drawer-footer">
+
+            <button type="button"
+                    class="parts-secondary-button"
+                    onclick="closePartDrawers()">
+
+                Cancel
+
+            </button>
+
+            <button type="submit"
+                    class="parts-primary-button">
+
+                Save Adjustment
+
+            </button>
+
+        </div>
+
+    </form>
+
+</aside>
+
+<script>
+    (() => {
+        const rows =
+            Array.from(document.querySelectorAll(".part-row"));
+
+        const searchInput =
+            document.getElementById("partSearch");
+
+        const supplierFilter =
+            document.getElementById("supplierFilter");
+
+        const statusFilter =
+            document.getElementById("statusFilter");
+
+        const filterButton =
+            document.getElementById("filterButton");
+
+        const clearButton =
+            document.getElementById("clearButton");
+
+        const paginationControls =
+            document.getElementById("paginationControls");
+
+        const paginationStart =
+            document.getElementById("paginationStart");
+
+        const paginationEnd =
+            document.getElementById("paginationEnd");
+
+        const paginationTotal =
+            document.getElementById("paginationTotal");
+
+        const resultsRange =
+            document.getElementById("resultsRange");
+
+        const resultsTotal =
+            document.getElementById("resultsTotal");
+
+        const pageSize = 10;
+
+        let currentPage = 1;
+
+        let filteredRows = [...rows];
+
+        function applyFilters() {
+            const search =
+                searchInput.value.trim().toLowerCase();
+
+            const supplier =
+                supplierFilter.value.trim().toLowerCase();
+
+            const status =
+                statusFilter.value.trim().toLowerCase();
+
+            filteredRows = rows.filter(row => {
+
+                const name =
+                    (row.dataset.partName || "").toLowerCase();
+
+                const number =
+                    (row.dataset.partNumber || "").toLowerCase();
+
+                const rowSupplier =
+                    (row.dataset.supplier || "").toLowerCase();
+
+                const rowStatus =
+                    (row.dataset.status || "").toLowerCase();
+
+                const isArchived =
+                    row.dataset.archived === "true";
+
+                const matchesSearch =
+                    !search ||
+                    name.includes(search) ||
+                    number.includes(search);
+
+                const matchesSupplier =
+                    !supplier ||
+                    rowSupplier === supplier;
+
+                const matchesStatus =
+                    !status ||
+                    rowStatus === status ||
+                    (status === "archived" && isArchived);
+
+                return (
+                    matchesSearch &&
+                    matchesSupplier &&
+                    matchesStatus
+                );
+            });
+
+            currentPage = 1;
+
+            renderTable();
+        }
+
+        function renderTable() {
+
+            rows.forEach(row => {
+                row.style.display = "none";
+            });
+
+            const total =
+                filteredRows.length;
+
+            const totalPages =
+                Math.max(
+                    1,
+                    Math.ceil(total / pageSize)
+                );
+
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            const startIndex =
+                (currentPage - 1) * pageSize;
+
+            const endIndex =
+                Math.min(
+                    startIndex + pageSize,
+                    total
+                );
+
+            filteredRows
+                .slice(startIndex, endIndex)
+                .forEach(row => {
+                    row.style.display = "";
+                });
+
+            const startDisplay =
+                total === 0
+                    ? 0
+                    : startIndex + 1;
+
+            const endDisplay =
+                total === 0
+                    ? 0
+                    : endIndex;
+
+            if (paginationStart) {
+                paginationStart.textContent =
+                    startDisplay;
+            }
+
+            if (paginationEnd) {
+                paginationEnd.textContent =
+                    endDisplay;
+            }
+
+            if (paginationTotal) {
+                paginationTotal.textContent =
+                    total;
+            }
+
+            if (resultsRange) {
+                resultsRange.textContent =
+                    `${startDisplay}–${endDisplay}`;
+            }
+
+            if (resultsTotal) {
+                resultsTotal.textContent =
+                    total;
+            }
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+
+            if (!paginationControls) {
+                return;
+            }
+
+            paginationControls.innerHTML = "";
+
+            const previous =
+                document.createElement("button");
+
+            previous.type = "button";
+
+            previous.className =
+                "parts-page-button";
+
+            previous.innerHTML =
+                '<i class="bi bi-chevron-left"></i>';
+
+            previous.disabled =
+                currentPage === 1;
+
+            previous.addEventListener(
+                "click",
+                () => {
+
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderTable();
+                    }
+
+                }
+            );
+
+            paginationControls.appendChild(previous);
+
+            for (
+                let page = 1;
+                page <= totalPages;
+                page++
+            ) {
+
+                const button =
+                    document.createElement("button");
+
+                button.type = "button";
+
+                button.className =
+                    "parts-page-button" +
+                    (
+                        page === currentPage
+                            ? " active"
+                            : ""
+                    );
+
+                button.textContent = page;
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        currentPage = page;
+                        renderTable();
+                    }
+                );
+
+                paginationControls.appendChild(button);
+            }
+
+            const next =
+                document.createElement("button");
+
+            next.type = "button";
+
+            next.className =
+                "parts-page-button";
+
+            next.innerHTML =
+                '<i class="bi bi-chevron-right"></i>';
+
+            next.disabled =
+                currentPage === totalPages;
+
+            next.addEventListener(
+                "click",
+                () => {
+
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderTable();
+                    }
+
+                }
+            );
+
+            paginationControls.appendChild(next);
+        }
+
+        filterButton?.addEventListener(
+            "click",
+            applyFilters
+        );
+
+        clearButton?.addEventListener(
+            "click",
+            () => {
+
+                searchInput.value = "";
+
+                supplierFilter.value = "";
+
+                statusFilter.value = "";
+
+                applyFilters();
+            }
+        );
+
+        searchInput?.addEventListener(
+            "keydown",
+            event => {
+
+                if (event.key === "Enter") {
+
+                    event.preventDefault();
+
+                    applyFilters();
+                }
+            }
+        );
+
+        searchInput?.addEventListener(
+            "input",
+            () => {
+                applyFilters();
+            }
+        );
+
+        renderTable();
+
+    })();
+
+    function showPartImageToast(message) {
+        const toast = document.getElementById("partImageToast");
+        if (!toast) return;
+
+        const text = toast.querySelector("span");
+        if (text) text.textContent = message;
+
+        toast.classList.add("show");
+        clearTimeout(window.__partImageToastTimer);
+        window.__partImageToastTimer = setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2400);
+    }
+
+    function setPartImagePreview(previewId, nameId, messageId, imageUrl, nameText) {
+        const preview = document.getElementById(previewId);
+        const name = document.getElementById(nameId);
+        const message = document.getElementById(messageId);
+
+        if (!preview || !name) return;
+
+        preview.innerHTML = "";
+
+        if (imageUrl) {
+            const image = document.createElement("img");
+            image.src = imageUrl;
+            image.alt = "Part image";
+            preview.appendChild(image);
+            name.textContent = nameText || "Current image saved";
+        } else {
+            preview.innerHTML = '<i class="bi bi-image"></i>';
+            name.textContent = "No image selected";
+        }
+
+        message?.classList.remove("show");
+    }
+
+    function handlePartImageChange(input, previewId, nameId, messageId) {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            input.value = "";
+            showPartImageToast("Image must be 5 MB or smaller.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = event => {
+            setPartImagePreview(previewId, nameId, messageId, event.target.result, file.name);
+            document.getElementById(messageId)?.classList.add("show");
+            showPartImageToast("Part image changed successfully.");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    document.getElementById("createPartImage")?.addEventListener("change", function () {
+        handlePartImageChange(this, "createPartImagePreview", "createPartImageName", "createPartImageMessage");
+    });
+
+    document.getElementById("editPartImage")?.addEventListener("change", function () {
+        handlePartImageChange(this, "editPartImagePreview", "editPartImageName", "editPartImageMessage");
+    });
+
+    function openPartDetails(button) {
+
+        document
+            .querySelectorAll(".part-menu-dropdown.show")
+            .forEach(menu => {
+                menu.classList.remove("show");
+            });
+
+        document
+            .querySelectorAll(".part-menu-button.active")
+            .forEach(menuButton => {
+                menuButton.classList.remove("active");
+            });
+
+        document.getElementById("detailsName")
+            .textContent =
+            button.dataset.name || "Part";
+
+        document.getElementById("detailsNumber")
+            .textContent =
+            button.dataset.number ||
+            "No part number";
+
+        document.getElementById("detailsCardName")
+            .textContent =
+            button.dataset.name || "Part";
+
+        document.getElementById("detailsCardNumber")
+            .textContent =
+            button.dataset.number ||
+            "No part number";
+
+        document.getElementById("detailsStock")
+            .textContent =
+            `${button.dataset.stock || 0} units`;
+
+        document.getElementById("detailsPrice")
+            .textContent =
+            button.dataset.price || "₱0.00";
+
+        document.getElementById("detailsSupplier")
+            .textContent =
+            button.dataset.supplier ||
+            "No supplier assigned";
+
+        document.getElementById("detailsStatus")
+            .textContent =
+            button.dataset.status ||
+            "In Stock";
+
+        const detailsImage = document.getElementById("detailsImage");
+        const detailsImagePlaceholder = document.getElementById("detailsImagePlaceholder");
+        const detailsImageUrl = button.dataset.image || "";
+
+        if (detailsImageUrl) {
+            detailsImage.src = detailsImageUrl;
+            detailsImage.style.display = "block";
+            detailsImagePlaceholder.style.display = "none";
+        } else {
+            detailsImage.removeAttribute("src");
+            detailsImage.style.display = "none";
+            detailsImagePlaceholder.style.display = "flex";
+        }
+
+        document
+            .getElementById("partDetailsBackdrop")
+            .classList.add("show");
+
+        document
+            .getElementById("partDetailsDrawer")
+            .classList.add("show");
+    }
+
+    function openAdjustStock(
+        partId,
+        partName,
+        currentStock
+    ) {
+
+        document
+            .querySelectorAll(".part-menu-dropdown.show")
+            .forEach(menu => {
+                menu.classList.remove("show");
+            });
+
+        document
+            .querySelectorAll(".part-menu-button.active")
+            .forEach(menuButton => {
+                menuButton.classList.remove("active");
+            });
+
+        document.getElementById("adjustPartId")
+            .value = partId;
+
+        document.getElementById("adjustPartName")
+            .textContent =
+            partName || "Part";
+
+        document.getElementById("adjustCurrentStock")
+            .textContent =
+            `Current stock: ${currentStock} units`;
+
+        document.getElementById("adjustQuantity")
+            .value = "";
+
+        document.getElementById("adjustAdd")
+            .checked = true;
+
+        document
+            .getElementById("adjustStockBackdrop")
+            .classList.add("show");
+
+        document
+            .getElementById("adjustStockDrawer")
+            .classList.add("show");
+    }
+
+    function closeCreatePartDrawer() {
+
+        document
+            .getElementById("createPartBackdrop")
+            ?.classList.remove("show");
+
+        document
+            .getElementById("createPartDrawer")
+            ?.classList.remove("show");
+
+        document
+            .getElementById("createPartDrawer")
+            ?.setAttribute("aria-hidden", "true");
+    }
+
+    function openCreatePartDrawer() {
+
+        closePartDrawers();
+
+        document
+            .getElementById("createPartBackdrop")
+            ?.classList.add("show");
+
+        document
+            .getElementById("createPartDrawer")
+            ?.classList.add("show");
+
+        document
+            .getElementById("createPartDrawer")
+            ?.setAttribute("aria-hidden", "false");
+
+        document
+            .getElementById("createPartName")
+            ?.focus();
+    }
+
+    function closePartDrawers() {
+
+        closeCreatePartDrawer();
+
+        [
+            ["partDetailsBackdrop", "partDetailsDrawer"],
+            ["adjustStockBackdrop", "adjustStockDrawer"],
+            ["editPartBackdrop", "editPartDrawer"],
+            ["archivePartBackdrop", "archivePartDrawer"],
+            ["archivedPartsBackdrop", "archivedPartsDrawer"]
+        ].forEach(([backdropId, drawerId]) => {
+            document.getElementById(backdropId)?.classList.remove("show");
+            document.getElementById(drawerId)?.classList.remove("show");
+            document.getElementById(drawerId)?.setAttribute("aria-hidden", "true");
+        });
+    }
+
+    function openEditPart(button) {
+
+        closePartDrawers();
+
+        document.getElementById("editPartId").value = button.dataset.id || "";
+        document.getElementById("editPartModelId").value = button.dataset.id || "";
+        document.getElementById("editPartName").value = button.dataset.name || "";
+        document.getElementById("editPartNumber").value = button.dataset.number || "";
+        document.getElementById("editUnitPrice").value = button.dataset.price || "0";
+        document.getElementById("editStockQuantity").value = button.dataset.stock || "0";
+        document.getElementById("editSupplierId").value = button.dataset.supplierId || "";
+
+        setPartImagePreview(
+            "editPartImagePreview",
+            "editPartImageName",
+            "editPartImageMessage",
+            button.dataset.image || "",
+            "Current image saved"
+        );
+        document.getElementById("editPartImage").value = "";
+
+        document.getElementById("editPartBackdrop")?.classList.add("show");
+        document.getElementById("editPartDrawer")?.classList.add("show");
+        document.getElementById("editPartDrawer")?.setAttribute("aria-hidden", "false");
+        document.getElementById("editPartName")?.focus();
+    }
+
+    function openArchivePart(button) {
+
+        closePartDrawers();
+
+        document.getElementById("archivePartId").value = button.dataset.id || "";
+        document.getElementById("archivePartName").textContent = button.dataset.name || "Part";
+
+        document.getElementById("archivePartBackdrop")?.classList.add("show");
+        document.getElementById("archivePartDrawer")?.classList.add("show");
+        document.getElementById("archivePartDrawer")?.setAttribute("aria-hidden", "false");
+    }
+
+    function openArchivedPartsDrawer() {
+
+        closePartDrawers();
+
+        document.getElementById("archivedPartsBackdrop")?.classList.add("show");
+        document.getElementById("archivedPartsDrawer")?.classList.add("show");
+        document.getElementById("archivedPartsDrawer")?.setAttribute("aria-hidden", "false");
+    }
+
+    document
+        .getElementById("createPartBackdrop")
+        ?.addEventListener(
+            "click",
+            closeCreatePartDrawer
+        );
+
+    document
+        .getElementById("partDetailsBackdrop")
+        ?.addEventListener(
+            "click",
+            closePartDrawers
+        );
+
+    document
+        .getElementById("adjustStockBackdrop")
+        ?.addEventListener(
+            "click",
+            closePartDrawers
+        );
+
+    [
+        "editPartBackdrop",
+        "archivePartBackdrop",
+        "archivedPartsBackdrop"
+    ].forEach(id => {
+        document.getElementById(id)?.addEventListener("click", closePartDrawers);
+    });
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Escape") {
+                closePartDrawers();
+            }
+        }
+    );
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            if (!event.target.closest(".part-menu")) {
+
+                document
+                    .querySelectorAll(
+                        ".part-menu-dropdown.show"
+                    )
+                    .forEach(menu => {
+                        menu.classList.remove("show");
+                    });
+
+                document
+                    .querySelectorAll(
+                        ".part-menu-button.active"
+                    )
+                    .forEach(button => {
+                        button.classList.remove("active");
+                    });
+            }
+        }
+    );
+</script>

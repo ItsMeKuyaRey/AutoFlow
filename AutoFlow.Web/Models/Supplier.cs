@@ -28,6 +28,9 @@ public class Supplier
     [StringLength(100)]
     public string? City { get; set; }
 
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
+
     [StringLength(50)]
     public string? Status { get; set; } = "Active";   // Active / Inactive
 

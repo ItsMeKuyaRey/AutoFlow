@@ -1,0 +1,175 @@
+@model IEnumerable<AutoFlow.Web.Models.Billing>
+@using AutoFlow.Web.Models
+
+@{
+    var archived = Model.ToList();
+}
+
+<style>
+    .billing-archive-page { position:fixed; inset:0; z-index:3500; background:rgba(15,23,42,.18); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); display:flex; justify-content:flex-end; }
+    .billing-archive-drawer { width:min(650px,100vw); height:100%; background:#fff; box-shadow:-16px 0 45px rgba(15,23,42,.18); display:flex; flex-direction:column; overflow:hidden; }
+    .billing-archive-head { padding:18px 20px; border-bottom:1px solid #e8ecf2; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .billing-archive-head h2 { margin:0; font-size:15px; font-weight:750; }
+    .billing-archive-head p { margin:4px 0 0; color:#667085; font-size:9px; }
+    .billing-archive-close { width:32px; height:32px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; color:#64748b; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+    .billing-archive-close:hover { color:#6d3df5; border-color:#c4b5fd; }
+    .billing-archive-body { flex:1; overflow-y:auto; padding:16px 20px; }
+    .billing-archive-card { border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:9px; background:#fff; }
+    .billing-archive-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .billing-archive-invoice { display:flex; align-items:center; gap:9px; min-width:0; }
+    .billing-archive-icon { width:32px; height:32px; border-radius:8px; background:#f8fafc; color:#64748b; display:grid; place-items:center; font-size:13px; flex:0 0 32px; }
+    .billing-archive-invoice strong { display:block; font-size:11px; color:#172033; }
+    .billing-archive-invoice span { display:block; margin-top:3px; color:#64748b; font-size:9px; }
+    .billing-archive-profiles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px; }
+    .billing-archive-profile { min-width:0; min-height:52px; padding:6px 8px; border:1px solid #e8ecf2; border-radius:8px; background:#f8fafc; display:flex; align-items:center; gap:8px; text-decoration:none; transition:border-color .15s ease,background .15s ease; }
+    .billing-archive-profile:hover { border-color:#c4b5fd; background:#faf8ff; }
+    .billing-archive-profile-image { width:44px; height:40px; flex:0 0 44px; display:block; object-fit:contain; object-position:center; border-radius:7px; background:#fff; overflow:hidden; }
+    .billing-archive-owner-image { width:40px; height:40px; flex-basis:40px; border-radius:50%; }
+    .billing-archive-profile-fallback { width:40px; height:40px; flex:0 0 40px; border-radius:50%; background:#ece8ff; color:#6445e8; display:grid; place-items:center; font-size:11px; font-weight:800; }
+    .billing-archive-vehicle-fallback { width:44px; height:40px; flex:0 0 44px; border-radius:7px; background:#fff; color:#7c3aed; display:grid; place-items:center; font-size:15px; }
+    .billing-archive-profile-copy { min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .billing-archive-profile-copy small { color:#94a3b8; font-size:7px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; }
+    .billing-archive-profile-copy strong { color:#334155; font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .billing-archive-profile-copy span { color:#64748b; font-size:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .billing-archive-balance { margin-top:8px; padding:8px 10px; border-radius:8px; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .billing-archive-balance small { color:#94a3b8; font-size:8px; font-weight:800; }
+    .billing-archive-balance strong { color:#334155; font-size:9px; }
+    .billing-archive-actions { margin-top:10px; display:flex; justify-content:flex-end; gap:7px; }
+    .billing-icon-button { width:31px; height:31px; padding:0; border:1px solid #e2e8f0; border-radius:8px; background:#fff; color:#475467; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; text-decoration:none; }
+    .billing-icon-button:hover { border-color:#c4b5fd; color:#6d3df5; background:#faf8ff; }
+    .billing-restore-button { width:31px; height:31px; padding:0; border:1px solid #bbf7d0; border-radius:8px; background:#f0fdf4; color:#15803d; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+    .billing-restore-button:hover { background:#dcfce7; }
+    .billing-archive-empty { padding:60px 20px; text-align:center; color:#64748b; }
+    .billing-archive-empty i { font-size:25px; color:#94a3b8; }
+    .billing-archive-empty h3 { margin:12px 0 5px; color:#334155; font-size:15px; }
+    .billing-archive-empty p { margin:0; font-size:10px; }
+    @@media (max-width:620px) {
+        .billing-archive-profiles { grid-template-columns:1fr; }
+    }
+</style>
+
+<div class="billing-archive-page" data-billing-archive-page>
+    <aside class="billing-archive-drawer" aria-label="Archived Billing">
+        <div class="billing-archive-head">
+            <div>
+                <h2>Archived Billing</h2>
+                <p>Preserved invoices that are no longer shown in the active billing list.</p>
+            </div>
+            <a asp-action="Index" class="billing-archive-close" title="Close archived billing" aria-label="Close archived billing"><i class="bi bi-x-lg"></i></a>
+        </div>
+
+        <div class="billing-archive-body">
+            @if (!archived.Any())
+            {
+                <div class="billing-archive-empty">
+                    <i class="bi bi-archive"></i>
+                    <h3>No Archived Invoices</h3>
+                    <p>Archived invoices will appear here and can be restored at any time.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var item in archived)
+                {
+                    var customer = item.JobOrder?.Vehicle?.Customer;
+                    var customerName = customer == null ? "—" : $"{customer.FirstName} {customer.LastName}".Trim();
+                    var vehicle = item.JobOrder?.Vehicle;
+                    var vehicleName = vehicle == null ? "—" : $"{vehicle.Make} {vehicle.Model}".Trim();
+                    var balance = Math.Max(0, item.TotalAmount - item.AmountPaid);
+                    var ownerInitial = string.IsNullOrWhiteSpace(customer?.FirstName) ? "?" : customer.FirstName[..1].ToUpperInvariant();
+
+                    <div class="billing-archive-card">
+                        <div class="billing-archive-card-head">
+                            <div class="billing-archive-invoice">
+                                <div class="billing-archive-icon"><i class="bi bi-receipt"></i></div>
+                                <div>
+                                    <strong>@item.InvoiceNumber</strong>
+                                    <span>Archived @item.UpdatedAt.ToString("MMM d, yyyy · h:mm tt")</span>
+                                </div>
+                            </div>
+                            <span class="af-badge" style="background:#f1f5f9;color:#475569;">Archived</span>
+                        </div>
+
+                        <div class="billing-archive-profiles">
+                            @if (customer != null)
+                            {
+                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@customer.CustomerId" class="billing-archive-profile" title="Open customer profile">
+                                    @if (!string.IsNullOrWhiteSpace(customer.ImageUrl))
+                                    {
+                                        <img class="billing-archive-profile-image billing-archive-owner-image" src="@customer.ImageUrl" alt="@customerName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="billing-archive-profile-fallback">@ownerInitial</span>
+                                    }
+                                    <span class="billing-archive-profile-copy">
+                                        <small>Owner</small>
+                                        <strong>@customerName</strong>
+                                        <span>@customer.Phone</span>
+                                    </span>
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="billing-archive-profile">
+                                    <span class="billing-archive-profile-fallback">?</span>
+                                    <span class="billing-archive-profile-copy"><small>Owner</small><strong>—</strong></span>
+                                </div>
+                            }
+
+                            @if (vehicle != null)
+                            {
+                                <a asp-controller="Vehicles" asp-action="Details" asp-route-id="@vehicle.VehicleId" class="billing-archive-profile" title="Open vehicle profile">
+                                    @if (!string.IsNullOrWhiteSpace(vehicle.ImageUrl))
+                                    {
+                                        <img class="billing-archive-profile-image" src="@vehicle.ImageUrl" alt="@vehicleName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="billing-archive-vehicle-fallback"><i class="bi bi-car-front"></i></span>
+                                    }
+                                    <span class="billing-archive-profile-copy">
+                                        <small>Vehicle</small>
+                                        <strong>@vehicleName</strong>
+                                        <span>@vehicle.PlateNumber · Open profile</span>
+                                    </span>
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="billing-archive-profile">
+                                    <span class="billing-archive-vehicle-fallback"><i class="bi bi-car-front"></i></span>
+                                    <span class="billing-archive-profile-copy"><small>Vehicle</small><strong>—</strong></span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="billing-archive-balance">
+                            <small>Remaining Balance</small>
+                            <strong>₱@balance.ToString("N2")</strong>
+                        </div>
+
+                        <div class="billing-archive-actions">
+                            <a asp-action="Index" asp-route-open="details" asp-route-id="@item.BillingId" class="billing-icon-button" title="View invoice" aria-label="View @item.InvoiceNumber"><i class="bi bi-eye"></i></a>
+                            <form asp-action="Restore" method="post" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.BillingId" />
+                                <button type="submit" class="billing-restore-button" title="Restore invoice" aria-label="Restore @item.InvoiceNumber"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </aside>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelector('[data-billing-archive-page]')?.addEventListener('click', event => {
+        if (event.target === event.currentTarget) {
+            window.location.href = '@Url.Action("Index", "Billings")';
+        }
+    });
+</script>
+}

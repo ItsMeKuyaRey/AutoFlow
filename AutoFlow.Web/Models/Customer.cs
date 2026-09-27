@@ -25,6 +25,9 @@ public class Customer
     [MaxLength(300)]
     public string? Address { get; set; }
 
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -1,4 +1,5 @@
 @model IEnumerable<AutoFlow.Web.Models.JobOrder>
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "Repair Job Orders";
@@ -7,10 +8,17 @@
 
     var initialOpen = ViewData["Open"]?.ToString() ?? "";
     var initialOpenId = ViewData["OpenId"]?.ToString() ?? "";
+    var archivedJobOrderCount = ViewData["ArchivedJobOrderCount"] is int count ? count : 0;
+    var billingIdsByJobOrder = ViewData["BillingIdsByJobOrder"] as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var billingStatusesByJobOrder = ViewData["BillingStatusesByJobOrder"] as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var jobOrderNotification = TempData["JobOrderNotification"]?.ToString();
 
     var vehicleOptions = ViewBag.VehicleId as SelectList;
+    var vehicleImageMap = ViewData["VehicleImageMap"] as Dictionary<int, string> ?? new Dictionary<int, string>();
     var appointmentOptions = ViewBag.AppointmentId as SelectList;
+    var appointmentMetaJson = ViewData["AppointmentMetaJson"]?.ToString() ?? "[]";
     var partOptions = ViewBag.PartId as SelectList;
+    var partMetaJson = ViewData["PartMetaJson"]?.ToString() ?? "[]";
 }
 
 <div class="job-workspace">
@@ -21,12 +29,23 @@
             <p>Manage repair work, track service progress, parts usage, and job costs.</p>
         </div>
 
+        <div style="display:flex; gap:8px; align-items:center;">
+
+        <a asp-action="Archived"
+           class="job-secondary-button"
+           style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:7px;">
+            Archived
+            <span style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#f1ecff; color:#6d3df5; font-size:.66rem; font-weight:800;">@archivedJobOrderCount</span>
+        </a>
+
         <button type="button"
                 class="job-primary-button"
                 id="openCreateJob">
             <span class="job-button-plus">+</span>
             New Job Order
         </button>
+
+        </div>
     </div>
 
     <div class="job-filter-card">
@@ -48,6 +67,7 @@
             <option value="In Progress">In Progress</option>
             <option value="Completed">Completed</option>
             <option value="Cancelled">Cancelled</option>
+            <option value="Archived">Archived</option>
         </select>
 
         <select id="jobDateFilter" class="job-filter-control">
@@ -127,6 +147,9 @@
                                 ? "No vehicle"
                                 : $"{item.Vehicle.Make} {item.Vehicle.Model}";
 
+                        var vehicleImageUrl = item.Vehicle?.ImageUrl ?? string.Empty;
+                        var ownerImageUrl = item.Vehicle?.Customer?.ImageUrl ?? string.Empty;
+
                         var plate =
                             item.Vehicle?.PlateNumber ?? "—";
 
@@ -136,25 +159,44 @@
                                 : item.Appointment.AppointmentDate
                                     .ToString("MMM dd, yyyy hh:mm tt");
 
+                        var displayStatus =
+                            item.IsArchived
+                                ? "Archived"
+                                : item.Status;
+
                         var badgeClass =
-                            item.Status switch
-                            {
-                                "Open" => "job-badge-blue",
-                                "In Progress" => "job-badge-orange",
-                                "Completed" => "job-badge-green",
-                                "Cancelled" => "job-badge-red",
-                                _ => "job-badge-blue"
-                            };
+                            item.IsArchived
+                                ? "job-badge-archived"
+                                : item.Status switch
+                                {
+                                    "Open" => "job-badge-blue",
+                                    "In Progress" => "job-badge-orange",
+                                    "Completed" => "job-badge-green",
+                                    "Cancelled" => "job-badge-red",
+                                    _ => "job-badge-blue"
+                                };
+
+                        var billingId = billingIdsByJobOrder.TryGetValue(item.JobOrderId, out var foundBillingId)
+                            ? foundBillingId
+                            : 0;
+
+                        var billingStatus = billingStatusesByJobOrder.TryGetValue(item.JobOrderId, out var foundBillingStatus)
+                            ? foundBillingStatus
+                            : string.Empty;
 
                         <tr class="job-data-row"
                             data-id="@item.JobOrderId"
-                            data-status="@item.Status"
+                            data-status="@displayStatus"
+                            data-job-status="@item.Status"
+                            data-archived="@item.IsArchived.ToString().ToLowerInvariant()"
                             data-date="@item.JobOrderDate.ToString("yyyy-MM-dd")"
                             data-search="@($"#{item.JobOrderId} {vehicleName} {plate} {ownerName}")"
                             data-vehicle-id="@item.VehicleId"
                             data-vehicle="@vehicleName"
+                            data-vehicle-image="@vehicleImageUrl"
                             data-plate="@plate"
                             data-owner="@ownerName"
+                            data-owner-image="@ownerImageUrl"
                             data-appointment-id="@(item.AppointmentId?.ToString() ?? "")"
                             data-appointment="@appointmentText"
                             data-job-date="@item.JobOrderDate.ToString("yyyy-MM-ddTHH:mm")"
@@ -162,7 +204,10 @@
                             data-description="@(item.Description ?? "")"
                             data-diagnosis="@(item.Diagnosis ?? "")"
                             data-notes="@(item.Notes ?? "")"
-                            data-total="@item.TotalCost.ToString("0.00")">
+                            data-parts="@JsonSerializer.Serialize(item.JobOrderParts.Select(jp => new { id = jp.PartId, quantity = jp.Quantity, name = jp.Part?.Name ?? "Unknown Part", unitPrice = jp.UnitPriceAtTimeOfUse, archived = jp.Part?.IsArchived ?? false }))"
+                            data-total="@item.TotalCost.ToString("0.00")"
+                            data-billing-id="@billingId"
+                            data-billing-status="@billingStatus">
 
                             <td>
                                 <div class="job-primary-cell">
@@ -175,14 +220,23 @@
 
                             <td>
                                 <div class="job-vehicle-cell">
-                                    <div class="job-vehicle-icon">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M5 17h14"></path>
-                                            <path d="M6 17l1-5h10l1 5"></path>
-                                            <path d="M8 12l1.5-4h5L16 12"></path>
-                                            <circle cx="8" cy="17" r="1.5"></circle>
-                                            <circle cx="16" cy="17" r="1.5"></circle>
-                                        </svg>
+                                    <div class="job-vehicle-icon job-vehicle-photo">
+                                        @if (!string.IsNullOrWhiteSpace(vehicleImageUrl))
+                                        {
+                                            <img src="@vehicleImageUrl"
+                                                 alt="@vehicleName"
+                                                 loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M5 17h14"></path>
+                                                <path d="M6 17l1-5h10l1 5"></path>
+                                                <path d="M8 12l1.5-4h5L16 12"></path>
+                                                <circle cx="8" cy="17" r="1.5"></circle>
+                                                <circle cx="16" cy="17" r="1.5"></circle>
+                                            </svg>
+                                        }
                                     </div>
 
                                     <div>
@@ -194,8 +248,17 @@
 
                             <td>
                                 <div class="job-owner-cell">
-                                    <div class="job-owner-avatar">
-                                        @(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                    <div class="job-owner-avatar job-owner-photo">
+                                        @if (!string.IsNullOrWhiteSpace(ownerImageUrl))
+                                        {
+                                            <img src="@ownerImageUrl"
+                                                 alt="@ownerName"
+                                                 loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            @(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                        }
                                     </div>
 
                                     <div>
@@ -226,10 +289,16 @@
                             </td>
 
                             <td>
-                                <span class="job-status-badge @badgeClass">
-                                    <span></span>
-                                    @item.Status
-                                </span>
+                                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                                    <span class="job-status-badge @badgeClass">
+                                        <span></span>
+                                        @displayStatus
+                                    </span>
+                                    @if (billingId > 0)
+                                    {
+                                        <span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:999px;background:#f5f3ff;color:#6d28d9;font-size:9px;font-weight:800;">Invoiced</span>
+                                    }
+                                </div>
                             </td>
 
                             <td>
@@ -265,18 +334,36 @@
                                         </svg>
                                     </button>
 
-                                    <button type="button"
-                                            class="job-icon-button job-icon-danger"
-                                            data-job-action="delete"
-                                            title="Delete Job Order">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M4 7h16"></path>
-                                            <path d="M10 11v6"></path>
-                                            <path d="M14 11v6"></path>
-                                            <path d="M6 7l1 14h10l1-14"></path>
-                                            <path d="M9 7V4h6v3"></path>
-                                        </svg>
-                                    </button>
+                                    @if (!item.IsArchived)
+                                    {
+                                        <button type="button"
+                                                class="job-icon-button job-icon-danger"
+                                                data-job-action="archive"
+                                                title="Archive Job Order">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16"></path>
+                                                <path d="M5 7l1 13h12l1-13"></path>
+                                                <path d="M9 11h6"></path>
+                                                <path d="M9 4h6l1 3H8l1-3z"></path>
+                                            </svg>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Restore" method="post" class="job-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.JobOrderId" />
+                                            <button type="submit"
+                                                    class="job-icon-button job-icon-restore"
+                                                    title="Restore Job Order"
+                                                    aria-label="Restore Job Order #@item.JobOrderId">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                                                    <path d="M3 4v6h6"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    }
 
                                 </div>
                             </td>
@@ -324,16 +411,71 @@
                                     Vehicle & Customer
                                 </div>
 
-                                <div class="job-detail-owner-card">
+                                <div class="job-detail-people-grid">
 
-                                    <div class="job-owner-avatar job-owner-avatar-large">
-                                        @(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                    <div class="job-detail-profile-card">
+                                        <div class="job-detail-profile-media job-detail-vehicle-media">
+                                            @if (!string.IsNullOrWhiteSpace(vehicleImageUrl))
+                                            {
+                                                <img src="@vehicleImageUrl" alt="@vehicleName" loading="lazy" />
+                                            }
+                                            else
+                                            {
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M5 17h14"></path>
+                                                    <path d="M6 17l1-5h10l1 5"></path>
+                                                    <path d="M8 12l1.5-4h5L16 12"></path>
+                                                    <circle cx="8" cy="17" r="1.5"></circle>
+                                                    <circle cx="16" cy="17" r="1.5"></circle>
+                                                </svg>
+                                            }
+                                        </div>
+                                        <div class="job-detail-profile-copy">
+                                            <span class="job-detail-profile-label">Vehicle</span>
+                                            <strong>@vehicleName</strong>
+                                            <span>@plate</span>
+                                            @if (!string.IsNullOrWhiteSpace(vehicleImageUrl))
+                                            {
+                                                <small><i class="bi bi-check-circle-fill"></i> Vehicle image linked</small>
+                                            }
+                                            else
+                                            {
+                                                <small><i class="bi bi-info-circle-fill"></i> No vehicle image saved</small>
+                                            }
+                                        </div>
                                     </div>
 
-                                    <div>
-                                        <strong>@ownerName</strong>
-                                        <span>@vehicleName</span>
-                                        <span>@plate</span>
+                                    <div class="job-detail-profile-card">
+                                        <div class="job-detail-profile-media job-detail-owner-media">
+                                            @if (!string.IsNullOrWhiteSpace(ownerImageUrl))
+                                            {
+                                                <img src="@ownerImageUrl" alt="@ownerName" loading="lazy" />
+                                            }
+                                            else
+                                            {
+                                                <span>@(item.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")</span>
+                                            }
+                                        </div>
+                                        <div class="job-detail-profile-copy">
+                                            <span class="job-detail-profile-label">Owner</span>
+                                            <strong>@ownerName</strong>
+                                            @if (!string.IsNullOrWhiteSpace(item.Vehicle?.Customer?.Phone))
+                                            {
+                                                <span>@item.Vehicle.Customer.Phone</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Customer record</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(ownerImageUrl))
+                                            {
+                                                <small><i class="bi bi-check-circle-fill"></i> Owner image linked</small>
+                                            }
+                                            else
+                                            {
+                                                <small><i class="bi bi-info-circle-fill"></i> No owner image saved</small>
+                                            }
+                                        </div>
                                     </div>
 
                                 </div>
@@ -552,6 +694,7 @@
                 <label>Vehicle</label>
 
                 <select name="VehicleId"
+                        id="jobCreateVehicleId"
                         required>
                     <option value="">Select vehicle</option>
 
@@ -559,38 +702,64 @@
                     {
                         foreach (var option in vehicleOptions)
                         {
-                            <option value="@option.Value">
+                            var vehicleId = int.TryParse(option.Value, out var parsedVehicleId) ? parsedVehicleId : 0;
+                            var vehicleImage = vehicleImageMap.TryGetValue(vehicleId, out var image) ? image : string.Empty;
+
+                            <option value="@option.Value" data-image="@vehicleImage">
                                 @option.Text
                             </option>
                         }
                     }
                 </select>
+
+                <div class="job-selected-vehicle" id="jobCreateSelectedVehicle" hidden>
+                    <div class="job-selected-vehicle-image">
+                        <img id="jobCreateVehicleImage" src="" alt="Selected vehicle" />
+                    </div>
+                    <div class="job-selected-vehicle-copy">
+                        <strong id="jobCreateVehicleName">Vehicle selected</strong>
+                        <span id="jobCreateVehicleStatus"><i class="bi bi-check-circle-fill"></i> Vehicle image linked</span>
+                    </div>
+                </div>
             </div>
 
             <div class="job-field job-field-full">
                 <label>Appointment</label>
 
-                <select name="AppointmentId">
+                <select name="AppointmentId"
+                        id="jobCreateAppointmentId">
                     <option value="">No appointment</option>
 
                     @if (appointmentOptions != null)
                     {
                         foreach (var option in appointmentOptions)
                         {
-                            <option value="@option.Value">
+                            var appointmentId = int.TryParse(option.Value, out var parsedAppointmentId) ? parsedAppointmentId : 0;
+                            <option value="@option.Value"
+                                    data-appointment-id="@appointmentId">
                                 @option.Text
                             </option>
                         }
                     }
                 </select>
+
+                <small class="job-appointment-link-note"
+                       id="jobCreateAppointmentNote">
+                    Select a vehicle to automatically link its scheduled repair appointment when one exists.
+                </small>
             </div>
 
             <div class="job-field">
                 <label>Job Order Date</label>
                 <input type="datetime-local"
                        name="JobOrderDate"
+                       id="jobCreateJobOrderDate"
                        value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                        required />
+                <small class="job-appointment-link-note"
+                       id="jobCreateJobDateNote">
+                    Manual date — no appointment is linked.
+                </small>
             </div>
 
             <div class="job-field">
@@ -617,6 +786,53 @@
                 </div>
             </div>
 
+        </div>
+
+        <div class="job-form-section-title">
+            Parts Used
+        </div>
+
+        <div class="job-create-parts-panel" id="jobCreatePartsPanel">
+            <div class="job-create-parts-help">
+                Add the parts that will be used for this repair. Selected parts are linked to the job order, deducted from Parts Inventory, and included automatically in Billing.
+            </div>
+
+            <div class="job-create-part-entry">
+                <select id="jobCreatePartSelect" aria-label="Select part to use">
+                    <option value="">Select part</option>
+                    @if (partOptions != null)
+                    {
+                        foreach (var option in partOptions)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
+                </select>
+
+                <input type="number"
+                       id="jobCreatePartQuantity"
+                       value="1"
+                       min="1"
+                       step="1"
+                       aria-label="Part quantity" />
+
+                <button type="button"
+                        class="job-secondary-button job-add-part-button"
+                        id="jobCreateAddPart">
+                    + Add Part
+                </button>
+            </div>
+
+            <div class="job-create-parts-list" id="jobCreatePartsList">
+                <div class="job-create-parts-empty" id="jobCreatePartsEmpty">No parts added yet.</div>
+            </div>
+
+            <div class="job-create-parts-total" id="jobCreatePartsTotal">
+                <span>Estimated Parts Cost</span>
+                <strong>₱0.00</strong>
+            </div>
+
+            <div id="jobCreatePartHiddenInputs"></div>
         </div>
 
         <div class="job-form-section-title">
@@ -708,20 +924,31 @@
                 <select name="VehicleId"
                         id="editVehicleId"
                         required>
-
                     <option value="">Select vehicle</option>
 
                     @if (vehicleOptions != null)
                     {
                         foreach (var option in vehicleOptions)
                         {
-                            <option value="@option.Value">
+                            var vehicleId = int.TryParse(option.Value, out var parsedVehicleId) ? parsedVehicleId : 0;
+                            var vehicleImage = vehicleImageMap.TryGetValue(vehicleId, out var image) ? image : string.Empty;
+
+                            <option value="@option.Value" data-image="@vehicleImage">
                                 @option.Text
                             </option>
                         }
                     }
-
                 </select>
+
+                <div class="job-selected-vehicle" id="jobEditSelectedVehicle" hidden>
+                    <div class="job-selected-vehicle-image">
+                        <img id="jobEditVehicleImage" src="" alt="Selected vehicle" />
+                    </div>
+                    <div class="job-selected-vehicle-copy">
+                        <strong id="jobEditVehicleName">Vehicle selected</strong>
+                        <span id="jobEditVehicleStatus"><i class="bi bi-check-circle-fill"></i> Vehicle image linked</span>
+                    </div>
+                </div>
             </div>
 
             <div class="job-field job-field-full">
@@ -782,6 +1009,54 @@
                 </div>
             </div>
 
+        </div>
+
+        <div class="job-form-section-title">
+            Parts Used
+        </div>
+
+        <div class="job-create-parts-panel job-edit-parts-panel" id="jobEditPartsPanel">
+            <div class="job-create-parts-help">
+                Add the parts that will be used for this repair. Selected parts are linked to the job order, deducted from Parts Inventory, and included automatically in Billing.
+            </div>
+
+            <div class="job-create-part-entry">
+                <select id="jobEditPartSelect" aria-label="Select part to use">
+                    <option value="">Select part</option>
+                    @if (partOptions != null)
+                    {
+                        foreach (var option in partOptions)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
+                </select>
+
+                <input type="number"
+                       id="jobEditPartQuantity"
+                       value="1"
+                       min="1"
+                       step="1"
+                       aria-label="Part quantity" />
+
+                <button type="button"
+                        class="job-secondary-button job-add-part-button"
+                        id="jobEditAddPart">
+                    + Add Part
+                </button>
+            </div>
+
+            <div class="job-create-parts-list" id="jobEditPartsList">
+                <div class="job-create-parts-empty" id="jobEditPartsEmpty">No parts added yet.</div>
+            </div>
+
+            <div class="job-create-parts-total" id="jobEditPartsTotal">
+                <span>Estimated Parts Cost</span>
+                <strong>₱0.00</strong>
+            </div>
+
+            <div id="jobEditPartHiddenInputs"></div>
+            <input type="hidden" name="partsUsedJson" id="jobEditPartsJson" value="[]" />
         </div>
 
         <div class="job-form-section-title">
@@ -870,6 +1145,25 @@
                     id="detailsAddPart">
                 Add Part
             </button>
+
+            <a class="job-secondary-button"
+               id="detailsCreateInvoice"
+               href="#"
+               style="display:none; text-decoration:none; align-items:center; justify-content:center;">
+                Create Invoice
+            </a>
+
+            <span id="detailsInvoiceCreated"
+                  style="display:none; align-items:center; justify-content:center; height:36px; padding:0 10px; border:1px solid #ddd6fe; border-radius:9px; background:#f5f3ff; color:#6d28d9; font-size:9px; font-weight:800;">
+                Invoice Created
+            </span>
+
+            <a class="job-secondary-button"
+               id="detailsBilling"
+               href="#"
+               style="display:none; text-decoration:none; align-items:center; justify-content:center;">
+                View Invoice
+            </a>
 
             <button type="button"
                     class="job-primary-button"
@@ -965,8 +1259,16 @@
 </div>
 
 
+@if (!string.IsNullOrWhiteSpace(jobOrderNotification))
+{
+    <div id="jobOrderNotification"
+         style="position:fixed; right:24px; bottom:24px; z-index:7000; min-width:280px; max-width:380px; padding:13px 16px; border:1px solid #ccefe1; border-radius:10px; background:#f0fdf4; color:#047857; box-shadow:0 14px 35px rgba(15,23,42,.14); font-size:.76rem; font-weight:750;">
+        <span style="margin-right:7px;">✓</span>@jobOrderNotification
+    </div>
+}
+
 <div class="job-modal-backdrop"
-     id="jobDeleteModal">
+     id="jobArchiveModal">
 
     <div class="job-confirm-modal">
 
@@ -980,34 +1282,34 @@
             </svg>
         </div>
 
-        <h2>Delete Job Order?</h2>
+        <h2>Archive Job Order?</h2>
 
         <p>
-            This will permanently remove
-            <strong id="deleteJobName">this job order</strong>
-            from the repair records.
+            This will move
+            <strong id="archiveJobName">this job order</strong>
+            to Archived Repair Job Orders. The record will remain available for viewing and restoration.
         </p>
 
-        <form asp-action="Delete"
+        <form asp-action="Archive"
               method="post">
 
             @Html.AntiForgeryToken()
 
             <input type="hidden"
                    name="id"
-                   id="deleteJobId" />
+                   id="archiveJobId" />
 
             <div class="job-confirm-actions">
 
                 <button type="button"
                         class="job-secondary-button"
-                        id="cancelDelete">
+                        id="cancelArchive">
                     No, Keep Job
                 </button>
 
                 <button type="submit"
                         class="job-danger-button">
-                    Yes, Delete Job
+                    Yes, Archive Job
                 </button>
 
             </div>
@@ -1019,10 +1321,741 @@
 </div>
 
 
+<style>
+    /* REPAIR JOB ORDERS Image linking, parts UI, appointment UI and detail drawer*/
+    /* LIST TABLE — VEHICLE / OWNER THUMBNAILS*/
+
+    .job-vehicle-photo {
+        width: 38px;
+        height: 32px;
+        min-width: 38px;
+        min-height: 32px;
+        flex: 0 0 38px;
+        overflow: hidden;
+        box-sizing: border-box;
+        border-radius: 7px;
+        background: #f7f8fb;
+    }
+
+    .job-owner-photo {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        flex: 0 0 30px;
+        border-radius: 50%;
+        overflow: hidden;
+        box-sizing: border-box;
+        background: #f3f0ff;
+    }
+
+    .job-vehicle-photo img,
+    .job-owner-photo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-width: 100%;
+        min-height: 100%;
+        max-width: none;
+        max-height: none;
+        object-fit: cover;
+        object-position: center center;
+        background: #fff;
+    }
+
+
+    /* CREATE / EDIT — PARTS PANEL*/
+
+    .job-create-parts-panel {
+        margin: -2px 0 18px;
+        padding: 12px;
+        border: 1px solid var(--af-border);
+        border-radius: 12px;
+        background: #fafbff;
+    }
+
+    .job-create-parts-help {
+        margin-bottom: 10px;
+        color: #7b879b;
+        font-size: .69rem;
+        line-height: 1.45;
+    }
+
+    .job-create-part-entry {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 78px auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .job-create-part-entry select,
+    .job-create-part-entry input {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .job-add-part-button {
+        min-height: 38px;
+        padding: 0 13px;
+        white-space: nowrap;
+        background: #7544f5;
+        border: 1px solid #7544f5;
+        color: #fff;
+        font-weight: 800;
+    }
+
+    .job-add-part-button:hover {
+        background: #6336d8;
+        border-color: #6336d8;
+        color: #fff;
+    }
+
+    .job-create-parts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .job-create-parts-empty {
+        padding: 10px 11px;
+        border: 1px dashed #dfe3eb;
+        border-radius: 9px;
+        color: #98a2b3;
+        background: #fff;
+        font-size: .68rem;
+        text-align: center;
+    }
+
+    .job-create-part-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 9px;
+        align-items: center;
+        padding: 9px 10px;
+        border: 1px solid #e8eaf0;
+        border-radius: 9px;
+        background: #fff;
+    }
+
+    .job-create-part-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .job-create-part-copy strong {
+        color: var(--af-text);
+        font-size: .71rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .job-create-part-copy span {
+        color: #8a94a6;
+        font-size: .62rem;
+    }
+
+    .job-create-part-quantity {
+        min-width: 45px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: #f3f0ff;
+        color: #6840dc;
+        font-size: .63rem;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .job-create-part-remove {
+        width: 28px;
+        height: 28px;
+        border: 1px solid #e5e7eb;
+        border-radius: 7px;
+        background: #fff;
+        color: #8b95a7;
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1;
+    }
+
+    .job-create-part-remove:hover {
+        border-color: #f1c8d0;
+        color: #b42318;
+        background: #fff7f7;
+    }
+
+    .job-create-parts-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e8eaf0;
+        color: #7b879b;
+        font-size: .67rem;
+    }
+
+    .job-create-parts-total strong {
+        color: var(--af-text);
+        font-size: .74rem;
+    }
+
+
+    /* APPOINTMENT LINK / AUTOMATIC DATE */
+
+    .job-appointment-link-note {
+        display: block;
+        margin-top: 6px;
+        color: #7b879b;
+        font-size: .72rem;
+        line-height: 1.4;
+    }
+
+    .job-appointment-linked {
+        color: #059669;
+        font-weight: 700;
+    }
+
+    .job-appointment-auto-date {
+        background: #f6f2ff;
+        border-color: rgba(117, 68, 245, .35);
+        color: #3f2a8f;
+    }
+
+
+    /* CREATE / EDIT — SELECTED VEHICLE This intentionally remains larger than drawer thumbnails. */
+
+    .job-selected-vehicle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid var(--af-border);
+        border-radius: 10px;
+        background: #fafbff;
+    }
+
+    .job-selected-vehicle-image {
+        width: 112px;
+        height: 76px;
+        flex: 0 0 112px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e6e8ef;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .job-selected-vehicle-image img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    .job-selected-vehicle-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .job-selected-vehicle-copy strong {
+        color: var(--af-text);
+        font-size: .76rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .job-selected-vehicle-copy span {
+        color: #087f5b;
+        font-size: .68rem;
+        font-weight: 750;
+    }
+
+    .job-selected-vehicle-copy span i {
+        margin-right: 4px;
+    }
+
+
+    /* JOB ORDER DETAIL DRAWER — PEOPLE GRID */
+
+    .job-detail-people-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .job-detail-profile-card {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px;
+        border: 1px solid var(--af-border);
+        border-radius: 10px;
+        background: #fff;
+    }
+
+
+    /* JOB ORDER DETAIL DRAWER — VEHICLE IMAGE Compact fixed frame.*/
+
+    .job-detail-profile-media {
+        width: 64px;
+        height: 56px;
+        min-width: 64px;
+        min-height: 56px;
+        flex: 0 0 64px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+        box-sizing: border-box;
+
+        border: 1px solid #e8eaf0;
+        border-radius: 8px;
+        background: #f7f8fb;
+    }
+
+
+    /*JOB ORDER DETAIL DRAWER — OWNER IMAGE Compact circular frame.*/
+
+    .job-detail-owner-media {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        min-height: 52px;
+        flex: 0 0 52px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+        box-sizing: border-box;
+
+        border-radius: 50%;
+        background: #ece8ff;
+        color: #6445e8;
+        font-size: .82rem;
+        font-weight: 800;
+    }
+
+
+    /* 
+       DETAIL DRAWER IMAGES
+       Same clean treatment as Vehicle Records.
+       No natural image dimensions can enlarge the frame.*/
+
+    .job-detail-profile-media img,
+    .job-detail-owner-media img {
+        display: block;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        min-width: 100% !important;
+        min-height: 100% !important;
+
+        max-width: none !important;
+        max-height: none !important;
+
+        object-fit: cover !important;
+        object-position: center center;
+
+        background: #fff;
+    }
+
+    .job-detail-profile-media svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: #6d4aff;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+
+    /*DETAIL DRAWER — PROFILE TEXT*/
+
+    .job-detail-profile-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .job-detail-profile-label {
+        color: var(--af-text-muted);
+        font-size: .61rem;
+        font-weight: 750;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+
+    .job-detail-profile-copy strong,
+    .job-detail-profile-copy > span:not(.job-detail-profile-label),
+    .job-detail-profile-copy small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .job-detail-profile-copy strong {
+        color: var(--af-text);
+        font-size: .74rem;
+    }
+
+    .job-detail-profile-copy > span:not(.job-detail-profile-label) {
+        color: var(--af-text-secondary);
+        font-size: .66rem;
+    }
+
+    .job-detail-profile-copy small {
+        color: #087f5b;
+        font-size: .61rem;
+        font-weight: 750;
+    }
+
+    .job-detail-profile-copy small i {
+        margin-right: 3px;
+    }
+
+
+    /*VIEW INVOICE / VIEW PAID INVOICE*/
+
+    #detailsBilling {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 36px;
+        padding: 0 15px;
+
+        border: 1px solid #7544f5 !important;
+        border-radius: 8px;
+
+        background: #7544f5 !important;
+        color: #ffffff !important;
+
+        font-weight: 800 !important;
+        font-size: .70rem;
+        line-height: 1;
+
+        text-decoration: none !important;
+        white-space: nowrap;
+
+        transition:
+            background .15s ease,
+            border-color .15s ease,
+            box-shadow .15s ease,
+            transform .15s ease;
+    }
+
+    #detailsBilling:hover {
+        background: #6336d8 !important;
+        border-color: #6336d8 !important;
+        color: #ffffff !important;
+
+        box-shadow: 0 4px 12px rgba(117, 68, 245, .20);
+    }
+
+    #detailsBilling:visited,
+    #detailsBilling:focus,
+    #detailsBilling:active {
+        color: #ffffff !important;
+    }
+
+    #detailsBilling:focus-visible {
+        outline: 2px solid rgba(117, 68, 245, .35);
+        outline-offset: 2px;
+    }
+
+
+    /*MOBILE*/
+
+    @@media (max-width: 620px) {
+
+        .job-detail-people-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .job-create-part-entry {
+            grid-template-columns: 1fr 76px;
+        }
+
+        .job-add-part-button {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .job-create-part-row {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+        }
+
+        .job-detail-profile-media {
+            width: 60px;
+            height: 52px;
+            min-width: 60px;
+            min-height: 52px;
+            flex-basis: 60px;
+        }
+
+        .job-detail-owner-media {
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
+            min-height: 50px;
+            flex-basis: 50px;
+        }
+
+        #detailsBilling {
+            min-height: 36px;
+            padding: 0 12px;
+            font-size: .68rem;
+        }
+    }
+</style>
+
+<!-- Archived Repair Job Orders overlay host -->
+<div id="jobArchiveOverlayHost"></div>
+
 @section Scripts {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    const jobArchiveOverlayHost = document.getElementById("jobArchiveOverlayHost");
+    const jobArchiveOverlayStyleIds = new Set();
+
+    function jobArchiveRouteKey(url) {
+        const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "").toLowerCase();
+        if (path === "/joborders/archived") return "archived";
+        if (path === "/joborders" || path === "/joborders/index") return "index";
+        return null;
+    }
+
+    function isJobOrdersIndexUrl(url) {
+        const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "").toLowerCase();
+        return path === "/joborders" || path === "/joborders/index";
+    }
+
+    function closeJobArchiveOverlay() {
+        if (jobArchiveOverlayHost) {
+            jobArchiveOverlayHost.innerHTML = "";
+        }
+        document.body.classList.remove("job-archive-overlay-open");
+    }
+
+    function appendJobArchiveOverlayStyles(doc) {
+        if (jobArchiveOverlayStyleIds.has("archived")) return;
+
+        const style = Array.from(doc.querySelectorAll("style")).find(item =>
+            (item.textContent || "").includes(".job-archive-overlay-page")
+        );
+
+        if (!style) return;
+
+        const clone = document.createElement("style");
+        clone.setAttribute("data-job-archive-overlay-style", "archived");
+        clone.textContent = style.textContent || "";
+        document.head.appendChild(clone);
+        jobArchiveOverlayStyleIds.add("archived");
+    }
+
+    function wireJobArchiveDrawer(root) {
+        const drawer = root.querySelector("#jobArchiveDrawer");
+        const content = root.querySelector("#jobArchiveDrawerContent");
+        const title = root.querySelector("#jobArchiveDrawerTitle");
+        const subtitle = root.querySelector("#jobArchiveDrawerSubtitle");
+        const restoreId = root.querySelector("#jobArchiveRestoreId");
+
+        if (!drawer || !content || !title || !subtitle || !restoreId) return;
+
+        function closeDrawer() {
+            drawer.classList.remove("open");
+            drawer.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("job-archive-open");
+        }
+
+        root.querySelectorAll("[data-close-archive-drawer]").forEach(button => {
+            button.addEventListener("click", closeDrawer);
+        });
+
+        drawer.addEventListener("click", function (event) {
+            if (event.target === drawer) closeDrawer();
+        });
+
+        root.querySelectorAll("[data-view-archived]").forEach(button => {
+            button.addEventListener("click", function () {
+                const id = button.dataset.viewArchived;
+                const template = root.querySelector(`#job-archive-details-${id}`);
+                if (!template) return;
+
+                title.textContent = `Job Order #${id}`;
+                subtitle.textContent = "Preserved repair record · Archived";
+                content.innerHTML = "";
+                content.appendChild(template.content.cloneNode(true));
+                restoreId.value = id;
+                drawer.classList.add("open");
+                drawer.setAttribute("aria-hidden", "false");
+                document.body.classList.add("job-archive-open");
+            });
+        });
+    }
+
+    function showJobArchiveOverlayLoading() {
+        if (!jobArchiveOverlayHost) return;
+        jobArchiveOverlayHost.innerHTML = `
+            <div class="job-archive-overlay-loading">
+                <div class="job-archive-overlay-loading-card">
+                    <span class="job-archive-overlay-spinner"></span>
+                    Loading archived repair jobs...
+                </div>
+            </div>`;
+        document.body.classList.add("job-archive-overlay-open");
+    }
+
+    async function openJobArchiveOverlay(url) {
+        const routeKey = jobArchiveRouteKey(url);
+        if (routeKey !== "archived") {
+            window.location.href = url;
+            return;
+        }
+
+        showJobArchiveOverlayLoading();
+
+        try {
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const root = doc.querySelector(".job-archive-overlay-page");
+
+            if (!root) {
+                window.location.href = url;
+                return;
+            }
+
+            appendJobArchiveOverlayStyles(doc);
+            jobArchiveOverlayHost.innerHTML = "";
+            root.setAttribute("data-job-archive-overlay-root", "true");
+            jobArchiveOverlayHost.appendChild(root);
+            document.body.classList.add("job-archive-overlay-open");
+            wireJobArchiveDrawer(root);
+        } catch (error) {
+            console.error("AutoFlow archived job order overlay error:", error);
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        const link = event.target.closest("a[href]");
+        if (!link) return;
+
+        const overlayRoot = link.closest("[data-job-archive-overlay-root]");
+        const href = link.href;
+        const routeKey = jobArchiveRouteKey(href);
+
+        if (overlayRoot) {
+            if (isJobOrdersIndexUrl(href)) {
+                event.preventDefault();
+                closeJobArchiveOverlay();
+                return;
+            }
+            return;
+        }
+
+        if (routeKey !== "archived") return;
+
+        event.preventDefault();
+        openJobArchiveOverlay(href);
+    }, true);
+
+    document.addEventListener("click", function (event) {
+        const backdrop = event.target.closest(".job-archive-overlay-backdrop");
+        if (!backdrop) return;
+        if (!backdrop.closest("[data-job-archive-overlay-root]")) return;
+        event.preventDefault();
+        closeJobArchiveOverlay();
+    }, true);
+
+    document.addEventListener("submit", async function (event) {
+        const form = event.target.closest("[data-job-archive-overlay-root] form");
+        if (!form) return;
+
+        event.preventDefault();
+
+        const submitButton = form.querySelector("button[type='submit']");
+        const originalText = submitButton ? submitButton.innerHTML : "";
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = "Restoring...";
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: (form.method || "POST").toUpperCase(),
+                credentials: "same-origin",
+                body: new FormData(form),
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            if (response.redirected && (isJobOrdersIndexUrl(response.url) || jobArchiveRouteKey(response.url) === "archived")) {
+                closeJobArchiveOverlay();
+                window.location.reload();
+                return;
+            }
+
+            if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+            const finalUrl = response.url;
+            if (isJobOrdersIndexUrl(finalUrl)) {
+                closeJobArchiveOverlay();
+                window.location.reload();
+                return;
+            }
+
+            if (jobArchiveRouteKey(finalUrl) === "archived") {
+                await openJobArchiveOverlay(finalUrl);
+                return;
+            }
+
+            window.location.href = finalUrl;
+        } catch (error) {
+            console.error("AutoFlow archived job restore error:", error);
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+    }, true);
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            const archiveRoot = document.querySelector("[data-job-archive-overlay-root]");
+            if (archiveRoot) closeJobArchiveOverlay();
+        }
+    });
 
     const rows = Array.from(
         document.querySelectorAll(".job-data-row")
@@ -1064,13 +2097,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const partDrawer =
         document.getElementById("jobPartDrawer");
 
-    const deleteModal =
-        document.getElementById("jobDeleteModal");
+    const archiveModal =
+        document.getElementById("jobArchiveModal");
+
+    const jobOrderNotification =
+        document.getElementById("jobOrderNotification");
+
+    if (jobOrderNotification) {
+        window.setTimeout(function () {
+            jobOrderNotification.style.transition = "opacity .2s ease, transform .2s ease";
+            jobOrderNotification.style.opacity = "0";
+            jobOrderNotification.style.transform = "translateY(8px)";
+            window.setTimeout(function () {
+                jobOrderNotification.remove();
+            }, 220);
+        }, 3200);
+    }
 
     const detailsContent =
         document.getElementById("detailsContent");
 
     const pageSize = 10;
+
+    const appointmentMeta = @Html.Raw(appointmentMetaJson);
+    const partMeta = @Html.Raw(partMetaJson);
 
     let currentPage = 1;
     let filteredRows = [...rows];
@@ -1391,6 +2441,57 @@ document.addEventListener("DOMContentLoaded", function () {
             .textContent = completed;
     }
 
+    function updateVehiclePreview(selectId, previewId, imageId, nameId, statusId) {
+        const select = document.getElementById(selectId);
+        const preview = document.getElementById(previewId);
+        const image = document.getElementById(imageId);
+        const name = document.getElementById(nameId);
+        const status = document.getElementById(statusId);
+
+        if (!select || !preview || !image || !name || !status) return;
+
+        const option = select.options[select.selectedIndex];
+        const imageUrl = option ? (option.dataset.image || '') : '';
+        const selectedText = option ? option.textContent.trim() : '';
+
+        if (!select.value) {
+            preview.hidden = true;
+            image.removeAttribute('src');
+            return;
+        }
+
+        preview.hidden = false;
+        name.textContent = selectedText || 'Vehicle selected';
+
+        if (imageUrl) {
+            image.src = imageUrl;
+            image.alt = selectedText || 'Selected vehicle';
+            status.innerHTML = '<i class="bi bi-check-circle-fill"></i> Vehicle image linked';
+        } else {
+            image.removeAttribute('src');
+            status.innerHTML = '<i class="bi bi-info-circle-fill"></i> Vehicle selected · no image saved';
+        }
+    }
+
+    function wireVehicleImagePreviews() {
+        const createVehicle = document.getElementById('jobCreateVehicleId');
+        const editVehicle = document.getElementById('editVehicleId');
+
+        if (createVehicle && !createVehicle.dataset.previewWired) {
+            createVehicle.addEventListener('change', function () {
+                updateVehiclePreview('jobCreateVehicleId', 'jobCreateSelectedVehicle', 'jobCreateVehicleImage', 'jobCreateVehicleName', 'jobCreateVehicleStatus');
+            });
+            createVehicle.dataset.previewWired = 'true';
+        }
+
+        if (editVehicle && !editVehicle.dataset.previewWired) {
+            editVehicle.addEventListener('change', function () {
+                updateVehiclePreview('editVehicleId', 'jobEditSelectedVehicle', 'jobEditVehicleImage', 'jobEditVehicleName', 'jobEditVehicleStatus');
+            });
+            editVehicle.dataset.previewWired = 'true';
+        }
+    }
+
     function closeDrawers() {
 
         document
@@ -1415,6 +2516,251 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    function syncCreateAppointmentForVehicle() {
+        const vehicleSelect = document.getElementById('jobCreateVehicleId');
+        const appointmentSelect = document.getElementById('jobCreateAppointmentId');
+        const dateInput = document.getElementById('jobCreateJobOrderDate');
+        const appointmentNote = document.getElementById('jobCreateAppointmentNote');
+        const dateNote = document.getElementById('jobCreateJobDateNote');
+
+        if (!vehicleSelect || !appointmentSelect || !dateInput) return;
+
+        const vehicleId = Number(vehicleSelect.value || 0);
+        const options = Array.from(appointmentSelect.options);
+
+        options.forEach(option => {
+            if (!option.value) {
+                option.hidden = false;
+                return;
+            }
+
+            const meta = appointmentMeta.find(a => Number(a.id) === Number(option.value));
+            option.hidden = !vehicleId || !meta || Number(meta.vehicleId) !== vehicleId;
+        });
+
+        const matchingAppointments = appointmentMeta
+            .filter(a =>
+                Number(a.vehicleId) === vehicleId &&
+                String(a.status || '').toLowerCase() === 'scheduled')
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+        const currentMeta = appointmentMeta.find(a => Number(a.id) === Number(appointmentSelect.value));
+        const currentMatchesVehicle = currentMeta && Number(currentMeta.vehicleId) === vehicleId && String(currentMeta.status || '').toLowerCase() === 'scheduled';
+
+        if (!currentMatchesVehicle) {
+            appointmentSelect.value = matchingAppointments.length > 0
+                ? String(matchingAppointments[0].id)
+                : '';
+        }
+
+        const selectedMeta = appointmentMeta.find(a => Number(a.id) === Number(appointmentSelect.value));
+
+        if (selectedMeta && Number(selectedMeta.vehicleId) === vehicleId && String(selectedMeta.status || '').toLowerCase() === 'scheduled') {
+            dateInput.value = selectedMeta.date;
+            dateInput.readOnly = true;
+            dateInput.classList.add('job-appointment-auto-date');
+
+            if (appointmentNote) {
+                appointmentNote.textContent = 'Appointment automatically linked to this vehicle.';
+                appointmentNote.classList.add('job-appointment-linked');
+            }
+
+            if (dateNote) {
+                dateNote.textContent = 'Automatically inherited from the linked appointment.';
+                dateNote.classList.add('job-appointment-linked');
+            }
+        } else {
+            if (!vehicleId) {
+                appointmentSelect.value = '';
+            }
+
+            dateInput.readOnly = false;
+            dateInput.classList.remove('job-appointment-auto-date');
+
+            if (appointmentNote) {
+                appointmentNote.textContent = vehicleId && matchingAppointments.length === 0
+                    ? 'No scheduled appointment found. This repair can be created as a walk-in.'
+                    : 'No appointment linked. You can create this repair manually.';
+                appointmentNote.classList.remove('job-appointment-linked');
+            }
+
+            if (dateNote) {
+                dateNote.textContent = 'Manual date — no appointment is linked.';
+                dateNote.classList.remove('job-appointment-linked');
+            }
+        }
+    }
+
+    function wireCreateAppointmentLinking() {
+        const vehicleSelect = document.getElementById('jobCreateVehicleId');
+        const appointmentSelect = document.getElementById('jobCreateAppointmentId');
+
+        if (vehicleSelect && !vehicleSelect.dataset.appointmentWired) {
+            vehicleSelect.addEventListener('change', syncCreateAppointmentForVehicle);
+            vehicleSelect.dataset.appointmentWired = 'true';
+        }
+
+        if (appointmentSelect && !appointmentSelect.dataset.appointmentWired) {
+            appointmentSelect.addEventListener('change', function () {
+                syncCreateAppointmentForVehicle();
+            });
+            appointmentSelect.dataset.appointmentWired = 'true';
+        }
+    }
+
+    function resetCreateParts() {
+        const select = document.getElementById('jobCreatePartSelect');
+        const quantity = document.getElementById('jobCreatePartQuantity');
+        const list = document.getElementById('jobCreatePartsList');
+        const hidden = document.getElementById('jobCreatePartHiddenInputs');
+        const total = document.querySelector('#jobCreatePartsTotal strong');
+
+        if (select) select.value = '';
+        if (quantity) quantity.value = '1';
+        if (hidden) hidden.innerHTML = '';
+        if (list) {
+            list.innerHTML = '<div class="job-create-parts-empty" id="jobCreatePartsEmpty">No parts added yet.</div>';
+        }
+        if (total) total.textContent = '₱0.00';
+    }
+
+    function renderCreateParts() {
+        const list = document.getElementById('jobCreatePartsList');
+        const hidden = document.getElementById('jobCreatePartHiddenInputs');
+        const total = document.querySelector('#jobCreatePartsTotal strong');
+        if (!list || !hidden) return;
+
+        const rows = Array.from(list.querySelectorAll('.job-create-part-row'));
+        let totalCost = 0;
+        hidden.innerHTML = '';
+
+        if (!rows.length) {
+            list.innerHTML = '<div class="job-create-parts-empty" id="jobCreatePartsEmpty">No parts added yet.</div>';
+        }
+
+        rows.forEach(row => {
+            const partId = row.dataset.partId;
+            const quantity = Number(row.dataset.quantity || 0);
+            const meta = partMeta.find(p => Number(p.id) === Number(partId));
+            const unitPrice = meta ? Number(meta.unitPrice || 0) : 0;
+            totalCost += unitPrice * quantity;
+
+            const partInput = document.createElement('input');
+            partInput.type = 'hidden';
+            partInput.name = 'partIds';
+            partInput.value = partId;
+            hidden.appendChild(partInput);
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'hidden';
+            quantityInput.name = 'partQuantities';
+            quantityInput.value = String(quantity);
+            hidden.appendChild(quantityInput);
+        });
+
+        if (total) total.textContent = `₱${totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function addCreatePart() {
+        const select = document.getElementById('jobCreatePartSelect');
+        const quantityInput = document.getElementById('jobCreatePartQuantity');
+        const list = document.getElementById('jobCreatePartsList');
+        if (!select || !quantityInput || !list || !select.value) return;
+
+        const partId = Number(select.value);
+        const quantityToAdd = Math.max(1, Number.parseInt(quantityInput.value || '1', 10));
+        const meta = partMeta.find(p => Number(p.id) === partId);
+        if (!meta) return;
+
+        const stock = Number(meta.stock || 0);
+        const existing = list.querySelector(`.job-create-part-row[data-part-id="${partId}"]`);
+        const currentQuantity = existing ? Number(existing.dataset.quantity || 0) : 0;
+        const newQuantity = currentQuantity + quantityToAdd;
+
+        if (newQuantity > stock) {
+            window.alert(`Only ${stock} unit${stock === 1 ? '' : 's'} of ${meta.name} are currently in stock.`);
+            return;
+        }
+
+        if (existing) {
+            existing.dataset.quantity = String(newQuantity);
+            const quantityBadge = existing.querySelector('.job-create-part-quantity');
+            if (quantityBadge) quantityBadge.textContent = `Qty ${newQuantity}`;
+        } else {
+            const empty = document.getElementById('jobCreatePartsEmpty');
+            if (empty) empty.remove();
+
+            const row = document.createElement('div');
+            row.className = 'job-create-part-row';
+            row.dataset.partId = String(partId);
+            row.dataset.quantity = String(newQuantity);
+            row.innerHTML = `
+                <div class="job-create-part-copy">
+                    <strong>${escapeHtml(meta.name)}</strong>
+                    <span>₱${Number(meta.unitPrice || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each · ${stock} in stock</span>
+                </div>
+                <span class="job-create-part-quantity">Qty ${newQuantity}</span>
+                <button type="button" class="job-create-part-remove" title="Remove part" aria-label="Remove ${escapeHtml(meta.name)}">×</button>
+            `;
+
+            row.querySelector('.job-create-part-remove').addEventListener('click', function () {
+                row.remove();
+                renderCreateParts();
+            });
+
+            list.appendChild(row);
+        }
+
+        select.value = '';
+        quantityInput.value = '1';
+        renderCreateParts();
+    }
+
+    function wireCreateParts() {
+        const addButton = document.getElementById('jobCreateAddPart');
+        const select = document.getElementById('jobCreatePartSelect');
+        const quantity = document.getElementById('jobCreatePartQuantity');
+
+        if (addButton && !addButton.dataset.wired) {
+            addButton.addEventListener('click', addCreatePart);
+            addButton.dataset.wired = 'true';
+        }
+
+        if (quantity && !quantity.dataset.wired) {
+            quantity.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addCreatePart();
+                }
+            });
+            quantity.dataset.wired = 'true';
+        }
+
+        if (select && !select.dataset.wired) {
+            select.addEventListener('change', function () {
+                const meta = partMeta.find(p => Number(p.id) === Number(select.value));
+                if (meta && quantity) {
+                    quantity.max = String(meta.stock || 1);
+                } else if (quantity) {
+                    quantity.removeAttribute('max');
+                }
+            });
+            select.dataset.wired = 'true';
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[char];
+        });
+    }
+
     function openCreate() {
 
         const form =
@@ -1423,6 +2769,20 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
         form.reset();
+        resetCreateParts();
+        wireCreateParts();
+
+        const createDate = document.getElementById('jobCreateJobOrderDate');
+        if (createDate) {
+            createDate.value = new Date().toISOString().slice(0, 16);
+            createDate.readOnly = false;
+            createDate.classList.remove('job-appointment-auto-date');
+        }
+
+        wireVehicleImagePreviews();
+        wireCreateAppointmentLinking();
+        updateVehiclePreview('jobCreateVehicleId', 'jobCreateSelectedVehicle', 'jobCreateVehicleImage', 'jobCreateVehicleName', 'jobCreateVehicleStatus');
+        syncCreateAppointmentForVehicle();
 
         document.querySelector(
             '#jobCreateForm select[name="Status"]'
@@ -1435,10 +2795,243 @@ document.addEventListener("DOMContentLoaded", function () {
         openDrawer(createDrawer);
     }
 
+    function resetEditParts() {
+        const select = document.getElementById('jobEditPartSelect');
+        const quantity = document.getElementById('jobEditPartQuantity');
+        const list = document.getElementById('jobEditPartsList');
+        const hidden = document.getElementById('jobEditPartHiddenInputs');
+        const total = document.querySelector('#jobEditPartsTotal strong');
+        const jsonInput = document.getElementById('jobEditPartsJson');
+
+        if (select) select.value = '';
+        if (quantity) quantity.value = '1';
+        if (hidden) hidden.innerHTML = '';
+        if (list) {
+            list.innerHTML = '<div class="job-create-parts-empty" id="jobEditPartsEmpty">No parts added yet.</div>';
+        }
+        if (total) total.textContent = '₱0.00';
+        if (jsonInput) jsonInput.value = '[]';
+    }
+
+    function getEditPartRows() {
+        const list = document.getElementById('jobEditPartsList');
+        return list ? Array.from(list.querySelectorAll('.job-create-part-row')) : [];
+    }
+
+    function getEditOriginalQuantity(partId) {
+        const row = selectedRow;
+        if (!row) return 0;
+
+        try {
+            const parts = JSON.parse(row.dataset.parts || '[]');
+            const part = parts.find(p => Number(p.id) === Number(partId));
+            return part ? Number(part.quantity || 0) : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    function renderEditParts() {
+        const list = document.getElementById('jobEditPartsList');
+        const hidden = document.getElementById('jobEditPartHiddenInputs');
+        const total = document.querySelector('#jobEditPartsTotal strong');
+        const jsonInput = document.getElementById('jobEditPartsJson');
+        if (!list || !hidden) return;
+
+        const rows = getEditPartRows();
+        let totalCost = 0;
+        hidden.innerHTML = '';
+
+        const partsSnapshot = [];
+
+        if (!rows.length) {
+            list.innerHTML = '<div class="job-create-parts-empty" id="jobEditPartsEmpty">No parts added yet.</div>';
+        }
+
+        rows.forEach(row => {
+            const partId = row.dataset.partId;
+            const quantity = Number(row.dataset.quantity || 0);
+            const meta = partMeta.find(p => Number(p.id) === Number(partId));
+            const unitPrice = meta ? Number(meta.unitPrice || 0) : Number(row.dataset.unitPrice || 0);
+            totalCost += unitPrice * quantity;
+
+            partsSnapshot.push({
+                partId: Number(partId),
+                quantity: quantity
+            });
+
+            const partInput = document.createElement('input');
+            partInput.type = 'hidden';
+            partInput.name = 'partIds';
+            partInput.value = partId;
+            hidden.appendChild(partInput);
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'hidden';
+            quantityInput.name = 'partQuantities';
+            quantityInput.value = String(quantity);
+            hidden.appendChild(quantityInput);
+        });
+
+        if (total) {
+            total.textContent = `₱${totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        if (jsonInput) {
+            jsonInput.value = JSON.stringify(partsSnapshot);
+        }
+    }
+
+    function addEditPart(partId, quantityToAdd) {
+        const list = document.getElementById('jobEditPartsList');
+        if (!list || !partId) return;
+
+        const meta = partMeta.find(p => Number(p.id) === Number(partId));
+        const existing = list.querySelector(`.job-create-part-row[data-part-id="${partId}"]`);
+        const currentQuantity = existing ? Number(existing.dataset.quantity || 0) : 0;
+        const originalQuantity = getEditOriginalQuantity(partId);
+        const stock = meta ? Number(meta.stock || 0) : 0;
+        const maxForJob = stock + originalQuantity;
+        const newQuantity = currentQuantity + Math.max(1, Number.parseInt(quantityToAdd || '1', 10));
+
+        if (meta && newQuantity > maxForJob) {
+            window.alert(`Only ${maxForJob} unit${maxForJob === 1 ? '' : 's'} of ${meta.name} are available for this repair job.`);
+            return;
+        }
+
+        if (!meta && !existing) return;
+
+        if (existing) {
+            existing.dataset.quantity = String(newQuantity);
+            const quantityBadge = existing.querySelector('.job-create-part-quantity');
+            if (quantityBadge) quantityBadge.textContent = `Qty ${newQuantity}`;
+        } else {
+            const empty = document.getElementById('jobEditPartsEmpty');
+            if (empty) empty.remove();
+
+            const name = meta ? meta.name : 'Unknown Part';
+            const unitPrice = meta ? Number(meta.unitPrice || 0) : 0;
+            const stockText = meta ? `${stock} in stock` : 'Existing job part';
+
+            const row = document.createElement('div');
+            row.className = 'job-create-part-row';
+            row.dataset.partId = String(partId);
+            row.dataset.quantity = String(newQuantity);
+            row.dataset.unitPrice = String(unitPrice);
+            row.innerHTML = `
+                <div class="job-create-part-copy">
+                    <strong>${escapeHtml(name)}</strong>
+                    <span>₱${unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each · ${stockText}</span>
+                </div>
+                <span class="job-create-part-quantity">Qty ${newQuantity}</span>
+                <button type="button" class="job-create-part-remove" title="Remove part" aria-label="Remove ${escapeHtml(name)}">×</button>
+            `;
+
+            row.querySelector('.job-create-part-remove').addEventListener('click', function () {
+                row.remove();
+                renderEditParts();
+            });
+
+            list.appendChild(row);
+        }
+
+        renderEditParts();
+    }
+
+    function wireEditParts() {
+        const addButton = document.getElementById('jobEditAddPart');
+        const select = document.getElementById('jobEditPartSelect');
+        const quantity = document.getElementById('jobEditPartQuantity');
+
+        if (addButton && !addButton.dataset.wired) {
+            addButton.addEventListener('click', function () {
+                if (!select || !select.value) return;
+                addEditPart(Number(select.value), quantity ? quantity.value : '1');
+                select.value = '';
+                if (quantity) quantity.value = '1';
+            });
+            addButton.dataset.wired = 'true';
+        }
+
+        if (quantity && !quantity.dataset.wired) {
+            quantity.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addButton?.click();
+                }
+            });
+            quantity.dataset.wired = 'true';
+        }
+
+        if (select && !select.dataset.wired) {
+            select.addEventListener('change', function () {
+                const meta = partMeta.find(p => Number(p.id) === Number(select.value));
+                const originalQuantity = meta ? getEditOriginalQuantity(meta.id) : 0;
+                if (quantity && meta) {
+                    quantity.max = String(Number(meta.stock || 0) + originalQuantity);
+                } else if (quantity) {
+                    quantity.removeAttribute('max');
+                }
+            });
+            select.dataset.wired = 'true';
+        }
+    }
+
+    function populateEditParts(row) {
+        const list = document.getElementById('jobEditPartsList');
+        if (!list) return;
+
+        list.innerHTML = '';
+
+        let parts = [];
+        try {
+            parts = JSON.parse(row.dataset.parts || '[]');
+        } catch {
+            parts = [];
+        }
+
+        parts.forEach(part => {
+            const meta = partMeta.find(p => Number(p.id) === Number(part.id));
+            const unitPrice = Number(part.unitPrice || (meta ? meta.unitPrice : 0));
+            const stock = meta ? Number(meta.stock || 0) : 0;
+            const archivedText = part.archived ? ' · archived inventory item' : ` · ${stock + Number(part.quantity || 0)} available for this job`;
+
+            const item = document.createElement('div');
+            item.className = 'job-create-part-row';
+            item.dataset.partId = String(part.id);
+            item.dataset.quantity = String(part.quantity || 1);
+            item.dataset.unitPrice = String(unitPrice);
+            item.innerHTML = `
+                <div class="job-create-part-copy">
+                    <strong>${escapeHtml(part.name || 'Unknown Part')}</strong>
+                    <span>₱${unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each${archivedText}</span>
+                </div>
+                <span class="job-create-part-quantity">Qty ${Number(part.quantity || 1)}</span>
+                <button type="button" class="job-create-part-remove" title="Remove part" aria-label="Remove ${escapeHtml(part.name || 'part')}">×</button>
+            `;
+
+            item.querySelector('.job-create-part-remove').addEventListener('click', function () {
+                item.remove();
+                renderEditParts();
+            });
+
+            list.appendChild(item);
+        });
+
+        if (!parts.length) {
+            list.innerHTML = '<div class="job-create-parts-empty" id="jobEditPartsEmpty">No parts added yet.</div>';
+        }
+
+        renderEditParts();
+    }
+
     function openEdit(row) {
 
         selectedRow = row;
         selectedJobId = row.dataset.id;
+
+        wireEditParts();
+        populateEditParts(row);
 
         document.getElementById(
             "editJobOrderId"
@@ -1447,6 +3040,9 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById(
             "editVehicleId"
         ).value = row.dataset.vehicleId;
+
+        wireVehicleImagePreviews();
+        updateVehiclePreview('editVehicleId', 'jobEditSelectedVehicle', 'jobEditVehicleImage', 'jobEditVehicleName', 'jobEditVehicleStatus');
 
         document.getElementById(
             "editAppointmentId"
@@ -1495,6 +3091,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
         selectedRow = row;
         selectedJobId = row.dataset.id;
+
+        const billingButton = document.getElementById("detailsBilling");
+        const createInvoiceButton = document.getElementById("detailsCreateInvoice");
+        const invoiceCreatedBadge = document.getElementById("detailsInvoiceCreated");
+        const billingId = row.dataset.billingId;
+        const billingStatus = row.dataset.billingStatus;
+        const hasInvoice = billingId && billingId !== "0";
+        const isCompleted = row.dataset.jobStatus === "Completed";
+
+        if (billingButton) {
+            billingButton.removeAttribute("href");
+            billingButton.style.display = "none";
+            if (hasInvoice) {
+                billingButton.href = `/Billings/Index?open=details&id=${encodeURIComponent(billingId)}`;
+                billingButton.textContent = billingStatus === "Paid" ? "View Paid Invoice" : "View Invoice";
+                billingButton.style.display = "inline-flex";
+            }
+        }
+
+        if (createInvoiceButton) {
+            createInvoiceButton.removeAttribute("href");
+            createInvoiceButton.style.display = "none";
+            if (isCompleted && !hasInvoice) {
+                createInvoiceButton.href = `/Billings/Index?open=create&jobOrderId=${encodeURIComponent(row.dataset.id)}`;
+                createInvoiceButton.style.display = "inline-flex";
+            }
+        }
+
+        if (invoiceCreatedBadge) {
+            invoiceCreatedBadge.style.display = hasInvoice ? "inline-flex" : "none";
+        }
+
+        const editButton = document.getElementById("detailsEdit");
+        if (editButton) {
+            // Completed jobs stay fully editable, even when an invoice already exists.
+            // This prevents an accidental status change or data entry mistake from
+            // permanently locking the repair record.
+            editButton.disabled = false;
+            editButton.title = "Edit Job";
+            editButton.style.opacity = "1";
+            editButton.style.cursor = "pointer";
+        }
 
         const status =
             row.dataset.status;
@@ -1551,36 +3189,38 @@ document.addEventListener("DOMContentLoaded", function () {
         openDrawer(partDrawer);
     }
 
-    function openDelete(row) {
+    function openArchive(row) {
 
         selectedRow = row;
         selectedJobId = row.dataset.id;
 
         document.getElementById(
-            "deleteJobId"
+            "archiveJobId"
         ).value =
             row.dataset.id;
 
         document.getElementById(
-            "deleteJobName"
+            "archiveJobName"
         ).textContent =
             `Job Order #${row.dataset.id}`;
 
-        deleteModal.classList.add("open");
+        archiveModal.classList.add("open");
 
         document.body.classList.add(
             "job-modal-active"
         );
     }
 
-    function closeDelete() {
+    function closeArchive() {
 
-        deleteModal.classList.remove("open");
+        archiveModal.classList.remove("open");
 
         document.body.classList.remove(
             "job-modal-active"
         );
     }
+
+    wireVehicleImagePreviews();
 
     document.getElementById(
         "openCreateJob"
@@ -1674,8 +3314,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                 openEdit(row);
                             }
 
-                            if (action === "delete") {
-                                openDelete(row);
+                            if (action === "archive") {
+                                openArchive(row);
                             }
                         }
                     );
@@ -1707,21 +3347,21 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     document.getElementById(
-        "cancelDelete"
+        "cancelArchive"
     ).addEventListener(
         "click",
-        closeDelete
+        closeArchive
     );
 
-    deleteModal.addEventListener(
+    archiveModal.addEventListener(
         "click",
         function (event) {
 
             if (
                 event.target ===
-                deleteModal
+                archiveModal
             ) {
-                closeDelete();
+                closeArchive();
             }
         }
     );
@@ -1733,7 +3373,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (event.key === "Escape") {
 
                 closeDrawers();
-                closeDelete();
+                closeArchive();
             }
         }
     );
@@ -1770,8 +3410,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 openEdit(initialRow);
             }
 
-            if (initialOpen === "delete") {
-                openDelete(initialRow);
+            if (initialOpen === "archive") {
+                openArchive(initialRow);
             }
 
             if (initialOpen === "addpart") {

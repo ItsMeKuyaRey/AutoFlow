@@ -1,7 +1,7 @@
 @model AutoFlow.Web.Models.Supplier
 
 @{
-    ViewData["Title"] = "Delete Supplier";
+    ViewData["Title"] = "Archive Supplier";
     var partCount = Model.Parts?.Count() ?? 0;
 }
 
@@ -159,7 +159,7 @@
 
         <div class="af-breadcrumb">
             <a asp-action="Index">Supplier Management</a>
-            <span> / Delete Supplier</span>
+            <span> / Archive Supplier</span>
         </div>
 
         <div class="af-card">
@@ -170,10 +170,10 @@
                 </div>
 
                 <div>
-                    <h1>Delete Supplier?</h1>
+                    <h1>Archive Supplier?</h1>
                     <p>
-                        This action will permanently remove this supplier
-                        record from AutoFlow.
+                        This action will move this supplier record to the archived supplier list.
+                        The record will not be permanently deleted.
                     </p>
                 </div>
             </div>
@@ -249,16 +249,14 @@
                         <i class="bi bi-info-circle me-1"></i>
                         This supplier currently has
                         <strong>@partCount</strong> associated part record(s).
-                        Deleting the supplier may be restricted by database
-                        relationships.
+                        Archiving keeps the supplier record available for historical reference.
                     </div>
                 }
                 else
                 {
                     <div class="af-danger-note">
                         <i class="bi bi-exclamation-circle me-1"></i>
-                        Please make sure this supplier record is no longer
-                        needed before continuing.
+                        The supplier will remain visible with an Archived status after this action.
                     </div>
                 }
 
@@ -281,8 +279,8 @@
 
                     <button type="submit"
                             class="af-btn af-btn-danger">
-                        <i class="bi bi-trash3 me-1"></i>
-                        Delete Supplier
+                        <i class="bi bi-archive me-1"></i>
+                        Archive Supplier
                     </button>
                 </form>
             </div>

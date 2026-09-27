@@ -19,64 +19,95 @@ public class CustomerFollowUpsController : Controller
     public async Task<IActionResult> Index(
         string? search,
         string? status,
-        string? followUpType)
+        string? followUpType,
+        int page = 1,
+        string? open = null,
+        int? id = null)
     {
+        const int pageSize = 10;
+        page = Math.Max(1, page);
+
+        // Keep archived follow-ups in the main CRM list. Archiving changes the row
+        // status instead of removing the record from the main page.
         var query = _context.CustomerFollowUps
             .AsNoTracking()
             .Include(f => f.Customer)
             .Include(f => f.Vehicle)
-            .Include(f => f.ServiceRecord)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var searchTerm = search.Trim();
-
             query = query.Where(f =>
                 f.Subject.Contains(searchTerm) ||
-                (f.Notes != null &&
-                 f.Notes.Contains(searchTerm)) ||
+                (f.Notes != null && f.Notes.Contains(searchTerm)) ||
                 (f.Customer != null &&
-                 (
-                     f.Customer.FirstName.Contains(searchTerm) ||
-                     f.Customer.LastName.Contains(searchTerm) ||
-                     (f.Customer.Email != null &&
-                      f.Customer.Email.Contains(searchTerm)) ||
-                     (f.Customer.Phone != null &&
-                      f.Customer.Phone.Contains(searchTerm))
-                 )) ||
+                 (f.Customer.FirstName.Contains(searchTerm) ||
+                  f.Customer.LastName.Contains(searchTerm) ||
+                  (f.Customer.Email != null && f.Customer.Email.Contains(searchTerm)) ||
+                  (f.Customer.Phone != null && f.Customer.Phone.Contains(searchTerm)))) ||
                 (f.Vehicle != null &&
-                 (
-                     f.Vehicle.PlateNumber.Contains(searchTerm) ||
-                     f.Vehicle.Make.Contains(searchTerm) ||
-                     f.Vehicle.Model.Contains(searchTerm)
-                 )));
+                 (f.Vehicle.PlateNumber.Contains(searchTerm) ||
+                  f.Vehicle.Make.Contains(searchTerm) ||
+                  f.Vehicle.Model.Contains(searchTerm))));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            query = query.Where(
-                f => f.Status == status);
+            query = query.Where(f => f.Status == status);
         }
 
         if (!string.IsNullOrWhiteSpace(followUpType))
         {
-            query = query.Where(
-                f => f.FollowUpType == followUpType);
+            query = query.Where(f => f.FollowUpType == followUpType);
         }
 
-        ViewBag.Search = search;
-        ViewBag.Status = status;
-        ViewBag.FollowUpType = followUpType;
+        var allFilteredFollowUps = await query
+            .OrderBy(f => f.FollowUpDate)
+            .ThenByDescending(f => f.CreatedAt)
+            .ToListAsync();
+
+        var archivedFollowUps = await _context.CustomerFollowUps
+            .AsNoTracking()
+            .Include(f => f.Customer)
+            .Include(f => f.Vehicle)
+            .Where(f => f.Status == "Archived")
+            .OrderByDescending(f => f.UpdatedAt)
+            .ThenByDescending(f => f.FollowUpDate)
+            .ToListAsync();
+
+        ViewBag.ArchivedCount = archivedFollowUps.Count;
+        ViewBag.ArchivedFollowUps = archivedFollowUps;
+
+        var now = GetDatabaseDateTime();
+        var today = now.Date;
+        var activeStatuses = new[] { "Pending", "Contacted" };
+
+        ViewBag.DueTodayCount = allFilteredFollowUps.Count(f =>
+            f.FollowUpDate.Date == today &&
+            activeStatuses.Contains(f.Status, StringComparer.OrdinalIgnoreCase));
+
+        ViewBag.UpcomingCount = allFilteredFollowUps.Count(f =>
+            f.NextFollowUpDate.HasValue &&
+            f.NextFollowUpDate.Value.Date > today &&
+            activeStatuses.Contains(f.Status, StringComparer.OrdinalIgnoreCase));
+
+        ViewBag.OverdueCount = allFilteredFollowUps.Count(f =>
+            f.FollowUpDate.Date < today &&
+            activeStatuses.Contains(f.Status, StringComparer.OrdinalIgnoreCase));
+
+        ViewBag.TotalCount = allFilteredFollowUps.Count;
+        ViewBag.PageSize = pageSize;
+        ViewBag.Page = page;
+        ViewBag.PageCount = Math.Max(1, (int)Math.Ceiling(allFilteredFollowUps.Count / (double)pageSize));
+        ViewBag.Search = search ?? string.Empty;
+        ViewBag.Status = status ?? string.Empty;
+        ViewBag.FollowUpType = followUpType ?? string.Empty;
+        ViewBag.Open = open ?? string.Empty;
+        ViewBag.OpenId = id;
 
         ViewBag.Statuses = new SelectList(
-            new[]
-            {
-                "Pending",
-                "Contacted",
-                "Completed",
-                "Cancelled"
-            },
+            new[] { "Pending", "Contacted", "Completed", "Cancelled" },
             status);
 
         ViewBag.FollowUpTypes = new SelectList(
@@ -91,54 +122,121 @@ public class CustomerFollowUpsController : Controller
             },
             followUpType);
 
-        var followUps = await query
-            .OrderBy(f => f.Status == "Pending" ? 0 : 1)
-            .ThenBy(f => f.FollowUpDate)
-            .ThenByDescending(f => f.CreatedAt)
-            .ToListAsync();
+        var pageCount = (int)ViewBag.PageCount;
+        if (page > pageCount)
+        {
+            page = pageCount;
+            ViewBag.Page = page;
+        }
+
+        var followUps = allFilteredFollowUps
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        CustomerFollowUp? drawerFollowUp = null;
+        if (id.HasValue &&
+            (string.Equals(open, "details", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(open, "edit", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(open, "delete", StringComparison.OrdinalIgnoreCase)))
+        {
+            drawerFollowUp = await _context.CustomerFollowUps
+                .AsNoTracking()
+                .Include(f => f.Customer)
+                .Include(f => f.Vehicle)
+                                .FirstOrDefaultAsync(f => f.FollowUpId == id.Value);
+        }
+
+        if (string.Equals(open, "create", StringComparison.OrdinalIgnoreCase))
+        {
+            drawerFollowUp = new CustomerFollowUp
+            {
+                FollowUpDate = GetDatabaseDateTime(),
+                Status = "Pending",
+                FollowUpType = "Service Follow-up"
+            };
+        }
+
+        ViewBag.DrawerFollowUp = drawerFollowUp;
+
+        if (drawerFollowUp != null &&
+            (string.Equals(open, "create", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(open, "edit", StringComparison.OrdinalIgnoreCase)))
+        {
+            await LoadFormDataAsync(
+                drawerFollowUp.CustomerId == 0 ? null : drawerFollowUp.CustomerId,
+                drawerFollowUp.VehicleId == 0 ? null : drawerFollowUp.VehicleId,
+                drawerFollowUp.Status,
+                drawerFollowUp.FollowUpType);
+        }
 
         return View(followUps);
+    }
+
+    // Lightweight JSON endpoints used by the CRM drawer to keep vehicle and service selections connected.
+    [HttpGet]
+    public async Task<IActionResult> VehiclesForCustomer(int customerId)
+    {
+        var vehicles = await _context.Vehicles
+            .AsNoTracking()
+            .Where(v => v.CustomerId == customerId)
+            .OrderBy(v => v.Make)
+            .ThenBy(v => v.Model)
+            .ThenBy(v => v.PlateNumber)
+            .Select(v => new
+            {
+                id = v.VehicleId,
+                text = v.Make + " " + v.Model + " · " + v.PlateNumber,
+                imageUrl = v.ImageUrl,
+                make = v.Make,
+                model = v.Model,
+                plateNumber = v.PlateNumber,
+                isArchived = v.IsArchived
+            })
+            .ToListAsync();
+
+        return Json(vehicles);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CustomerProfile(int customerId)
+    {
+        var customer = await _context.Customers
+            .AsNoTracking()
+            .Where(c => c.CustomerId == customerId)
+            .Select(c => new
+            {
+                c.CustomerId,
+                name = (c.FirstName + " " + c.LastName).Trim(),
+                c.Phone,
+                c.Email,
+                imageUrl = c.ImageUrl
+            })
+            .FirstOrDefaultAsync();
+
+        if (customer == null)
+        {
+            return NotFound();
+        }
+
+        return Json(customer);
     }
 
     // GET: CustomerFollowUps/Details/5
     public async Task<IActionResult> Details(int? id)
     {
-        if (id == null)
+        if (id == null || !await CustomerFollowUpExistsAsync(id.Value))
         {
             return NotFound();
         }
 
-        var followUp = await _context.CustomerFollowUps
-            .AsNoTracking()
-            .Include(f => f.Customer)
-            .Include(f => f.Vehicle)
-            .Include(f => f.ServiceRecord)
-            .FirstOrDefaultAsync(
-                f => f.FollowUpId == id);
-
-        if (followUp == null)
-        {
-            return NotFound();
-        }
-
-        return View(followUp);
+        return RedirectToAction(nameof(Index), new { open = "details", id });
     }
 
     // GET: CustomerFollowUps/Create
-    public async Task<IActionResult> Create()
+    public IActionResult Create()
     {
-        var followUp = new CustomerFollowUp
-        {
-            FollowUpDate = GetDatabaseDateTime(),
-            Status = "Pending",
-            FollowUpType = "Service Follow-up"
-        };
-
-        await LoadFormDataAsync(
-            selectedStatus: followUp.Status,
-            selectedFollowUpType: followUp.FollowUpType);
-
-        return View(followUp);
+        return RedirectToAction(nameof(Index), new { open = "create" });
     }
 
     // POST: CustomerFollowUps/Create
@@ -148,7 +246,6 @@ public class CustomerFollowUpsController : Controller
         [Bind(
             "CustomerId," +
             "VehicleId," +
-            "ServiceRecordId," +
             "FollowUpDate," +
             "FollowUpType," +
             "Subject," +
@@ -157,6 +254,18 @@ public class CustomerFollowUpsController : Controller
             "NextFollowUpDate")]
         CustomerFollowUp followUp)
     {
+        if (string.IsNullOrWhiteSpace(followUp.FollowUpType))
+        {
+            followUp.FollowUpType = "Service Follow-up";
+            ModelState.Remove(nameof(followUp.FollowUpType));
+        }
+
+        if (string.IsNullOrWhiteSpace(followUp.Status))
+        {
+            followUp.Status = "Pending";
+            ModelState.Remove(nameof(followUp.Status));
+        }
+
         if (!await CustomerExistsAsync(
                 followUp.CustomerId))
         {
@@ -172,16 +281,6 @@ public class CustomerFollowUpsController : Controller
             ModelState.AddModelError(
                 "VehicleId",
                 "The selected vehicle does not belong to the selected customer.");
-        }
-
-        if (followUp.ServiceRecordId.HasValue &&
-            !await ServiceRecordBelongsToVehicleAsync(
-                followUp.ServiceRecordId.Value,
-                followUp.VehicleId))
-        {
-            ModelState.AddModelError(
-                "ServiceRecordId",
-                "The selected service record does not belong to the selected vehicle.");
         }
 
         if (string.IsNullOrWhiteSpace(followUp.Subject))
@@ -241,42 +340,27 @@ public class CustomerFollowUpsController : Controller
                 nameof(Index));
         }
 
-        await LoadFormDataAsync(
-            followUp.CustomerId,
-            followUp.VehicleId,
-            followUp.ServiceRecordId,
-            followUp.Status,
-            followUp.FollowUpType);
+        TempData["ErrorMessage"] =
+            ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message))
+            ?? "Please check the follow-up details and try again.";
 
-        return View(followUp);
+        return RedirectToAction(
+            nameof(Index),
+            new { open = "create" });
     }
 
     // GET: CustomerFollowUps/Edit/5
     public async Task<IActionResult> Edit(int? id)
     {
-        if (id == null)
+        if (id == null || !await CustomerFollowUpExistsAsync(id.Value))
         {
             return NotFound();
         }
 
-        var followUp =
-            await _context.CustomerFollowUps
-                .FirstOrDefaultAsync(
-                    f => f.FollowUpId == id);
-
-        if (followUp == null)
-        {
-            return NotFound();
-        }
-
-        await LoadFormDataAsync(
-            followUp.CustomerId,
-            followUp.VehicleId,
-            followUp.ServiceRecordId,
-            followUp.Status,
-            followUp.FollowUpType);
-
-        return View(followUp);
+        return RedirectToAction(nameof(Index), new { open = "edit", id });
     }
 
     // POST: CustomerFollowUps/Edit/5
@@ -288,7 +372,6 @@ public class CustomerFollowUpsController : Controller
             "FollowUpId," +
             "CustomerId," +
             "VehicleId," +
-            "ServiceRecordId," +
             "FollowUpDate," +
             "FollowUpType," +
             "Subject," +
@@ -318,16 +401,6 @@ public class CustomerFollowUpsController : Controller
             ModelState.AddModelError(
                 "VehicleId",
                 "The selected vehicle does not belong to the selected customer.");
-        }
-
-        if (followUp.ServiceRecordId.HasValue &&
-            !await ServiceRecordBelongsToVehicleAsync(
-                followUp.ServiceRecordId.Value,
-                followUp.VehicleId))
-        {
-            ModelState.AddModelError(
-                "ServiceRecordId",
-                "The selected service record does not belong to the selected vehicle.");
         }
 
         if (string.IsNullOrWhiteSpace(followUp.Subject))
@@ -379,9 +452,6 @@ public class CustomerFollowUpsController : Controller
                 existing.VehicleId =
                     followUp.VehicleId;
 
-                existing.ServiceRecordId =
-                    followUp.ServiceRecordId;
-
                 existing.FollowUpDate =
                     NormalizeDatabaseDateTime(
                         followUp.FollowUpDate);
@@ -431,7 +501,6 @@ public class CustomerFollowUpsController : Controller
         await LoadFormDataAsync(
             followUp.CustomerId,
             followUp.VehicleId,
-            followUp.ServiceRecordId,
             followUp.Status,
             followUp.FollowUpType);
 
@@ -441,60 +510,65 @@ public class CustomerFollowUpsController : Controller
     // GET: CustomerFollowUps/Delete/5
     public async Task<IActionResult> Delete(int? id)
     {
-        if (id == null)
+        if (id == null || !await CustomerFollowUpExistsAsync(id.Value))
         {
             return NotFound();
         }
 
-        var followUp =
-            await _context.CustomerFollowUps
-                .AsNoTracking()
-                .Include(f => f.Customer)
-                .Include(f => f.Vehicle)
-                .Include(f => f.ServiceRecord)
-                .FirstOrDefaultAsync(
-                    f => f.FollowUpId == id);
-
-        if (followUp == null)
-        {
-            return NotFound();
-        }
-
-        return View(followUp);
+        return RedirectToAction(nameof(Index), new { open = "delete", id });
     }
 
     // POST: CustomerFollowUps/Delete/5
+    // Kept as the existing route so the current archive confirmation drawer continues to work.
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(
-        int id)
+    public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var followUp =
-            await _context.CustomerFollowUps
-                .FindAsync(id);
-
+        var followUp = await _context.CustomerFollowUps.FindAsync(id);
         if (followUp == null)
         {
             return NotFound();
         }
 
-        _context.CustomerFollowUps.Remove(
-            followUp);
+        followUp.Status = "Archived";
+        followUp.UpdatedAt = GetDatabaseDateTime();
 
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            "Customer follow-up deleted successfully.";
+            "Customer follow-up archived successfully.";
 
-        return RedirectToAction(
-            nameof(Index));
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: CustomerFollowUps/Restore/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var followUp = await _context.CustomerFollowUps.FindAsync(id);
+        if (followUp == null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(followUp.Status, "Archived", StringComparison.OrdinalIgnoreCase))
+        {
+            followUp.Status = "Pending";
+            followUp.UpdatedAt = GetDatabaseDateTime();
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] =
+                "Customer follow-up restored successfully.";
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     // Load dropdown data for Create and Edit
     private async Task LoadFormDataAsync(
         int? selectedCustomerId = null,
         int? selectedVehicleId = null,
-        int? selectedServiceRecordId = null,
         string? selectedStatus = null,
         string? selectedFollowUpType = null)
     {
@@ -523,11 +597,10 @@ public class CustomerFollowUpsController : Controller
                 "DisplayName",
                 selectedCustomerId);
 
-        var vehiclesQuery =
+        IQueryable<Vehicle> vehiclesQuery =
             _context.Vehicles
                 .AsNoTracking()
-                .Include(v => v.Customer)
-                .Where(v => !v.IsArchived);
+                .Include(v => v.Customer);
 
         if (selectedCustomerId.HasValue)
         {
@@ -553,7 +626,9 @@ public class CustomerFollowUpsController : Controller
                     " " +
                     v.Model +
                     " · " +
-                    v.PlateNumber
+                    v.PlateNumber +
+                    (v.IsArchived ? " · Archived" : ""),
+                v.IsArchived
             })
             .ToList();
 
@@ -563,50 +638,6 @@ public class CustomerFollowUpsController : Controller
                 "VehicleId",
                 "DisplayName",
                 selectedVehicleId);
-
-        var serviceRecordsQuery =
-            _context.ServiceRecords
-                .AsNoTracking()
-                .Include(sr => sr.Vehicle)
-                .AsQueryable();
-
-        if (selectedVehicleId.HasValue)
-        {
-            serviceRecordsQuery =
-                serviceRecordsQuery.Where(
-                    sr => sr.VehicleId ==
-                          selectedVehicleId.Value);
-        }
-
-        var serviceRecords =
-            await serviceRecordsQuery
-                .OrderByDescending(
-                    sr => sr.ServiceDate)
-                .ToListAsync();
-
-        var serviceRecordOptions =
-            serviceRecords.Select(sr => new
-            {
-                sr.ServiceRecordId,
-                DisplayName =
-                    sr.ServiceDate.ToString(
-                        "MMM dd, yyyy") +
-                    " · " +
-                    (
-                        string.IsNullOrWhiteSpace(
-                            sr.Complaint)
-                            ? "Service record"
-                            : sr.Complaint
-                    )
-            })
-            .ToList();
-
-        ViewBag.ServiceRecordId =
-            new SelectList(
-                serviceRecordOptions,
-                "ServiceRecordId",
-                "DisplayName",
-                selectedServiceRecordId);
 
         ViewBag.Statuses =
             new SelectList(
@@ -663,23 +694,7 @@ public class CustomerFollowUpsController : Controller
             .AnyAsync(
                 v =>
                     v.VehicleId == vehicleId &&
-                    v.CustomerId == customerId &&
-                    !v.IsArchived);
-    }
-
-    // Make sure the selected service record belongs to the selected vehicle
-    private async Task<bool> ServiceRecordBelongsToVehicleAsync(
-        int serviceRecordId,
-        int vehicleId)
-    {
-        return await _context.ServiceRecords
-            .AsNoTracking()
-            .AnyAsync(
-                sr =>
-                    sr.ServiceRecordId ==
-                    serviceRecordId &&
-                    sr.VehicleId ==
-                    vehicleId);
+                    v.CustomerId == customerId);
     }
 
     // PostgreSQL timestamp without time zone helper

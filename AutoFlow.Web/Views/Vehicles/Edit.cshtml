@@ -2,169 +2,486 @@
 
 @{
     ViewData["Title"] = "Edit Vehicle";
+    var vehicleInitial = string.IsNullOrWhiteSpace(Model.Make) ? "V" : Model.Make.Substring(0, 1).ToUpperInvariant();
+    var vehicleName = $"{Model.Make} {Model.Model}".Trim();
 }
 
-<div class="customer-form-page">
+<style>
+    .vehicle-edit-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+    }
 
-    <div class="customer-form-header">
-        <div>
-            <a asp-action="Index" class="customer-back-link">
-                ← Back to Vehicles
-            </a>
+    .vehicle-edit-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(245, 247, 251, .78);
+    }
 
-            <h1>Edit Vehicle</h1>
-            <p>Update the vehicle's registered information.</p>
+    .vehicle-edit-drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(560px, 100%);
+        min-height: calc(100vh - 120px);
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -18px 0 45px rgba(15, 23, 42, .10);
+        display: flex;
+        flex-direction: column;
+        z-index: 2;
+    }
+
+    .vehicle-edit-header {
+        padding: 25px 28px 22px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .vehicle-edit-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    .vehicle-edit-title {
+        margin: 0;
+        color: #111827;
+        font-size: 20px;
+        font-weight: 850;
+        letter-spacing: -.02em;
+    }
+
+    .vehicle-edit-subtitle {
+        margin: 7px 0 0;
+        color: #8b95a7;
+        font-size: 11px;
+    }
+
+    .vehicle-edit-cancel-top {
+        color: #8b95a7;
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .vehicle-edit-cancel-top:hover {
+        color: #7c3aed;
+    }
+
+    .vehicle-edit-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 27px 28px;
+    }
+
+    .vehicle-edit-profile {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 28px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .vehicle-edit-avatar {
+        width: 50px;
+        height: 50px;
+        min-width: 50px;
+        min-height: 50px;
+        flex: 0 0 50px;
+        border-radius: 13px;
+        background: #eee7ff;
+        color: #7c3aed;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    .vehicle-edit-avatar img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .vehicle-edit-profile strong {
+        display: block;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .vehicle-edit-profile span {
+        display: block;
+        margin-top: 4px;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .vehicle-edit-section {
+        margin-bottom: 27px;
+    }
+
+    .vehicle-edit-section-heading {
+        margin-bottom: 14px;
+    }
+
+    .vehicle-edit-section-heading h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .vehicle-edit-section-heading p {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 10px;
+    }
+
+    .vehicle-edit-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .vehicle-edit-field {
+        margin-bottom: 13px;
+    }
+
+    .vehicle-edit-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .vehicle-edit-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #697386;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .vehicle-edit-field input,
+    .vehicle-edit-field textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #e2e6ed;
+        border-radius: 8px;
+        background: #fff;
+        color: #172033;
+        font-size: 11px;
+        outline: none;
+        transition: .18s ease;
+    }
+
+    .vehicle-edit-field input {
+        height: 40px;
+        padding: 0 12px;
+    }
+
+    .vehicle-edit-field textarea {
+        min-height: 92px;
+        padding: 11px 12px;
+        resize: vertical;
+    }
+
+    .vehicle-edit-field input:focus,
+    .vehicle-edit-field textarea:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, .08);
+    }
+
+    .vehicle-edit-error {
+        display: block;
+        margin-top: 5px;
+        color: #dc2626;
+        font-size: 9px;
+    }
+
+    .vehicle-edit-validation {
+        margin-bottom: 20px;
+        padding: 11px 13px;
+        border-radius: 8px;
+        border: 1px solid #fecaca;
+        background: #fff7f7;
+        color: #b91c1c;
+        font-size: 10px;
+    }
+
+    .vehicle-edit-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        padding: 17px 28px;
+        border-top: 1px solid #edf0f4;
+    }
+
+    .vehicle-edit-button {
+        min-width: 112px;
+        height: 38px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .vehicle-edit-button-secondary {
+        border: 1px solid #e1e5eb;
+        background: #fff;
+        color: #5f6b7c;
+    }
+
+    .vehicle-edit-button-primary {
+        border: 1px solid #7c3aed;
+        background: #7c3aed;
+        color: #fff;
+        box-shadow: 0 7px 18px rgba(124, 58, 237, .18);
+    }
+
+    .vehicle-edit-button-primary:hover {
+        background: #6d28d9;
+    }
+
+    @@media (max-width: 700px) {
+        .vehicle-edit-drawer {
+            width: 100%;
+            border-left: 0;
+        }
+
+        .vehicle-edit-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vehicle-edit-field.full {
+            grid-column: auto;
+        }
+
+        .vehicle-edit-header,
+        .vehicle-edit-body,
+        .vehicle-edit-footer {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+
+    /* AutoFlow vehicle overlay */
+    .vehicle-edit-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5000 !important;
+    }
+
+    .vehicle-edit-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .22) !important;
+        backdrop-filter: blur(2px);
+    }
+
+    .vehicle-edit-drawer {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+        animation: afVehicleDrawerIn .20s ease-out;
+    }
+
+
+    .af-image-picker { display:flex; align-items:center; gap:14px; padding:12px; border:1px solid #e8eaf0; border-radius:14px; background:#fafbfc; }
+    .af-image-preview { width:76px; height:76px; flex:0 0 76px; border-radius:16px; overflow:hidden; background:#f1eaff; display:grid; place-items:center; border:1px solid #e6defe; }
+    .af-image-preview img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+    .af-image-preview-empty { width:100%; height:100%; display:grid; place-items:center; color:#7c3aed; font-size:24px; }
+    .af-image-picker-controls { min-width:0; display:flex; flex-direction:column; gap:5px; }
+    .af-image-picker-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; width:max-content; padding:8px 11px; border-radius:8px; background:#7c3aed; color:#fff; font-size:11px; font-weight:800; cursor:pointer; }
+    .af-image-picker-button:hover { background:#6d28d9; }
+    .af-image-selected { color:#344054; font-size:11px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
+    .af-image-picker-controls small { color:#98a1b2; font-size:10px; }
+
+    .vehicle-customer-profile { display:none; align-items:center; gap:12px; margin-top:10px; padding:12px; border:1px solid #e8eaf0; border-radius:14px; background:#fafbfc; }
+    .vehicle-customer-profile.is-visible { display:flex; }
+    .vehicle-customer-profile-avatar { width:48px; height:48px; flex:0 0 48px; border-radius:12px; overflow:hidden; display:grid; place-items:center; background:#f1eaff; color:#6d28d9; font-size:16px; font-weight:900; border:1px solid #e6defe; }
+    .vehicle-customer-profile-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+    .vehicle-customer-profile-copy { min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .vehicle-customer-profile-copy strong { color:#1f2937; font-size:12px; font-weight:850; }
+    .vehicle-customer-profile-copy span { color:#667085; font-size:10px; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vehicle-customer-profile-status { margin-left:auto; padding:4px 8px; border-radius:999px; background:#dcfce7; color:#16803a; font-size:9px; font-weight:850; text-transform:uppercase; }
+    .vehicle-customer-profile-status.archived { background:#f1f5f9; color:#64748b; }
+
+</style>
+
+<div class="vehicle-edit-page">
+    <div class="vehicle-edit-backdrop"></div>
+    <aside class="vehicle-edit-drawer">
+        <div class="vehicle-edit-header">
+            <div class="vehicle-edit-header-row">
+                <div>
+                    <h1 class="vehicle-edit-title">Edit Vehicle</h1>
+                    <p class="vehicle-edit-subtitle">Modify the vehicle's AutoFlow record.</p>
+                </div>
+                <a asp-action="Index" class="vehicle-edit-cancel-top">Cancel</a>
+            </div>
         </div>
-    </div>
 
-    <div class="customer-form-card">
-
-        <form asp-action="Edit" method="post">
-
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
+        <form asp-action="Edit" asp-route-id="@Model.VehicleId" method="post" enctype="multipart/form-data" class="d-flex flex-column flex-grow-1">
+            @Html.AntiForgeryToken()
             <input type="hidden" asp-for="VehicleId" />
 
-            <div class="customer-form-section">
+            <div class="vehicle-edit-body">
+                <div asp-validation-summary="ModelOnly" class="vehicle-edit-validation"></div>
 
-                <div class="customer-form-section-header">
+                <div class="vehicle-edit-profile">
+                    <div class="vehicle-edit-avatar">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@vehicleName" />
+                        }
+                        else
+                        {
+                            @vehicleInitial
+                        }
+                    </div>
                     <div>
-                        <h3>Vehicle Information</h3>
-                        <p>Update the core information for this vehicle.</p>
+                        <strong>@vehicleName</strong>
+                        <span>Vehicle ID #@Model.VehicleId</span>
                     </div>
                 </div>
 
-                <div class="customer-form-row">
-
-                    <div class="customer-field">
-                        <label asp-for="CustomerId">Customer</label>
-
-                        <select asp-for="CustomerId"
-                                class="form-select"
-                                asp-items="ViewBag.CustomerId">
-                            <option value="">-- Select Customer --</option>
-                        </select>
-
-                        <span asp-validation-for="CustomerId" class="text-danger"></span>
+                <section class="vehicle-edit-section">
+                    <div class="vehicle-edit-section-heading">
+                        <h2>Vehicle Information</h2>
+                        <p>Update the registered identity and ownership information.</p>
                     </div>
 
-                    <div class="customer-field">
-                        <label asp-for="PlateNumber">Plate Number</label>
+                    <div class="vehicle-edit-grid">
+                        <div class="vehicle-edit-field full">
+                            <label asp-for="CustomerId">Customer</label>
+                            <select asp-for="CustomerId" asp-items="ViewBag.CustomerId" id="vehicleEditCustomer">
+                                <option value="">Select customer...</option>
+                            </select>
+                            <span asp-validation-for="CustomerId" class="vehicle-edit-error"></span>
+                            <div class="vehicle-customer-profile" id="vehicleEditCustomerProfile" aria-live="polite">
+                                <div class="vehicle-customer-profile-avatar" id="vehicleEditCustomerAvatar"></div>
+                                <div class="vehicle-customer-profile-copy">
+                                    <strong id="vehicleEditCustomerName"></strong>
+                                    <span id="vehicleEditCustomerContact"></span>
+                                </div>
+                                <span class="vehicle-customer-profile-status" id="vehicleEditCustomerStatus">Active</span>
+                            </div>
+                        </div>
 
-                        <input asp-for="PlateNumber"
-                               class="form-control"
-                               placeholder="Enter plate number" />
+                        <div class="vehicle-edit-field">
+                            <label asp-for="Make">Make</label>
+                            <input asp-for="Make" placeholder="e.g. Toyota" />
+                            <span asp-validation-for="Make" class="vehicle-edit-error"></span>
+                        </div>
 
-                        <span asp-validation-for="PlateNumber" class="text-danger"></span>
+                        <div class="vehicle-edit-field">
+                            <label asp-for="Model">Model</label>
+                            <input asp-for="Model" placeholder="e.g. Vios" />
+                            <span asp-validation-for="Model" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field">
+                            <label asp-for="Year">Year</label>
+                            <input asp-for="Year" type="number" min="1900" max="2100" placeholder="e.g. 2024" />
+                            <span asp-validation-for="Year" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field">
+                            <label asp-for="Color">Color</label>
+                            <input asp-for="Color" placeholder="e.g. Silver" />
+                            <span asp-validation-for="Color" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field full">
+                            <label asp-for="PlateNumber">Plate Number</label>
+                            <input asp-for="PlateNumber" placeholder="Enter plate number" />
+                            <span asp-validation-for="PlateNumber" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field full">
+                            <label asp-for="VIN">VIN</label>
+                            <input asp-for="VIN" placeholder="Enter VIN if available" />
+                            <span asp-validation-for="VIN" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field">
+                            <label asp-for="Mileage">Mileage</label>
+                            <input asp-for="Mileage" type="number" min="0" placeholder="Current mileage" />
+                            <span asp-validation-for="Mileage" class="vehicle-edit-error"></span>
+                        </div>
+
+                        <div class="vehicle-edit-field">
+                            <label>Vehicle Image</label>
+                            <div class="af-image-picker">
+                                <div class="af-image-preview" id="vehicleEditImagePreview">
+                                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl)) { <img src="@Model.ImageUrl" alt="@vehicleName" /> } else { <div class="af-image-preview-empty"><i class="bi bi-car-front"></i></div> }
+                                </div>
+                                <div class="af-image-picker-controls">
+                                    <label for="vehicleEditProfileImage" class="af-image-picker-button"><i class="bi bi-image"></i> Choose Image</label>
+                                    <input id="vehicleEditProfileImage" name="profileImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                                    <div class="af-image-selected" id="vehicleEditImageStatus">@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "No image selected" : "Current image saved")</div>
+                                    <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                                </div>
+                            </div>
+                            <span asp-validation-for="ImageUrl" class="vehicle-edit-error"></span>
+                        </div>
                     </div>
+                </section>
 
-                </div>
-
-                <div class="customer-form-row">
-
-                    <div class="customer-field">
-                        <label asp-for="Make">Make</label>
-
-                        <input asp-for="Make"
-                               class="form-control"
-                               placeholder="e.g. Toyota" />
-
-                        <span asp-validation-for="Make" class="text-danger"></span>
+                <section class="vehicle-edit-section">
+                    <div class="vehicle-edit-section-heading">
+                        <h2>Record Information</h2>
+                        <p>System timestamps remain managed by AutoFlow.</p>
                     </div>
-
-                    <div class="customer-field">
-                        <label asp-for="Model">Model</label>
-
-                        <input asp-for="Model"
-                               class="form-control"
-                               placeholder="e.g. Vios" />
-
-                        <span asp-validation-for="Model" class="text-danger"></span>
+                    <div class="vehicle-edit-record">
+                        <div><span>Created</span><strong>@Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</strong></div>
+                        <div><span>Last Updated</span><strong>@Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")</strong></div>
                     </div>
-
-                </div>
-
-                <div class="customer-form-row">
-
-                    <div class="customer-field">
-                        <label asp-for="Year">Year</label>
-
-                        <input asp-for="Year"
-                               class="form-control"
-                               placeholder="e.g. 2024" />
-
-                        <span asp-validation-for="Year" class="text-danger"></span>
-                    </div>
-
-                    <div class="customer-field">
-                        <label asp-for="Color">Color</label>
-
-                        <input asp-for="Color"
-                               class="form-control"
-                               placeholder="e.g. Black" />
-
-                        <span asp-validation-for="Color" class="text-danger"></span>
-                    </div>
-
-                    <div class="customer-field">
-                        <label asp-for="Mileage">Mileage</label>
-
-                        <input asp-for="Mileage"
-                               class="form-control"
-                               placeholder="e.g. 25000" />
-
-                        <span asp-validation-for="Mileage" class="text-danger"></span>
-                    </div>
-
-                </div>
-
-                <div class="customer-form-row">
-
-                    <div class="customer-field">
-                        <label asp-for="VIN">VIN</label>
-
-                        <input asp-for="VIN"
-                               class="form-control"
-                               placeholder="Enter VIN if available" />
-
-                        <span asp-validation-for="VIN" class="text-danger"></span>
-                    </div>
-
-                    <div class="customer-field">
-                        <label asp-for="ImageUrl">Image URL</label>
-
-                        <input asp-for="ImageUrl"
-                               class="form-control"
-                               placeholder="Optional vehicle image URL" />
-
-                        <span asp-validation-for="ImageUrl" class="text-danger"></span>
-                    </div>
-
-                </div>
-
+                </section>
             </div>
 
-            <div class="customer-form-footer">
-
-                <a asp-action="Index"
-                   class="af-button af-button-secondary">
-                    Cancel
-                </a>
-
-                <button type="submit"
-                        class="af-button af-button-primary">
-                    Save Changes
-                </button>
-
+            <div class="vehicle-edit-footer">
+                <a asp-action="Index" class="vehicle-edit-button vehicle-edit-button-secondary">Cancel</a>
+                <button type="submit" class="vehicle-edit-button vehicle-edit-button-primary">Save Changes</button>
             </div>
-
         </form>
-
-    </div>
+    </aside>
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }
+
+<script>
+(function(){
+    const input=document.getElementById('vehicleEditProfileImage'),preview=document.getElementById('vehicleEditImagePreview'),status=document.getElementById('vehicleEditImageStatus');
+    if(input&&preview&&status){input.addEventListener('change',function(){const file=this.files&&this.files[0];if(!file){return;}status.textContent=file.name;const r=new FileReader();r.onload=e=>preview.innerHTML='<img src="'+e.target.result+'" alt="Selected vehicle image" />';r.readAsDataURL(file);});}
+    const customer=document.getElementById('vehicleEditCustomer'),card=document.getElementById('vehicleEditCustomerProfile'),avatar=document.getElementById('vehicleEditCustomerAvatar'),name=document.getElementById('vehicleEditCustomerName'),contact=document.getElementById('vehicleEditCustomerContact'),state=document.getElementById('vehicleEditCustomerStatus');
+    const profiles=@Html.Raw(ViewBag.CustomerProfilesJson ?? "[]");
+    function renderCustomer(){const item=profiles.find(x=>String(x.id)===String(customer?.value));if(!item){card?.classList.remove('is-visible');return;}if(name)name.textContent=item.name||'Customer';if(contact)contact.textContent=item.phone||item.email||item.address||'No contact information';if(state){state.textContent=item.isArchived?'Archived':'Active';state.classList.toggle('archived',!!item.isArchived);}if(avatar)avatar.innerHTML=item.imageUrl?'<img src="'+item.imageUrl+'" alt="'+(item.name||'Customer')+'" />':((item.name||'?').trim().charAt(0).toUpperCase());card?.classList.add('is-visible');}
+    customer?.addEventListener('change',renderCustomer); renderCustomer();
+})();
+</script>

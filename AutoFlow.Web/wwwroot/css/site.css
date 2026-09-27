@@ -1,4 +1,4 @@
-/*AutoFlow — Global Design System*/
+/*AutoFlow â€” Global Design System*/
 
 :root {
     --af-primary: #2563eb;
@@ -3017,6 +3017,11 @@ body.drawer-open {
     color: #dc2626;
 }
 
+.job-badge-archived {
+    background: #f0f2f6;
+    color: #687181;
+}
+
 .job-value {
     color: var(--af-text);
     font-size: 0.8rem;
@@ -3055,6 +3060,21 @@ body.drawer-open {
     background: #fff1f2;
     border-color: #fecdd3;
     color: #dc2626;
+}
+
+.job-inline-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.job-icon-button.job-icon-restore {
+    color: #16a34a;
+}
+
+.job-icon-button.job-icon-restore:hover {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
 }
 
 .job-icon-button svg {
@@ -3640,6 +3660,177 @@ body.job-modal-active {
     .job-confirm-actions button {
         width: 100%;
     }
+}
+
+/* Repair Job Orders linked images */
+.job-vehicle-photo {
+    overflow: hidden;
+}
+
+.job-vehicle-photo img,
+.job-owner-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background: #fff;
+}
+
+.job-owner-photo {
+    overflow: hidden;
+}
+
+.job-selected-vehicle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--af-border);
+    border-radius: 10px;
+    background: #fafbff;
+}
+
+.job-selected-vehicle-image {
+    width: 112px;
+    height: 76px;
+    flex: 0 0 112px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e6e8ef;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.job-selected-vehicle-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.job-selected-vehicle-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.job-selected-vehicle-copy strong {
+    color: var(--af-text);
+    font-size: .76rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.job-selected-vehicle-copy span {
+    color: #087f5b;
+    font-size: .68rem;
+    font-weight: 750;
+}
+
+.job-selected-vehicle-copy span i {
+    margin-right: 4px;
+}
+
+.job-detail-people-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.job-detail-profile-card {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px;
+    border: 1px solid var(--af-border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.job-detail-profile-media {
+    width: 66px;
+    height: 58px;
+    flex: 0 0 66px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #e8eaf0;
+    border-radius: 8px;
+    background: #f7f8fb;
+}
+
+.job-detail-owner-media {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    border-radius: 50%;
+    background: #ece8ff;
+    color: #6445e8;
+    font-size: .82rem;
+    font-weight: 800;
+}
+
+.job-detail-profile-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background: #fff;
+}
+
+.job-detail-profile-media svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: #6d4aff;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.job-detail-profile-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.job-detail-profile-label {
+    color: var(--af-text-muted);
+    font-size: .61rem;
+    font-weight: 750;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.job-detail-profile-copy strong,
+.job-detail-profile-copy > span:not(.job-detail-profile-label),
+.job-detail-profile-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.job-detail-profile-copy strong { color: var(--af-text); font-size: .74rem; }
+.job-detail-profile-copy > span:not(.job-detail-profile-label) { color: var(--af-text-secondary); font-size: .66rem; }
+.job-detail-profile-copy small { color: #087f5b; font-size: .61rem; font-weight: 750; }
+.job-detail-profile-copy small i { margin-right: 3px; }
+
+@media (max-width: 620px) {
+    .job-detail-people-grid { grid-template-columns: 1fr; }
 }
 
 /* AutoFlow Customer Management - Premium Functional UI */
@@ -4344,4 +4535,541 @@ body.job-modal-active {
         overflow-x: auto;
         flex-wrap: nowrap;
     }
+}
+
+
+/* =========================================================
+   AutoFlow â€” Service Appointment Drawers (Create / Details / Edit)
+   ========================================================= */
+
+.af-drawer-page{
+    position:fixed;inset:0;z-index:10000;
+    display:flex;justify-content:flex-end;
+}
+.af-drawer-backdrop{
+    position:absolute;inset:0;
+    background:rgba(15,23,42,.42);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+}
+.af-drawer{
+    position:relative;
+    width:min(480px,100vw);
+    height:100%;
+    background:#ffffff;
+    box-shadow:-24px 0 60px rgba(15,23,42,.20);
+    display:flex;
+    flex-direction:column;
+    animation:afDrawerIn .26s cubic-bezier(.22,1,.36,1);
+}
+@keyframes afDrawerIn{
+    from{transform:translateX(100%);opacity:.5}
+    to{transform:translateX(0);opacity:1}
+}
+
+.af-drawer-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    padding:28px 28px 18px;
+    border-bottom:1px solid #eef0f4;
+    flex-shrink:0;
+}
+.af-drawer-head h2{
+    margin:0;
+    font-size:22px;
+    font-weight:700;
+    color:#0f172a;
+    letter-spacing:-.03em;
+}
+.af-drawer-head p{
+    margin:6px 0 0;
+    font-size:13px;
+    color:#64748b;
+    font-weight:500;
+}
+.af-drawer-x{
+    width:36px;height:36px;
+    border:0;
+    border-radius:10px;
+    background:#f1f5f9;
+    color:#475569;
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    flex-shrink:0;
+}
+.af-drawer-x:hover{background:#e2e8f0;color:#0f172a}
+
+.af-drawer-scroll{
+    flex:1;
+    overflow-y:auto;
+    padding:24px 28px 12px;
+}
+.af-drawer-foot{
+    flex-shrink:0;
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    padding:16px 28px 24px;
+    border-top:1px solid #eef0f4;
+    background:#fff;
+}
+
+.af-field{margin-bottom:20px}
+.af-label{
+    display:block;
+    margin-bottom:8px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#64748b;
+}
+.af-label .req{color:#ef4444}
+
+.af-control{
+    display:block;
+    width:100%;
+    height:48px;
+    padding:0 16px;
+    border:1.5px solid #e2e8f0;
+    border-radius:12px;
+    background:#f8fafc;
+    font-size:14px;
+    font-weight:500;
+    color:#0f172a;
+    outline:none;
+    box-sizing:border-box;
+    transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.af-control:hover{border-color:#cbd5e1;background:#fff}
+.af-control:focus{
+    border-color:#8b5cf6;
+    background:#fff;
+    box-shadow:0 0 0 4px rgba(139,92,246,.14);
+}
+select.af-control{
+    appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    padding-right:40px;
+}
+textarea.af-control{
+    height:auto;
+    min-height:100px;
+    padding:14px 16px;
+    resize:vertical;
+    line-height:1.5;
+}
+
+.af-row-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.af-status-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+.af-status-btn{
+    height:36px;
+    padding:0 16px;
+    border:1.5px solid #e2e8f0;
+    border-radius:999px;
+    background:#fff;
+    color:#475569;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .15s;
+}
+.af-status-btn:hover{border-color:#c4b5fd;color:#6d28d9}
+.af-status-btn.is-active{
+    background:#7c3aed;
+    border-color:#7c3aed;
+    color:#fff;
+    box-shadow:0 4px 14px rgba(124,58,237,.28);
+}
+
+.af-error{
+    color:#dc2626;
+    font-size:12px;
+    margin-top:6px;
+    font-weight:600;
+}
+
+.af-btn{
+    height:44px;
+    padding:0 20px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    border:none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    text-decoration:none;
+    transition:transform .12s,background .15s,box-shadow .15s;
+}
+.af-btn-ghost{
+    background:#fff;
+    color:#475569;
+    border:1.5px solid #e2e8f0;
+}
+.af-btn-ghost:hover{background:#f8fafc;border-color:#cbd5e1}
+.af-btn-primary{
+    background:linear-gradient(135deg,#8b5cf6,#7c3aed);
+    color:#fff;
+    box-shadow:0 8px 22px rgba(124,58,237,.30);
+}
+.af-btn-primary:hover{
+    background:linear-gradient(135deg,#7c3aed,#6d28d9);
+    transform:translateY(-1px);
+    color:#fff;
+}
+.af-btn-dark{
+    background:#0f172a;
+    color:#fff;
+    box-shadow:0 8px 18px rgba(15,23,42,.18);
+}
+.af-btn-dark:hover{background:#1e293b;transform:translateY(-1px);color:#fff}
+.af-btn svg{
+    width:16px;height:16px;
+    fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round;
+}
+
+.af-detail-card{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:16px;
+    margin-bottom:12px;
+    border:1px solid #ede9fe;
+    border-radius:14px;
+    background:linear-gradient(135deg,#ffffff,#faf8ff);
+}
+.af-detail-icon{
+    width:44px;height:44px;
+    border-radius:12px;
+    flex-shrink:0;
+    display:grid;
+    place-items:center;
+    background:#ede9fe;
+    color:#7c3aed;
+}
+.af-detail-icon svg{
+    width:22px;height:22px;
+    fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;
+}
+.af-detail-k{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#94a3b8;
+    margin-bottom:4px;
+}
+.af-detail-v{
+    font-size:15px;
+    font-weight:700;
+    color:#0f172a;
+    line-height:1.35;
+}
+.af-detail-s{
+    font-size:12px;
+    color:#64748b;
+    margin-top:3px;
+    font-weight:500;
+}
+.af-detail-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:12px;
+}
+.af-detail-box{
+    padding:14px 16px;
+    border:1px solid #eef0f4;
+    border-radius:14px;
+    background:#fff;
+}
+.af-detail-block{
+    padding:16px;
+    margin-bottom:12px;
+    border:1px solid #eef0f4;
+    border-radius:14px;
+    background:#fff;
+}
+.af-detail-note{
+    font-size:13px;
+    color:#334155;
+    line-height:1.55;
+    font-weight:500;
+    white-space:pre-wrap;
+}
+.af-status-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    height:32px;
+    padding:0 14px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
+}
+.af-status-badge::before{
+    content:"";
+    width:7px;height:7px;
+    border-radius:50%;
+    background:currentColor;
+}
+.af-status-badge.scheduled{background:#f5f3ff;color:#6d28d9}
+.af-status-badge.confirmed{background:#ecfdf5;color:#047857}
+.af-status-badge.completed{background:#eff6ff;color:#1d4ed8}
+.af-status-badge.in-progress{background:#fff7ed;color:#c2410c}
+.af-status-badge.cancelled{background:#fef2f2;color:#b91c1c}
+
+@media(max-width:560px){
+    .af-drawer{width:100%}
+    .af-row-2,.af-detail-grid{grid-template-columns:1fr}
+}
+/* Billing hand-off from Repair Job Orders */
+#detailsBilling {
+    border: 1px solid #7544f5;
+    color: #fff !important;
+    background: #7544f5;
+    font-weight: 800;
+}
+#detailsBilling:hover {
+    border-color: #6336d8;
+    color: #fff !important;
+    background: #6336d8;
+}
+
+/* AutoFlow dark mode: core module readability follows Repair Job Orders */
+body.af-dark .customer-page-premium .customer-page-header h1,
+body.af-dark .vehicle-page-premium .vehicle-page-header h1,
+body.af-dark .vehicle-page .vehicle-page-header h1,
+body.af-dark .af-cal-page .af-cal-header h1,
+body.af-dark .suppliers-page .suppliers-header h1,
+body.af-dark .crm-page .crm-header h1,
+body.af-dark .history-page .history-header h1 {
+    color: #e5e7eb !important;
+}
+
+body.af-dark .customer-page-premium .customer-page-header p,
+body.af-dark .vehicle-page .vehicle-page-header p,
+body.af-dark .af-cal-page .af-cal-header p,
+body.af-dark .suppliers-page .suppliers-header p,
+body.af-dark .crm-page .crm-header p,
+body.af-dark .history-page .history-header p,
+body.af-dark .suppliers-page .suppliers-breadcrumb,
+body.af-dark .crm-page .crm-breadcrumb,
+body.af-dark .history-page .history-breadcrumb {
+    color: #9aa4b2 !important;
+}
+
+body.af-dark .customer-toolbar-premium .customer-search input,
+body.af-dark .customer-toolbar-premium .customer-filter-select,
+body.af-dark .customer-toolbar-premium .customer-filter-select select,
+body.af-dark .vehicle-toolbar-premium .vehicle-search,
+body.af-dark .vehicle-toolbar-premium .vehicle-search input,
+body.af-dark .vehicle-toolbar-premium .vehicle-filter-select,
+body.af-dark .vehicle-toolbar-premium .vehicle-filter-select select,
+body.af-dark .crm-page .crm-search input,
+body.af-dark .crm-page .crm-select,
+body.af-dark .suppliers-page .supplier-search-input,
+body.af-dark .suppliers-page .supplier-status-select {
+    background: #0f172a !important;
+    color: #e5e7eb !important;
+    border-color: #263244 !important;
+}
+
+body.af-dark .customer-toolbar-premium .customer-search input::placeholder,
+body.af-dark .vehicle-toolbar-premium .vehicle-search input::placeholder,
+body.af-dark .crm-page .crm-search input::placeholder,
+body.af-dark .suppliers-page .supplier-search-input::placeholder {
+    color: #778397 !important;
+}
+
+body.af-dark .customer-toolbar-premium .customer-filter-select label,
+body.af-dark .customer-toolbar-premium .customer-filter-select .customer-control-icon,
+body.af-dark .customer-toolbar-premium .customer-select-chevron,
+body.af-dark .vehicle-toolbar-premium .vehicle-filter-select label,
+body.af-dark .vehicle-toolbar-premium .vehicle-filter-select .vehicle-control-icon,
+body.af-dark .vehicle-toolbar-premium .vehicle-select-chevron,
+body.af-dark .suppliers-page .supplier-filter-label {
+    color: #9aa4b2 !important;
+}
+
+body.af-dark .customer-page-premium .customer-table-card,
+body.af-dark .vehicle-page .vehicle-card,
+body.af-dark .crm-page .crm-table-card,
+body.af-dark .history-page .history-card,
+body.af-dark .suppliers-page .suppliers-card,
+body.af-dark .af-cal-page .af-cal-grid-wrap {
+    background: #ffffff !important;
+    color: #202938 !important;
+}
+
+body.af-dark .customer-page-premium .customer-table th,
+body.af-dark .customer-page-premium .customer-table td,
+body.af-dark .vehicle-page .vehicle-table th,
+body.af-dark .vehicle-page .vehicle-table td,
+body.af-dark .crm-page .crm-table th,
+body.af-dark .crm-page .crm-table td,
+body.af-dark .history-page .history-table th,
+body.af-dark .history-page .history-table td,
+body.af-dark .suppliers-page .supplier-table th,
+body.af-dark .suppliers-page .supplier-table td {
+    color: #374151 !important;
+}
+
+body.af-dark .customer-page-premium .customer-table th,
+body.af-dark .vehicle-page .vehicle-table th,
+body.af-dark .crm-page .crm-table th,
+body.af-dark .history-page .history-table th,
+body.af-dark .suppliers-page .supplier-table th {
+    background: #fafbfc !important;
+    color: #7b8494 !important;
+}
+
+body.af-dark .customer-page-premium .customer-identity strong,
+body.af-dark .customer-page-premium .customer-contact strong,
+body.af-dark .vehicle-page .vehicle-main-cell strong,
+body.af-dark .vehicle-page .vehicle-owner-cell strong,
+body.af-dark .vehicle-page .vehicle-registration strong,
+body.af-dark .vehicle-page .vehicle-detail-cell strong,
+body.af-dark .crm-page .crm-person strong,
+body.af-dark .crm-page .crm-vehicle strong,
+body.af-dark .history-page .history-identity-name,
+body.af-dark .history-page .history-vehicle-name,
+body.af-dark .suppliers-page .suppliers-card-title h2 {
+    color: #202938 !important;
+}
+
+body.af-dark .customer-page-premium .customer-identity small,
+body.af-dark .customer-page-premium .customer-contact small,
+body.af-dark .customer-page-premium .customer-address,
+body.af-dark .customer-page-premium .customer-date,
+body.af-dark .vehicle-page .vehicle-main-cell small,
+body.af-dark .vehicle-page .vehicle-owner-cell small,
+body.af-dark .vehicle-page .vehicle-registration small,
+body.af-dark .vehicle-page .vehicle-detail-cell small,
+body.af-dark .crm-page .crm-person span,
+body.af-dark .crm-page .crm-vehicle span,
+body.af-dark .crm-page .crm-date span,
+body.af-dark .history-page .history-identity-meta,
+body.af-dark .history-page .history-vehicle-plate,
+body.af-dark .history-page .history-text,
+body.af-dark .suppliers-page .supplier-filter-summary,
+body.af-dark .suppliers-page .supplier-filter-summary strong {
+    color: #667085 !important;
+}
+
+body.af-dark .af-cal-page .af-cal-month-label,
+body.af-dark .af-cal-page .af-cal-legend,
+body.af-dark .af-cal-page .af-cal-weekdays div,
+body.af-dark .af-cal-page .af-cal-daynum {
+    color: #334155 !important;
+}
+
+body.af-dark .af-cal-page .af-cal-toolbar,
+body.af-dark .af-cal-page .af-cal-nav-btn {
+    color: #334155 !important;
+}
+
+body.af-dark .af-cal-page .af-cal-header .af-cal-create-btn {
+    color: #ffffff !important;
+}
+
+body.af-dark .crm-page .crm-filter-card,
+body.af-dark .suppliers-page .supplier-filter-panel {
+    color: #334155 !important;
+}
+
+body.af-dark .crm-page .crm-clear,
+body.af-dark .suppliers-page .supplier-filter-summary {
+    color: #7b6bea !important;
+}
+
+body.af-dark .history-page .history-auto-note,
+body.af-dark .history-page .history-stat-label,
+body.af-dark .history-page .history-section-label {
+    color: #667085 !important;
+}
+
+body.af-dark .customer-page-premium .customer-result-bar,
+body.af-dark .vehicle-page .vehicle-result-bar {
+    color: #9aa4b2 !important;
+}
+
+/* AutoFlow dark mode: Repair Job Orders + Billing readability */
+body.af-dark .job-workspace-header h1,
+body.af-dark .job-table-top h2,
+body.af-dark .job-primary-cell strong,
+body.af-dark .job-vehicle-cell strong,
+body.af-dark .job-owner-cell strong,
+body.af-dark .job-value,
+body.af-dark .billing-invoice-number,
+body.af-dark .billing-customer,
+body.af-dark .billing-money {
+    color: #202938 !important;
+}
+
+body.af-dark .job-workspace-header p,
+body.af-dark #jobResultSummary,
+body.af-dark .job-table-meta,
+body.af-dark .job-primary-cell span,
+body.af-dark .job-date-cell span,
+body.af-dark .job-value-sub,
+body.af-dark .job-vehicle-cell span,
+body.af-dark .job-owner-cell span,
+body.af-dark .billing-table td,
+body.af-dark .billing-invoice small,
+body.af-dark .billing-vehicle-cell small,
+body.af-dark .billing-footer {
+    color: #667085 !important;
+}
+
+body.af-dark .job-modern-table tbody td {
+    color: #374151 !important;
+}
+
+body.af-dark .job-modern-table thead th,
+body.af-dark .billing-table thead th {
+    color: #7b8494 !important;
+}
+
+body.af-dark .job-filter-control,
+body.af-dark .job-search-box input {
+    color: #202938 !important;
+}
+
+body.af-dark .job-filter-control option {
+    color: #202938 !important;
+    background: #ffffff !important;
+}
+
+body.af-dark .billing-job-link {
+    color: #6d3df0 !important;
+}
+
+body.af-dark .billing-due {
+    color: #dc2626 !important;
+}
+
+body.af-dark .billing-paid {
+    color: #15803d !important;
 }

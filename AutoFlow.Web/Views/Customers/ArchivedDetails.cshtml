@@ -2,152 +2,409 @@
 
 @{
     ViewData["Title"] = "Archived Customer";
+
+    var firstInitial =
+        string.IsNullOrWhiteSpace(Model.FirstName)
+            ? "?"
+            : Model.FirstName.Substring(0, 1);
+
+    var lastInitial =
+        string.IsNullOrWhiteSpace(Model.LastName)
+            ? ""
+            : Model.LastName.Substring(0, 1);
 }
 
-<div class="customer-detail-page">
+<style>
+    .customer-archived-details-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+    }
 
-    <div class="customer-detail-header">
+    .customer-archived-details-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(245,247,251,.78);
+    }
 
-        <div>
-            <a asp-action="Archived"
-               class="customer-back-link">
-                <span>←</span> Back to Archived
-            </a>
+    .customer-archived-details-drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(570px, 100%);
+        min-height: calc(100vh - 120px);
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -18px 0 45px rgba(15,23,42,.10);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+    }
 
-            <h1>Archived Customer</h1>
-            <p>
-                Historical customer record preserved by AutoFlow.
-            </p>
+    .customer-archived-details-header {
+        padding: 22px 28px 20px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .customer-archived-details-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .customer-archived-details-close {
+        color: #9aa3b2;
+        text-decoration: none;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .customer-archived-details-close:hover {
+        color: #7c3aed;
+    }
+
+    .customer-archived-restore {
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 7px;
+        border: 1px solid #ccefe1;
+        background: #f4fffa;
+        color: #059669;
+        font-size: 9px;
+        font-weight: 850;
+        cursor: pointer;
+    }
+
+    .customer-archived-restore:hover {
+        background: #ecfdf5;
+    }
+
+    .customer-archived-details-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 26px 28px 35px;
+    }
+
+    .customer-archived-profile {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .customer-archived-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: #f2f4f7;
+        color: #64748b;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .customer-archived-status {
+        display: inline-flex;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #fff1f0;
+        color: #d95548;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .customer-archived-name {
+        margin: 7px 0 0;
+        color: #111827;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .customer-archived-id {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .customer-archived-section {
+        margin-top: 25px;
+    }
+
+    .customer-archived-section-heading {
+        margin-bottom: 13px;
+    }
+
+    .customer-archived-section-heading h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .customer-archived-section-heading p {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .customer-archived-card {
+        overflow: hidden;
+        border: 1px solid #e8ebf0;
+        border-radius: 11px;
+        background: #fff;
+    }
+
+    .customer-archived-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 15px;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .customer-archived-row:last-child {
+        border-bottom: 0;
+    }
+
+    .customer-archived-row span {
+        color: #9aa3b2;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .customer-archived-row strong {
+        max-width: 65%;
+        color: #263143;
+        font-size: 10px;
+        font-weight: 800;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .customer-archived-note {
+        margin-top: 20px;
+        padding: 13px;
+        border: 1px solid #e8e1ff;
+        border-radius: 9px;
+        background: #faf8ff;
+        color: #67538d;
+        font-size: 9px;
+        line-height: 1.55;
+    }
+
+    @@media (max-width: 700px) {
+        .customer-archived-details-drawer {
+            width: 100%;
+            border-left: 0;
+        }
+
+        .customer-archived-details-header,
+        .customer-archived-details-body {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+
+    /* AutoFlow customer archived-details overlay */
+    .customer-archived-details-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5000 !important;
+    }
+
+    .customer-archived-details-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .22) !important;
+        backdrop-filter: blur(2px);
+    }
+
+    .customer-archived-details-drawer {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+        animation: afCustomerDrawerIn .20s ease-out;
+    }
+
+    .customer-archived-avatar { overflow:hidden; }
+    .customer-archived-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+</style>
+
+<div class="customer-archived-details-page">
+
+    <div class="customer-archived-details-backdrop"></div>
+
+    <aside class="customer-archived-details-drawer">
+
+        <div class="customer-archived-details-header">
+
+            <div class="customer-archived-details-top">
+
+                <form asp-action="Restore"
+                      method="post"
+                      style="margin:0;">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="id"
+                           value="@Model.CustomerId" />
+
+                    <button type="submit"
+                            class="customer-archived-restore">
+                        Restore Customer
+                    </button>
+
+                </form>
+
+                <a asp-action="Archived"
+                   class="customer-archived-details-close"
+                   title="Close">
+                    ×
+                </a>
+
+            </div>
+
         </div>
 
-        <form asp-action="Restore"
-              method="post">
+        <div class="customer-archived-details-body">
 
-            @Html.AntiForgeryToken()
+            <div class="customer-archived-profile">
 
-            <input type="hidden"
-                   name="id"
-                   value="@Model.CustomerId" />
+                <div class="customer-archived-avatar">
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="@Model.FirstName @Model.LastName" />
+                    }
+                    else
+                    {
+                        @firstInitial@lastInitial
+                    }
+                </div>
 
-            <button type="submit"
-                    class="customer-primary-button">
-                Restore Customer
-            </button>
+                <div>
 
-        </form>
+                    <span class="customer-archived-status">
+                        Archived
+                    </span>
 
-    </div>
+                    <h1 class="customer-archived-name">
+                        @Model.FirstName @Model.LastName
+                    </h1>
 
-    <div class="customer-profile-card">
+                    <p class="customer-archived-id">
+                        Customer ID #@Model.CustomerId
+                    </p>
 
-        <div class="customer-profile-main">
+                </div>
 
-            <div class="customer-large-avatar archived-avatar">
-                @Model.FirstName.Substring(0, 1)@Model.LastName.Substring(0, 1)
             </div>
 
-            <div>
+            <section class="customer-archived-section">
 
-                <span class="customer-status-badge archived">
-                    Archived
-                </span>
+                <div class="customer-archived-section-heading">
+                    <h2>Preserved Contact Information</h2>
+                    <p>Historical customer details remain available.</p>
+                </div>
 
-                <h2>
-                    @Model.FirstName @Model.LastName
-                </h2>
+                <div class="customer-archived-card">
 
-                <p>
-                    Customer ID #@Model.CustomerId
-                </p>
+                    <div class="customer-archived-row">
+                        <span>Phone</span>
 
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Phone)
+                                ? "Not provided"
+                                : Model.Phone)
+                        </strong>
+                    </div>
+
+                    <div class="customer-archived-row">
+                        <span>Email</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Email)
+                                ? "Not provided"
+                                : Model.Email)
+                        </strong>
+                    </div>
+
+                    <div class="customer-archived-row">
+                        <span>Home Address</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Address)
+                                ? "Not provided"
+                                : Model.Address)
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section class="customer-archived-section">
+
+                <div class="customer-archived-section-heading">
+                    <h2>Archive Record</h2>
+                    <p>Preserved record history.</p>
+                </div>
+
+                <div class="customer-archived-card">
+
+                    <div class="customer-archived-row">
+                        <span>Customer ID</span>
+                        <strong>#@Model.CustomerId</strong>
+                    </div>
+
+                    <div class="customer-archived-row">
+                        <span>Created</span>
+
+                        <strong>
+                            @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                        </strong>
+                    </div>
+
+                    <div class="customer-archived-row">
+                        <span>Archived / Updated</span>
+
+                        <strong>
+                            @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                        </strong>
+                    </div>
+
+                    <div class="customer-archived-row">
+                        <span>Current State</span>
+                        <strong>Archived</strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <div class="customer-archived-note">
+                This customer record has been preserved rather than permanently deleted.
+                Restoring the record will return it to the active Customer Management list.
             </div>
 
         </div>
 
-    </div>
-
-    <div class="customer-information-grid">
-
-        <section class="customer-info-card">
-
-            <div class="customer-card-heading">
-                <div class="customer-card-icon">☎</div>
-
-                <div>
-                    <h3>Contact Information</h3>
-                    <p>Preserved customer details</p>
-                </div>
-            </div>
-
-            <div class="customer-info-list">
-
-                <div class="customer-info-item">
-                    <span>Phone</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Phone)
-                            ? "Not provided"
-                            : Model.Phone)
-                    </strong>
-                </div>
-
-                <div class="customer-info-item">
-                    <span>Email</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Email)
-                            ? "Not provided"
-                            : Model.Email)
-                    </strong>
-                </div>
-
-                <div class="customer-info-item">
-                    <span>Address</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Address)
-                            ? "Not provided"
-                            : Model.Address)
-                    </strong>
-                </div>
-
-            </div>
-
-        </section>
-
-        <section class="customer-info-card">
-
-            <div class="customer-card-heading">
-                <div class="customer-card-icon">◷</div>
-
-                <div>
-                    <h3>Record Information</h3>
-                    <p>Archive status and history</p>
-                </div>
-            </div>
-
-            <div class="customer-info-list">
-
-                <div class="customer-info-item">
-                    <span>Customer ID</span>
-                    <strong>#@Model.CustomerId</strong>
-                </div>
-
-                <div class="customer-info-item">
-                    <span>Created</span>
-                    <strong>
-                        @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
-                    </strong>
-                </div>
-
-                <div class="customer-info-item">
-                    <span>Archived / Updated</span>
-                    <strong>
-                        @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
-                    </strong>
-                </div>
-
-            </div>
-
-        </section>
-
-    </div>
+    </aside>
 
 </div>

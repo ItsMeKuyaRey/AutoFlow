@@ -4,61 +4,255 @@
     ViewData["Title"] = "Edit Appointment";
 }
 
-<div class="page-header">
-    <div>
-        <h1>Edit Appointment</h1>
-        <p>Update appointment details.</p>
-    </div>
-</div>
-
-<div class="af-card" style="max-width: 720px; padding: 28px;">
-    <form asp-action="Edit" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-        <input type="hidden" asp-for="AppointmentId" />
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label asp-for="VehicleId" class="form-label fw-semibold">Vehicle</label>
-                <select asp-for="VehicleId" class="form-select" asp-items="ViewBag.VehicleId">
-                    <option value="">-- Select Vehicle --</option>
-                </select>
-                <span asp-validation-for="VehicleId" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="AppointmentDate" class="form-label fw-semibold">Date & Time</label>
-                <input asp-for="AppointmentDate" type="datetime-local" class="form-control" />
-                <span asp-validation-for="AppointmentDate" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Status" class="form-label fw-semibold">Status</label>
-                <select asp-for="Status" class="form-select">
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                </select>
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="col-12">
-                <label asp-for="CustomerConcern" class="form-label fw-semibold">Customer Concern</label>
-                <textarea asp-for="CustomerConcern" class="form-control" rows="3"></textarea>
-                <span asp-validation-for="CustomerConcern" class="text-danger"></span>
-            </div>
-            <div class="col-12">
-                <label asp-for="Notes" class="form-label fw-semibold">Internal Notes</label>
-                <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
-                <span asp-validation-for="Notes" class="text-danger"></span>
-            </div>
-        </div>
-
-        <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="af-button af-button-primary">Save Changes</button>
-            <a asp-action="Index" class="af-button af-button-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<style>
+.af-drawer-page{position:fixed;inset:0;z-index:10000;display:flex;justify-content:flex-end}
+.af-drawer-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.40);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.af-drawer{
+    position:relative;width:min(480px,100vw);height:100%;
+    background:#ffffff;box-shadow:-20px 0 50px rgba(15,23,42,.18);
+    display:flex;flex-direction:column;
+    animation:afDrawerSlide .24s cubic-bezier(.22,1,.36,1);
 }
+@@keyframes afDrawerSlide{from{transform:translateX(100%);opacity:.6}to{transform:translateX(0);opacity:1}}
+.af-drawer-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    padding:28px 28px 20px;border-bottom:1px solid #eef0f4;flex-shrink:0;
+}
+.af-drawer-head h2{margin:0;font-size:22px;font-weight:700;color:#0f172a;letter-spacing:-.03em}
+.af-drawer-head p{margin:6px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.af-drawer-x{
+    width:36px;height:36px;border:none;border-radius:10px;
+    background:#f1f5f9;color:#475569;font-size:20px;line-height:1;cursor:pointer;
+    display:grid;place-items:center;
+}
+.af-drawer-x:hover{background:#e2e8f0;color:#0f172a}
+.af-field{margin-bottom:20px}
+.af-label{
+    display:block;margin-bottom:8px;
+    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b;
+}
+.af-label .req{color:#ef4444}
+.af-control{
+    width:100%;height:48px;padding:0 16px;
+    border:1.5px solid #e2e8f0;border-radius:12px;background:#f8fafc;
+    font-size:14px;font-weight:500;color:#0f172a;outline:none;box-sizing:border-box;
+    transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.af-control:hover{border-color:#cbd5e1;background:#fff}
+.af-control:focus{border-color:#8b5cf6;background:#fff;box-shadow:0 0 0 4px rgba(139,92,246,.12)}
+select.af-control{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+textarea.af-control{height:auto;min-height:96px;padding:14px 16px;resize:vertical;line-height:1.5}
+.af-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.af-status-row{display:flex;flex-wrap:wrap;gap:8px}
+.af-status-btn{
+    height:36px;padding:0 16px;border:1.5px solid #e2e8f0;border-radius:999px;
+    background:#fff;color:#475569;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+}
+.af-status-btn:hover{border-color:#c4b5fd;color:#6d28d9}
+.af-status-btn.is-active{background:#7c3aed;border-color:#7c3aed;color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.25)}
+.af-error{color:#dc2626;font-size:12px;margin-top:6px;font-weight:600}
+.af-drawer-foot{
+    flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;
+    padding:16px 28px 24px;border-top:1px solid #eef0f4;background:#fff;
+}
+.af-btn{height:44px;padding:0 20px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:transform .12s,background .15s}
+.af-btn-ghost{background:#fff;color:#475569;border:1.5px solid #e2e8f0}
+.af-btn-ghost:hover{background:#f8fafc}
+.af-btn-primary{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;box-shadow:0 8px 20px rgba(124,58,237,.28)}
+.af-btn-primary:hover{background:linear-gradient(135deg,#7c3aed,#6d28d9);transform:translateY(-1px)}
+@@media(max-width:560px){.af-drawer{width:100%}.af-row-2{grid-template-columns:1fr}}
+</style>
+
+<div class="af-drawer-page appointment-edit-page">
+    <div class="af-drawer-backdrop appointment-edit-backdrop" data-appointment-close></div>
+
+    <section class="af-drawer appointment-edit-drawer" role="dialog" aria-modal="true">
+        <div class="af-drawer-head">
+            <div>
+                <h2>Edit Appointment</h2>
+                <p>Update the selected service appointment.</p>
+            </div>
+            <button type="button" class="af-drawer-x" data-appointment-close aria-label="Close">&times;</button>
+        </div>
+
+        <form asp-action="Edit" method="post" style="display:flex;flex-direction:column;flex:1;overflow:hidden;margin:0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="AppointmentId" />
+
+            <div style="flex:1;overflow-y:auto;padding:24px 28px 16px">
+                <div asp-validation-summary="ModelOnly" class="af-error"></div>
+
+                <div class="af-field">
+                    <label class="af-label" asp-for="CustomerId">Customer <span class="req">*</span></label>
+                    <select asp-for="CustomerId" class="af-control" asp-items="ViewBag.CustomerId">
+                        <option value="">Select an existing customer</option>
+                    </select>
+                    <span asp-validation-for="CustomerId" class="af-error"></span>
+                </div>
+
+                <div class="af-field">
+                    <label class="af-label" asp-for="VehicleId">Vehicle <span class="req">*</span></label>
+                    <select asp-for="VehicleId" class="af-control" asp-items="ViewBag.VehicleId">
+                        <option value="">Select vehicle associated with customer</option>
+                    </select>
+                    <span asp-validation-for="VehicleId" class="af-error"></span>
+                </div>
+
+                <div class="af-field">
+                    <label class="af-label">Scheduled Date &amp; Time <span class="req">*</span></label>
+                    <div class="af-row-2">
+                        <input id="afEditDate" type="date" class="af-control" value="@Model.AppointmentDate.ToString("yyyy-MM-dd")" />
+                        <input id="afEditTime" type="time" class="af-control" value="@Model.AppointmentDate.ToString("HH:mm")" />
+                    </div>
+                    <input asp-for="AppointmentDate" type="hidden" id="afEditDateHidden" />
+                    <span asp-validation-for="AppointmentDate" class="af-error"></span>
+                </div>
+
+                <div class="af-field">
+                    <label class="af-label" asp-for="Reason">Service Reason</label>
+                    <textarea asp-for="Reason" class="af-control" rows="3" placeholder="Describe the reason for the appointment"></textarea>
+                    <span asp-validation-for="Reason" class="af-error"></span>
+                </div>
+
+                <div class="af-field">
+                    <label class="af-label" asp-for="Notes">Notes</label>
+                    <textarea asp-for="Notes" class="af-control" rows="2" placeholder="Additional appointment notes"></textarea>
+                    <span asp-validation-for="Notes" class="af-error"></span>
+                </div>
+
+                <div class="af-field">
+                    <label class="af-label">Status</label>
+                    <div class="af-status-row" id="afEditStatusPills">
+                        <button type="button" class="af-status-btn" data-status="Scheduled">Scheduled</button>
+                        <button type="button" class="af-status-btn" data-status="Confirmed">Confirmed</button>
+                        <button type="button" class="af-status-btn" data-status="Completed">Completed</button>
+                        <button type="button" class="af-status-btn" data-status="Cancelled">Cancelled</button>
+                    </div>
+                    <input type="hidden" asp-for="Status" id="afEditStatus" />
+                </div>
+            </div>
+
+            <div class="af-drawer-foot">
+                <button type="button" class="af-btn af-btn-ghost" data-appointment-close data-appointment-cancel>Cancel</button>
+                <button type="submit" class="af-btn af-btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<script>
+(function () {
+    var root = document.querySelector(".appointment-edit-page");
+    if (!root) return;
+
+    var d = root.querySelector("#afEditDate");
+    var t = root.querySelector("#afEditTime");
+    var h = root.querySelector("#afEditDateHidden");
+
+    function sync() {
+        if (d && t && h && d.value && t.value) {
+            h.value = d.value + "T" + t.value + ":00";
+        }
+    }
+
+    if (d) d.addEventListener("change", sync);
+    if (t) t.addEventListener("change", sync);
+    sync();
+
+    var cust = root.querySelector("[name='CustomerId']");
+    var veh = root.querySelector("[name='VehicleId']");
+    var vehiclesUrl = "@Url.Action("GetVehiclesByCustomer", "Appointments")";
+    var selectedVehicleId = veh ? veh.value : "";
+
+    function setVehicleState(message, disabled) {
+        if (!veh) return;
+        veh.innerHTML = '<option value="">' + message + '</option>';
+        veh.disabled = disabled;
+    }
+
+    async function loadVehicles(customerId, keepVehicleId) {
+        if (!veh) return;
+
+        if (!customerId) {
+            setVehicleState("Select vehicle associated with customer", true);
+            return;
+        }
+
+        veh.disabled = true;
+        veh.innerHTML = '<option value="">Loading vehicles...</option>';
+
+        try {
+            var response = await fetch(
+                vehiclesUrl + "?customerId=" + encodeURIComponent(customerId),
+                {
+                    method: "GET",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                });
+
+            if (!response.ok) {
+                throw new Error("Vehicle request failed: " + response.status);
+            }
+
+            var vehicles = await response.json();
+
+            veh.innerHTML = '<option value="">Select vehicle associated with customer</option>';
+
+            if (!Array.isArray(vehicles) || vehicles.length === 0) {
+                veh.disabled = true;
+                return;
+            }
+
+            vehicles.forEach(function (vehicle) {
+                var option = document.createElement("option");
+                option.value = vehicle.vehicleId;
+                option.textContent = vehicle.displayName;
+
+                if (
+                    keepVehicleId &&
+                    String(vehicle.vehicleId) === String(keepVehicleId)
+                ) {
+                    option.selected = true;
+                }
+
+                veh.appendChild(option);
+            });
+
+            veh.disabled = false;
+        }
+        catch (error) {
+            console.error("AutoFlow edit appointment vehicle loading error:", error);
+            setVehicleState("Could not load vehicles", true);
+        }
+    }
+
+    if (cust) {
+        cust.addEventListener("change", function () {
+            loadVehicles(cust.value, null);
+        });
+
+        if (cust.value) {
+            loadVehicles(cust.value, selectedVehicleId);
+        }
+        else {
+            setVehicleState("Select vehicle associated with customer", true);
+        }
+    }
+
+    var pills = root.querySelectorAll("#afEditStatusPills .af-status-btn");
+    var hid = root.querySelector("#afEditStatus");
+    var cur = hid ? hid.value : "Scheduled";
+
+    pills.forEach(function (b) {
+        b.classList.toggle("is-active", b.getAttribute("data-status") === cur);
+        b.addEventListener("click", function () {
+            pills.forEach(function (x) { x.classList.remove("is-active"); });
+            b.classList.add("is-active");
+            if (hid) hid.value = b.getAttribute("data-status");
+        });
+    });
+})();
+</script>

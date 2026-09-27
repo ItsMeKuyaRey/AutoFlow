@@ -241,7 +241,14 @@
                             <td>
                                 <div class="customer-identity">
                                     <div class="customer-avatar @(item.IsArchived ? "customer-avatar-archived" : "")">
-                                        @initials
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@fullName" />
+                                        }
+                                        else
+                                        {
+                                            @initials
+                                        }
                                     </div>
                                     <div class="customer-identity-text">
                                         <strong>@fullName</strong>
@@ -406,6 +413,184 @@
 
 </div>
 
+
+<!-- Customer overlay host -->
+<div id="customerOverlayHost" class="customer-overlay-host" aria-live="polite"></div>
+
+<style>
+    .customer-toolbar-premium .customer-filter-select {
+        cursor: pointer;
+    }
+
+    .customer-toolbar-premium .customer-filter-select > label,
+    .customer-toolbar-premium .customer-filter-select > .customer-control-icon,
+    .customer-toolbar-premium .customer-filter-select > .customer-select-chevron {
+        cursor: pointer;
+    }
+
+    .customer-toolbar-premium .customer-filter-select:hover {
+        border-color: #d9ccfa;
+        background: #faf8ff;
+    }
+
+    .customer-toolbar-premium .customer-filter-select:hover .customer-select-chevron {
+        stroke: #7c3aed;
+    }
+
+    .customer-toolbar-premium .customer-filter-select select {
+        cursor: pointer;
+    }
+
+    .customer-overlay-host {
+        position: relative;
+        z-index: 5000;
+    }
+
+    body.customer-overlay-open {
+        overflow: hidden;
+    }
+
+    .customer-overlay-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 5200;
+        display: grid;
+        place-items: center;
+        background: rgba(15, 23, 42, .18);
+        backdrop-filter: blur(2px);
+    }
+
+    .customer-overlay-loading-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 15px;
+        border: 1px solid #e7eaf0;
+        border-radius: 10px;
+        background: #fff;
+        color: #5f6b7c;
+        font-size: 10px;
+        font-weight: 800;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, .12);
+    }
+
+    .customer-overlay-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #e5e7eb;
+        border-top-color: #7c3aed;
+        border-radius: 50%;
+        animation: customerOverlaySpin .65s linear infinite;
+    }
+
+    @@keyframes customerOverlaySpin {
+        to { transform: rotate(360deg); }
+    }
+    .customer-avatar { overflow:hidden; }
+    .customer-avatar img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; background:#fff; }
+</style>
+
+
+<style>
+    /* AutoFlow customer readability fix */
+    .customer-page-premium .customer-primary-button {
+        background: #6d28d9 !important;
+        color: #ffffff !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    .customer-page-premium .customer-primary-button svg {
+        stroke: #ffffff !important;
+        color: #ffffff !important;
+        opacity: 1 !important;
+    }
+
+    .customer-page-premium .customer-primary-button:hover {
+        background: #5b21b6 !important;
+        color: #ffffff !important;
+    }
+
+    .customer-page-premium .customer-secondary-button {
+        color: #475569 !important;
+        opacity: 1 !important;
+    }
+
+    .customer-page-premium .customer-filter-select label {
+        color: #64748b !important;
+    }
+
+    .customer-page-premium .customer-filter-select select {
+        color: #1f2937 !important;
+        opacity: 1 !important;
+    }
+
+    .customer-page-premium .customer-filter-select .customer-control-icon {
+        color: #7c3aed !important;
+    }
+
+    .customer-page-premium .customer-select-chevron {
+        stroke: #64748b !important;
+    }
+
+    .customer-page-premium .customer-summary-item {
+        color: #64748b !important;
+    }
+
+    .customer-page-premium .customer-summary-item-muted {
+        color: #64748b !important;
+    }
+
+    .customer-page-premium .customer-result-bar {
+        color: #64748b !important;
+    }
+
+    .customer-page-premium .customer-result-state {
+        color: #64748b !important;
+    }
+
+    /* Live customer image selection */
+    .af-image-selected.is-selected {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #16a34a;
+        font-weight: 800;
+    }
+
+    .af-image-check {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 17px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #dcfce7;
+        color: #16a34a;
+        font-size: 10px;
+        line-height: 1;
+    }
+
+    .af-image-file-name {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #667085;
+        font-weight: 600;
+    }
+
+    .af-image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        background: #fff;
+    }
+
+</style>
+
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -430,7 +615,7 @@
             const filteredEmpty = document.getElementById("customerFilteredEmpty");
             const tableBody = document.getElementById("customerTableBody");
             const rows = Array.from(document.querySelectorAll(".customer-row"));
-            const pageSize = 8;
+            const pageSize = 14;
             let currentPage = 1;
 
             function closeAdvanced() {
@@ -613,6 +798,36 @@
                 updateFilterCount();
             }
 
+            function makeCustomerFilterFullyClickable(container, select) {
+                if (!container || !select) return;
+
+                container.addEventListener("click", function (event) {
+                    if (event.target.closest("select")) return;
+
+                    select.focus();
+
+                    if (typeof select.showPicker === "function") {
+                        try {
+                            select.showPicker();
+                            return;
+                        } catch {
+                        }
+                    }
+
+                    select.click();
+                });
+            }
+
+            makeCustomerFilterFullyClickable(
+                statusFilter.closest(".customer-filter-select"),
+                statusFilter
+            );
+
+            makeCustomerFilterFullyClickable(
+                dateFilter.closest(".customer-filter-select"),
+                dateFilter
+            );
+
             searchInput.addEventListener("input", () => filterCustomers(true));
             statusFilter.addEventListener("change", () => filterCustomers(true));
             dateFilter.addEventListener("change", () => filterCustomers(true));
@@ -651,5 +866,324 @@
 
             filterCustomers(true);
         });
-    </script>
+    
+            // Customer workspace overlays keep the current page visible underneath.
+            const customerOverlayHost = document.getElementById("customerOverlayHost");
+            const customerOverlaySelectors = {
+                create: ".customer-drawer-page",
+                edit: ".customer-edit-page",
+                details: ".customer-details-page",
+                delete: ".customer-archive-modal-page",
+                archived: ".customer-archive-history-page",
+                archivedDetails: ".customer-archived-details-page"
+            };
+
+            const customerOverlayStyleIds = new Set();
+
+            function customerRouteKey(url) {
+                const path = new URL(url, window.location.origin).pathname
+                    .replace(/\/+$/, "")
+                    .toLowerCase();
+
+                if (path === "/customers/create") return "create";
+                if (/^\/customers\/edit\/\d+$/.test(path)) return "edit";
+                if (/^\/customers\/details\/\d+$/.test(path)) return "details";
+                if (/^\/customers\/delete\/\d+$/.test(path)) return "delete";
+                if (path === "/customers/archived") return "archived";
+                if (/^\/customers\/archiveddetails\/\d+$/.test(path)) return "archivedDetails";
+                return null;
+            }
+
+            function isCustomerIndexUrl(url) {
+                const path = new URL(url, window.location.origin).pathname
+                    .replace(/\/+$/, "")
+                    .toLowerCase();
+
+                return path === "/customers" || path === "/customers/index";
+            }
+
+            function closeCustomerOverlay() {
+                customerOverlayHost.innerHTML = "";
+                document.body.classList.remove("customer-overlay-open");
+            }
+
+            function appendCustomerOverlayStyles(doc, routeKey) {
+                if (customerOverlayStyleIds.has(routeKey)) return;
+
+                const selector = customerOverlaySelectors[routeKey];
+                const styleSignature = selector ? selector.replace(/^\./, "") : "";
+                const style = Array.from(doc.querySelectorAll("style"))
+                    .find(item => (item.textContent || "").includes(styleSignature));
+
+                if (!style) return;
+
+                const clone = document.createElement("style");
+                clone.setAttribute("data-customer-overlay-style", routeKey);
+                clone.textContent = style.textContent || "";
+                document.head.appendChild(clone);
+                customerOverlayStyleIds.add(routeKey);
+            }
+
+            function getCustomerOverlayRoot(doc, routeKey) {
+                const selector = customerOverlaySelectors[routeKey];
+                return selector ? doc.querySelector(selector) : null;
+            }
+
+            function showCustomerOverlayLoading() {
+                customerOverlayHost.innerHTML = `
+                    <div class="customer-overlay-loading">
+                        <div class="customer-overlay-loading-card">
+                            <span class="customer-overlay-spinner"></span>
+                            Loading customer workspace...
+                        </div>
+                    </div>`;
+                document.body.classList.add("customer-overlay-open");
+            }
+
+            function wireCustomerCreateImagePreview(root) {
+                if (!root) return;
+
+                const input = root.querySelector("#customerCreateProfileImage");
+                const preview = root.querySelector("#customerCreateImagePreview");
+                const status = root.querySelector("#customerCreateImageStatus");
+
+                if (!input || !preview || !status || input.dataset.imagePreviewWired === "true") {
+                    return;
+                }
+
+                input.dataset.imagePreviewWired = "true";
+
+                input.addEventListener("change", function () {
+                    const file = input.files && input.files[0];
+
+                    if (!file) {
+                        preview.innerHTML = '<div class="af-image-preview-empty"><i class="bi bi-person"></i></div>';
+                        status.classList.remove("is-selected");
+                        status.textContent = "No image selected";
+                        return;
+                    }
+
+                    if (!file.type.startsWith("image/")) {
+                        input.value = "";
+                        preview.innerHTML = '<div class="af-image-preview-empty"><i class="bi bi-person"></i></div>';
+                        status.classList.remove("is-selected");
+                        status.textContent = "Please choose an image file";
+                        return;
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        input.value = "";
+                        preview.innerHTML = '<div class="af-image-preview-empty"><i class="bi bi-person"></i></div>';
+                        status.classList.remove("is-selected");
+                        status.textContent = "Image must be 5 MB or smaller";
+                        return;
+                    }
+
+                    status.classList.add("is-selected");
+                    status.innerHTML =
+                        '<span class="af-image-check"><i class="bi bi-check-lg"></i></span>' +
+                        '<span>Profile image selected</span>' +
+                        '<span class="af-image-file-name">' + escapeCustomerImageText(file.name) + '</span>';
+
+                    const reader = new FileReader();
+
+                    reader.onload = function (event) {
+                        preview.innerHTML =
+                            '<img src="' + event.target.result + '" alt="Selected customer profile image" />';
+                    };
+
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function escapeCustomerImageText(value) {
+                return String(value || "").replace(/[&<>"']/g, function (character) {
+                    return {
+                        "&": "&amp;",
+                        "<": "&lt;",
+                        ">": "&gt;",
+                        '"': "&quot;",
+                        "'": "&#039;"
+                    }[character];
+                });
+            }
+
+            async function openCustomerOverlay(url) {
+                const routeKey = customerRouteKey(url);
+                if (!routeKey) {
+                    window.location.href = url;
+                    return;
+                }
+
+                showCustomerOverlayLoading();
+
+                try {
+                    const response = await fetch(url, {
+                        method: "GET",
+                        credentials: "same-origin",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Request failed: ${response.status}`);
+                    }
+
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, "text/html");
+                    const root = getCustomerOverlayRoot(doc, routeKey);
+
+                    if (!root) {
+                        window.location.href = url;
+                        return;
+                    }
+
+                    appendCustomerOverlayStyles(doc, routeKey);
+
+                    customerOverlayHost.innerHTML = "";
+                    root.setAttribute("data-customer-overlay-root", "true");
+                    customerOverlayHost.appendChild(root);
+                    document.body.classList.add("customer-overlay-open");
+
+                    wireCustomerCreateImagePreview(root);
+
+                    const firstField = root.querySelector("input:not([type='hidden']), textarea, select");
+                    if (firstField) {
+                        window.setTimeout(() => firstField.focus(), 120);
+                    }
+                } catch (error) {
+                    console.error("AutoFlow customer overlay error:", error);
+                    window.location.href = url;
+                }
+            }
+
+            document.addEventListener("click", function (event) {
+                const link = event.target.closest("a[href]");
+                if (!link) return;
+
+                const overlayRoot = link.closest("[data-customer-overlay-root]");
+                const href = link.href;
+                const routeKey = customerRouteKey(href);
+
+                if (overlayRoot) {
+                    if (isCustomerIndexUrl(href)) {
+                        event.preventDefault();
+                        closeCustomerOverlay();
+                        return;
+                    }
+
+                    if (routeKey) {
+                        event.preventDefault();
+                        openCustomerOverlay(href);
+                    }
+
+                    return;
+                }
+
+                if (!routeKey) return;
+
+                event.preventDefault();
+                openCustomerOverlay(href);
+            }, true);
+
+            document.addEventListener("click", function (event) {
+                const backdrop = event.target.closest(
+                    ".customer-drawer-backdrop, " +
+                    ".customer-edit-backdrop, " +
+                    ".customer-details-backdrop, " +
+                    ".customer-archived-details-backdrop, " +
+                    ".customer-archive-history-backdrop"
+                );
+
+                if (!backdrop) return;
+
+                const root = backdrop.closest("[data-customer-overlay-root]");
+                if (!root) return;
+
+                event.preventDefault();
+                closeCustomerOverlay();
+            }, true);
+
+            document.addEventListener("submit", async function (event) {
+                const form = event.target.closest("[data-customer-overlay-root] form");
+                if (!form) return;
+
+                event.preventDefault();
+
+                const submitButton = form.querySelector("button[type='submit']");
+                const originalText = submitButton ? submitButton.innerHTML : "";
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = "Saving...";
+                }
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: (form.method || "POST").toUpperCase(),
+                        credentials: "same-origin",
+                        body: new FormData(form),
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
+
+                    if (response.redirected && isCustomerIndexUrl(response.url)) {
+                        closeCustomerOverlay();
+                        window.location.reload();
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`Request failed: ${response.status}`);
+                    }
+
+                    const html = await response.text();
+                    const finalUrl = response.url;
+                    const routeKey = customerRouteKey(finalUrl);
+
+                    if (isCustomerIndexUrl(finalUrl)) {
+                        closeCustomerOverlay();
+                        window.location.reload();
+                        return;
+                    }
+
+                    if (!routeKey) {
+                        window.location.href = finalUrl;
+                        return;
+                    }
+
+                    const doc = new DOMParser().parseFromString(html, "text/html");
+                    const root = getCustomerOverlayRoot(doc, routeKey);
+
+                    if (!root) {
+                        window.location.href = finalUrl;
+                        return;
+                    }
+
+                    appendCustomerOverlayStyles(doc, routeKey);
+                    customerOverlayHost.innerHTML = "";
+                    root.setAttribute("data-customer-overlay-root", "true");
+                    customerOverlayHost.appendChild(root);
+                    document.body.classList.add("customer-overlay-open");
+
+                    wireCustomerCreateImagePreview(root);
+                } catch (error) {
+                    console.error("AutoFlow customer form error:", error);
+
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                }
+            }, true);
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key !== "Escape") return;
+                if (!customerOverlayHost.querySelector("[data-customer-overlay-root]")) return;
+                closeCustomerOverlay();
+            });
+
+</script>
 }

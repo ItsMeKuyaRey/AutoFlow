@@ -1,7 +1,16 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
 @model AutoFlow.Web.Models.JobOrder
 
 @{
     ViewData["Title"] = "Edit Job Order";
+
+    var parts = Model.JobOrderParts?.ToList() ?? new List<AutoFlow.Web.Models.JobOrderPart>();
+    var partsTotal = parts.Sum(p => p.Quantity * p.UnitPriceAtTimeOfUse);
+    var vehicleName = Model.Vehicle == null ? "Vehicle unavailable" : $"{Model.Vehicle.Make} {Model.Vehicle.Model}".Trim();
+    var vehicleImage = Model.Vehicle?.ImageUrl ?? string.Empty;
+    var ownerName = Model.Vehicle?.Customer == null ? "Customer unavailable" : $"{Model.Vehicle.Customer.FirstName} {Model.Vehicle.Customer.LastName}".Trim();
+    var ownerImage = Model.Vehicle?.Customer?.ImageUrl ?? string.Empty;
+    var ownerInitial = Model.Vehicle?.Customer?.FirstName?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?";
 }
 
 <style>
@@ -65,6 +74,62 @@
         margin-top: 30px;
         border-top: 1px solid var(--af-border);
     }
+
+    .job-edit-linked-grid {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
+        margin-top:14px;
+    }
+
+    .job-edit-linked-card {
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+        padding:10px;
+        border:1px solid var(--af-border);
+        border-radius:10px;
+        background:var(--af-bg);
+    }
+
+    .job-edit-linked-media {
+        width:72px;
+        height:60px;
+        flex:0 0 72px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        border:1px solid #e8eaf0;
+        border-radius:8px;
+        background:#fff;
+    }
+
+    .job-edit-linked-media.owner {
+        width:58px;
+        height:58px;
+        flex-basis:58px;
+        border-radius:50%;
+        background:#ece8ff;
+        color:#6445e8;
+        font-weight:800;
+    }
+
+    .job-edit-linked-media img { width:100%; height:100%; object-fit:contain; display:block; }
+    .job-edit-linked-copy { min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .job-edit-linked-copy span { color:var(--af-text-secondary); font-size:.66rem; }
+    .job-edit-linked-copy strong { color:var(--af-text); font-size:.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .job-edit-parts { margin-top:26px; padding-top:22px; border-top:1px solid var(--af-border); }
+    .job-edit-parts-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .job-edit-parts-row strong { color:var(--af-text); font-size:.88rem; }
+    .job-edit-parts-row span { color:var(--af-text-secondary); font-size:.72rem; }
+    .job-edit-part-list { border:1px solid var(--af-border); border-radius:10px; overflow:hidden; }
+    .job-edit-part-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid var(--af-border); }
+    .job-edit-part-item:last-child { border-bottom:0; }
+    .job-edit-part-item strong { color:var(--af-text); font-size:.74rem; }
+    .job-edit-part-item span { color:var(--af-text-secondary); font-size:.67rem; }
+
 
     @@media (max-width: 768px) {
         .job-form-footer {
@@ -156,6 +221,46 @@
 
                         <span asp-validation-for="AppointmentId"
                               class="text-danger"></span>
+                        <small class="text-muted d-block mt-1">A scheduled appointment automatically controls the repair date/time. Leave it empty for a manual repair date.</small>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="job-edit-linked-grid">
+                            <div class="job-edit-linked-card">
+                                <div class="job-edit-linked-media">
+                                    @if (!string.IsNullOrWhiteSpace(vehicleImage))
+                                    {
+                                        <img src="@vehicleImage" alt="@vehicleName" />
+                                    }
+                                    else
+                                    {
+                                        <span>🚗</span>
+                                    }
+                                </div>
+                                <div class="job-edit-linked-copy">
+                                    <span>Vehicle</span>
+                                    <strong>@vehicleName</strong>
+                                    <span>@Model.Vehicle?.PlateNumber</span>
+                                </div>
+                            </div>
+                            <div class="job-edit-linked-card">
+                                <div class="job-edit-linked-media owner">
+                                    @if (!string.IsNullOrWhiteSpace(ownerImage))
+                                    {
+                                        <img src="@ownerImage" alt="@ownerName" />
+                                    }
+                                    else
+                                    {
+                                        @ownerInitial
+                                    }
+                                </div>
+                                <div class="job-edit-linked-copy">
+                                    <span>Owner</span>
+                                    <strong>@ownerName</strong>
+                                    <span>Customer record</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
@@ -269,6 +374,50 @@
                           class="text-danger"></span>
                 </div>
 
+            </div>
+
+            <div class="job-edit-parts">
+                <div class="job-edit-parts-row">
+                    <strong>Parts Used</strong>
+                    <span>Choose the parts used for this repair. Inventory and Billing update automatically.</span>
+                </div>
+
+                <div class="job-create-part-entry" style="margin-top:10px;">
+                    <select id="standaloneEditPartSelect" aria-label="Select part to use">
+                        <option value="">Select part</option>
+                        @if (ViewBag.PartId is SelectList editPartOptions)
+                        {
+                            foreach (var option in editPartOptions)
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                    <input type="number" id="standaloneEditPartQuantity" value="1" min="1" step="1" aria-label="Part quantity" />
+                    <button type="button" class="af-button af-button-secondary" id="standaloneEditAddPart">+ Add Part</button>
+                </div>
+
+                <div class="job-edit-part-list" id="standaloneEditPartsList">
+                    @foreach (var part in parts)
+                    {
+                        <div class="job-edit-part-item" data-part-id="@part.PartId" data-quantity="@part.Quantity" data-unit-price="@part.UnitPriceAtTimeOfUse">
+                            <div>
+                                <strong>@(part.Part?.Name ?? "Unknown Part")</strong>
+                                <span>Qty @part.Quantity × ₱@part.UnitPriceAtTimeOfUse.ToString("N2")</span>
+                            </div>
+                            <button type="button" class="job-edit-part-remove" aria-label="Remove part">×</button>
+                        </div>
+                    }
+                    @if (!parts.Any())
+                    {
+                        <div class="text-muted" id="standaloneEditPartsEmpty" style="padding:12px;font-size:.74rem;">No parts have been added to this job order yet.</div>
+                    }
+                </div>
+                <div class="job-create-parts-total" style="margin-top:10px;">
+                    <span>Estimated Parts Cost</span>
+                    <strong id="standaloneEditPartsTotal">₱@partsTotal.ToString("N2")</strong>
+                </div>
+                <div id="standaloneEditPartHiddenInputs"></div>
             </div>
 
             <div class="job-form-footer">

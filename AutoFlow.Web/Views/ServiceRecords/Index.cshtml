@@ -1,700 +1,378 @@
-@model IEnumerable<AutoFlow.Web.Models.ServiceRecord>
+@model AutoFlow.Web.ViewModels.ServiceHistoryPageViewModel
 
 @{
     ViewData["Title"] = "Service History";
 
-    var records = Model.ToList();
+    var records = Model.Records;
+    var archivedRecords = Model.ArchivedRecords;
+    var totalRecords = records.Count;
+    var completedCount = records.Count(r => r.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase));
+    var vehiclesServiced = records.Select(r => r.ServiceRecord.VehicleId).Distinct().Count();
+    var latestService = records.FirstOrDefault();
 
-    var completedCount = records.Count(r => r.Status == "Completed");
-    var inProgressCount = records.Count(r => r.Status == "In Progress");
-    var cancelledCount = records.Count(r => r.Status == "Cancelled");
+    string QueryUrl(string? targetOpen = null, int? targetId = null) =>
+        Url.Action("Index", "ServiceRecords", new
+        {
+            open = string.IsNullOrWhiteSpace(targetOpen) ? null : targetOpen,
+            id = targetId
+        }) ?? "/ServiceRecords/Index";
+
+    string StatusClass(string? status) =>
+        status?.ToLowerInvariant() switch
+        {
+            "completed" => "completed",
+            "archived" => "archived",
+            _ => "default"
+        };
+
+    string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "—";
+        return string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
+    }
 }
 
 <style>
-    .history-page {
-        max-width: 1500px;
-        margin: 0 auto;
-        padding: 32px 28px 50px;
-    }
+    .history-page { max-width: 1500px; margin: 0 auto; padding: 32px 28px 50px; }
+    .history-breadcrumb { display:flex; align-items:center; gap:8px; color:#7b8190; font-size:13px; margin-bottom:20px; }
+    .history-breadcrumb i { font-size:11px; }
+    .history-header { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:25px; }
+    .history-header h1 { font-size:30px; font-weight:800; color:#202431; margin:0 0 7px; letter-spacing:-.5px; }
+    .history-header p { color:#7b8190; font-size:14px; margin:0; }
+    .history-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
+    .history-archive-btn { min-height:40px; border-radius:9px; padding:0 13px; font-size:11px; font-weight:750; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid #dfe3ea; background:#fff; color:#596273; cursor:pointer; }
+    .history-archive-btn:hover { border-color:#cfc4fb; background:#faf9ff; color:#7544f5; }
+    .history-header-count { min-width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; border-radius:999px; background:#f0f2f6; color:#737b8b; font-size:9px; font-weight:800; }
 
-    .history-breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #7b8190;
-        font-size: 13px;
-        margin-bottom: 20px;
-    }
+    .history-auto-note { display:flex; align-items:flex-start; gap:11px; padding:13px 15px; margin-bottom:20px; border:1px solid #e7ddff; border-radius:12px; background:#faf8ff; color:#5f46a8; font-size:12px; line-height:1.45; }
+    .history-auto-note i { font-size:15px; margin-top:1px; }
+    .history-auto-note strong { color:#4d3694; }
 
-    .history-breadcrumb i {
-        font-size: 11px;
-    }
+    .history-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; margin-bottom:22px; }
+    .history-stat { background:#fff; border:1px solid #ececf1; border-radius:14px; padding:18px; box-shadow:0 4px 16px rgba(30,25,50,.04); display:flex; align-items:center; gap:13px; }
+    .history-stat-icon { width:43px; height:43px; border-radius:12px; background:#f1ebff; color:#7043c1; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+    .history-stat-icon.success { background:#eaf8ef; color:#27834a; }
+    .history-stat-icon.info { background:#edf7ff; color:#087fb7; }
+    .history-stat-icon.warning { background:#fff6df; color:#b77900; }
+    .history-stat-label { color:#858b98; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+    .history-stat-value { color:#252936; font-size:22px; font-weight:800; }
+    .history-stat-value.small { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
 
-    .history-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-        margin-bottom: 25px;
-    }
+    .history-card { background:#fff; border:1px solid #ececf1; border-radius:16px; box-shadow:0 5px 20px rgba(30,25,50,.05); overflow:hidden; }
+    .history-card-header { padding:20px 22px; border-bottom:1px solid #eeeeF2; display:flex; align-items:center; justify-content:space-between; gap:15px; }
+    .history-card-title { display:flex; align-items:center; gap:10px; }
+    .history-card-title i { color:#7043c1; font-size:18px; }
+    .history-card-title h2 { font-size:16px; font-weight:750; color:#292e39; margin:0; }
+    .history-count { background:#f3effc; color:#7043c1; border-radius:999px; padding:5px 9px; font-size:10px; font-weight:750; }
 
-    .history-header h1 {
-        font-size: 30px;
-        font-weight: 800;
-        color: #202431;
-        margin: 0 0 7px;
-        letter-spacing: -.5px;
-    }
+    .history-table { width:100%; margin:0; table-layout:fixed; }
+    .history-table th:nth-child(1){width:22%}.history-table th:nth-child(2){width:13%}.history-table th:nth-child(3){width:10%}.history-table th:nth-child(4){width:15%}.history-table th:nth-child(5){width:15%}.history-table th:nth-child(6){width:10%}.history-table th:nth-child(7){width:15%}
+    .history-table thead th { background:#fafafd; color:#777e8b; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding:14px; border-bottom:1px solid #ececf1; white-space:nowrap; }
+    .history-table tbody td { padding:15px 14px; border-color:#f0f0f3; color:#464c58; font-size:13px; vertical-align:middle; }
+    .history-table tbody tr:hover { background:#fcfbff; }
+    .history-table tbody tr.history-row-archived { background:#fbfbfc; }
 
-    .history-header p {
-        color: #7b8190;
-        font-size: 14px;
-        margin: 0;
-    }
+    .history-identity { display:flex; align-items:center; gap:10px; min-width:0; }
+    .history-avatar { width:40px; height:40px; flex:0 0 40px; border-radius:11px; object-fit:cover; background:#f1ebff; color:#7043c1; display:grid; place-items:center; font-size:11px; font-weight:800; border:1px solid #e6def8; overflow:hidden; }
+    .history-avatar.vehicle { border-radius:10px; background:#f4f6f8; color:#6d7583; border-color:#e4e7eb; }
+    .history-identity-copy { min-width:0; }
+    .history-identity-name { color:#292e39; font-weight:750; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-identity-meta { color:#8b919d; font-size:10px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-vehicle-stack { display:flex; align-items:center; gap:9px; }
+    .history-vehicle-stack .history-avatar { width:38px; height:38px; flex-basis:38px; }
+    .history-vehicle-name { color:#292e39; font-weight:750; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-vehicle-plate { color:#8b919d; font-size:10px; margin-top:3px; }
+    .history-date { color:#4d5360; font-weight:650; white-space:nowrap; }
+    .history-mileage { color:#4d5360; font-weight:700; }
+    .history-text { color:#596273; line-height:1.4; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .history-muted { color:#9aa0aa; }
+    .history-status { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 10px; font-size:10px; font-weight:750; white-space:nowrap; }
+    .history-status.completed { color:#27834a; background:#eaf8ef; }.history-status.archived{color:#737986;background:#f1f2f5}.history-status.default{color:#687181;background:#f1f2f5}
+    .history-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .history-actions { display:flex; justify-content:flex-end; align-items:center; gap:6px; width:100%; }
+    .history-action { width:35px; height:35px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-size:13px; background:#fff; transition:transform .15s ease,background .15s ease; }
+    .history-action:hover{transform:translateY(-1px)}.history-action.view{color:#69717e;border:1px solid #dfe2e8}.history-action.view:hover{background:#f8f9fb}.history-action.archive{color:#c03952;border:1px solid #f0cbd2;background:#fff8f9}.history-action.archive:hover{background:#fff1f3}.history-action.restore{color:#1b9a70;border:1px solid #ccefe1;background:#f2fcf8}.history-action.restore:hover{background:#e9faf4}.history-inline-form{display:inline-flex;margin:0}
 
-    .history-add-btn {
-        background: #7043c1;
-        border-color: #7043c1;
-        color: #fff;
-        border-radius: 10px;
-        padding: 10px 17px;
-        font-weight: 700;
-        font-size: 13px;
-        white-space: nowrap;
-    }
+    .history-empty { padding:65px 20px; text-align:center; }
+    .history-empty-icon { width:62px; height:62px; border-radius:17px; background:#f1ebff; color:#7043c1; display:grid; place-items:center; margin:0 auto 15px; font-size:25px; }
+    .history-empty h3 { font-size:18px; font-weight:750; color:#292e39; margin-bottom:6px; }.history-empty p{color:#858b98;font-size:13px;margin:0 auto;max-width:560px}
 
-    .history-add-btn:hover {
-        background: #5d35a6;
-        border-color: #5d35a6;
-        color: #fff;
-    }
-
-    .history-stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 15px;
-        margin-bottom: 22px;
-    }
-
-    .history-stat {
-        background: #fff;
-        border: 1px solid #ececf1;
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: 0 4px 16px rgba(30, 25, 50, .04);
-        display: flex;
-        align-items: center;
-        gap: 13px;
-    }
-
-    .history-stat-icon {
-        width: 43px;
-        height: 43px;
-        border-radius: 12px;
-        background: #f1ebff;
-        color: #7043c1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 19px;
-        flex-shrink: 0;
-    }
-
-    .history-stat-icon.success {
-        background: #eaf8ef;
-        color: #27834a;
-    }
-
-    .history-stat-icon.warning {
-        background: #fff6df;
-        color: #a36a00;
-    }
-
-    .history-stat-icon.danger {
-        background: #fff0f2;
-        color: #c03952;
-    }
-
-    .history-stat-label {
-        color: #858b98;
-        font-size: 10px;
-        font-weight: 750;
-        text-transform: uppercase;
-        letter-spacing: .05em;
-        margin-bottom: 3px;
-    }
-
-    .history-stat-value {
-        color: #252936;
-        font-size: 21px;
-        font-weight: 800;
-    }
-
-    .history-card {
-        background: #fff;
-        border: 1px solid #ececf1;
-        border-radius: 16px;
-        box-shadow: 0 5px 20px rgba(30, 25, 50, .05);
-        overflow: hidden;
-    }
-
-    .history-card-header {
-        padding: 20px 22px;
-        border-bottom: 1px solid #eeeeF2;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .history-card-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .history-card-title i {
-        color: #7043c1;
-        font-size: 18px;
-    }
-
-    .history-card-title h2 {
-        font-size: 16px;
-        font-weight: 750;
-        color: #292e39;
-        margin: 0;
-    }
-
-    .history-count {
-        background: #f3effc;
-        color: #7043c1;
-        border-radius: 999px;
-        padding: 5px 10px;
-        font-size: 10px;
-        font-weight: 750;
-    }
-
-    .history-table {
-        margin: 0;
-    }
-
-    .history-table thead th {
-        background: #fafafd;
-        color: #777e8b;
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-        padding: 14px 17px;
-        border-bottom: 1px solid #ececf1;
-        white-space: nowrap;
-    }
-
-    .history-table tbody td {
-        padding: 16px 17px;
-        border-color: #f0f0f3;
-        color: #464c58;
-        font-size: 13px;
-        vertical-align: middle;
-    }
-
-    .history-table tbody tr:hover {
-        background: #fcfbff;
-    }
-
-    .vehicle-block {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-    }
-
-    .vehicle-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        background: #f1ebff;
-        color: #7043c1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 17px;
-        flex-shrink: 0;
-    }
-
-    .vehicle-name {
-        color: #292e39;
-        font-weight: 750;
-        font-size: 13px;
-    }
-
-    .vehicle-plate {
-        color: #9297a2;
-        font-size: 10px;
-        margin-top: 2px;
-    }
-
-    .history-date {
-        color: #4c525e;
-        font-weight: 650;
-        white-space: nowrap;
-    }
-
-    .history-mileage {
-        font-weight: 650;
-        color: #4c525e;
-    }
-
-    .history-muted {
-        color: #a0a5ae;
-    }
-
-    .history-text {
-        max-width: 200px;
-        line-height: 1.45;
-        color: #555b67;
-    }
-
-    .history-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 10px;
-        font-weight: 750;
-        white-space: nowrap;
-    }
-
-    .history-status.completed {
-        color: #27834a;
-        background: #eaf8ef;
-    }
-
-    .history-status.progress {
-        color: #956300;
-        background: #fff6df;
-    }
-
-    .history-status.cancelled {
-        color: #c03952;
-        background: #fff0f2;
-    }
-
-    .history-status.default {
-        color: #68707d;
-        background: #f1f2f5;
-    }
-
-    .history-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: currentColor;
-    }
-
-    .history-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 5px;
-        white-space: nowrap;
-    }
-
-    .history-action {
-        height: 34px;
-        min-width: 34px;
-        padding: 0 9px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        font-size: 11px;
-        font-weight: 700;
-        text-decoration: none;
-    }
-
-    .history-action.view {
-        color: #69717e;
-        border: 1px solid #dfe2e8;
-        background: #fff;
-    }
-
-    .history-action.edit {
-        color: #7043c1;
-        border: 1px solid #ded2f5;
-        background: #faf8ff;
-    }
-
-    .history-action.delete {
-        color: #c03952;
-        border: 1px solid #f0cbd2;
-        background: #fff8f9;
-    }
-
-    .history-empty {
-        text-align: center;
-        padding: 75px 20px;
-    }
-
-    .history-empty-icon {
-        width: 68px;
-        height: 68px;
-        border-radius: 18px;
-        background: #f1ebff;
-        color: #7043c1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 17px;
-        font-size: 28px;
-    }
-
-    .history-empty h3 {
-        color: #292e39;
-        font-size: 19px;
-        font-weight: 750;
-        margin-bottom: 7px;
-    }
-
-    .history-empty p {
-        color: #858b98;
-        font-size: 13px;
-        max-width: 470px;
-        margin: 0 auto 20px;
-        line-height: 1.6;
-    }
-
-    @@media (max-width: 1100px) {
-        .history-stats {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @@media (max-width: 900px) {
-        .history-header {
-            flex-direction: column;
-        }
-
-        .history-add-btn {
-            width: 100%;
-        }
-    }
-
-    @@media (max-width: 700px) {
-        .history-page {
-            padding: 22px 16px 40px;
-        }
-
-        .history-stats {
-            grid-template-columns: 1fr;
-        }
-
-        .history-table thead {
-            display: none;
-        }
-
-        .history-table tbody tr {
-            display: block;
-            padding: 14px 16px;
-            border-bottom: 1px solid #ececf1;
-        }
-
-        .history-table tbody td {
-            display: block;
-            padding: 6px 0;
-            border: 0;
-        }
-
-        .history-actions {
-            justify-content: flex-start;
-            margin-top: 7px;
-        }
-    }
+    .history-drawer-backdrop { position:fixed; inset:0; z-index:2000; display:flex; justify-content:flex-end; background:rgba(17,24,39,.18); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+    .history-drawer { width:min(560px,100vw); height:100%; background:#fff; border-left:1px solid #e7e8ee; box-shadow:-18px 0 45px rgba(25,20,45,.16); display:flex; flex-direction:column; overflow:hidden; }
+    .history-drawer-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 24px 20px; border-bottom:1px solid #eceef3; flex:0 0 auto; }
+    .history-drawer-kicker { color:#7043c1; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }.history-drawer-head h2{margin:0;color:#202431;font-size:20px;font-weight:800}.history-drawer-head p{margin:4px 0 0;color:#8a92a0;font-size:11px}
+    .history-drawer-close { width:34px;height:34px;flex:0 0 34px;border:1px solid #e1e4ea;border-radius:9px;background:#fff;color:#707887;display:grid;place-items:center;text-decoration:none; }
+    .history-drawer-body { flex:1; overflow:auto; padding:22px 24px 28px; }
+    .history-section { margin-bottom:22px; }.history-section:last-child{margin-bottom:0}.history-section-label{color:#9aa3b2;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+    .history-profile-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .history-profile-card { padding:13px; border:1px solid #eceef3; border-radius:12px; background:#fafbfc; display:flex; align-items:center; gap:10px; min-width:0; }
+    .history-profile-card .history-avatar { width:46px;height:46px;flex-basis:46px;border-radius:12px; }.history-profile-card .history-identity-name{font-size:12px}.history-profile-card .history-identity-meta{font-size:9px}
+    .history-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.history-info-card{padding:13px;border:1px solid #eceef3;border-radius:11px;background:#fafbfc}.history-info-label{color:#9aa0aa;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}.history-info-value{color:#303847;font-size:13px;font-weight:700;line-height:1.35}
+    .history-detail-box{padding:14px;border:1px solid #edf0f4;border-radius:11px;background:#fafbfc;color:#596273;font-size:13px;line-height:1.6;white-space:pre-wrap}
+    .history-job-card{padding:15px;border:1px solid #eee9fa;border-radius:12px;background:#faf9ff}.history-job-title{color:#292e39;font-size:15px;font-weight:800}.history-job-meta{margin-top:4px;color:#7043c1;font-size:10px;font-weight:800}
+    .history-parts{border:1px solid #edf0f4;border-radius:11px;overflow:hidden}.history-part-row{display:flex;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid #edf0f4;font-size:12px}.history-part-row:last-child{border-bottom:0}.history-part-name{color:#3d4552;font-weight:700}.history-part-cost{color:#5e6674;font-weight:700;white-space:nowrap}.history-total-row{display:flex;justify-content:space-between;padding:12px 13px;background:#fafbfc;font-size:12px;font-weight:800;color:#303847}
+    .history-confirm{padding:16px;border:1px solid #f2d5da;border-radius:12px;background:#fff8f9}.history-confirm-icon{width:40px;height:40px;border-radius:11px;background:#fff0f0;color:#c03952;display:grid;place-items:center;margin-bottom:11px}.history-confirm h3{margin:0 0 5px;color:#3a2b30;font-size:15px;font-weight:800}.history-confirm p{margin:0;color:#74646a;font-size:12px;line-height:1.55}
+    .history-drawer-footer{border-top:1px solid #eceef3;padding:16px 24px;display:flex;justify-content:flex-end;gap:9px;flex:0 0 auto}.history-drawer-btn{min-height:38px;border-radius:9px;padding:0 14px;font-size:11px;font-weight:800;border:1px solid transparent;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}.history-drawer-btn.secondary{background:#fff;color:#596273;border-color:#dfe3ea}.history-drawer-btn.danger{background:#c03952;color:#fff;border-color:#c03952}.history-drawer-btn.restore{background:#1b9a70;color:#fff;border-color:#1b9a70}
+    .history-archive-shell{height:100%;display:flex;flex-direction:column;background:#fff}.history-archive-body{flex:1;overflow:auto;padding:20px 24px 28px}.history-archived-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;margin-bottom:10px;border:1px solid #eceef3;border-radius:12px;background:#fff}.history-archived-info{min-width:0;display:flex;align-items:center;gap:11px}.history-archived-info .history-avatar{width:40px;height:40px;flex-basis:40px}.history-archived-info strong,.history-archived-info span,.history-archived-info small{display:block}.history-archived-info strong{color:#292e39;font-size:13px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.history-archived-info span{margin-top:2px;color:#8d94a1;font-size:10px}.history-archived-info small{margin-top:4px;color:#687181;font-size:10px}.history-archived-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}.history-archive-empty{min-height:260px;display:grid;place-items:center;align-content:center;text-align:center}.history-archive-empty-icon{width:58px;height:58px;margin-bottom:14px;border-radius:16px;background:#f1ebff;color:#7043c1;display:grid;place-items:center;font-size:22px}.history-archive-empty h3{margin:0 0 5px;color:#292e39;font-size:16px;font-weight:800}.history-archive-empty p{margin:0;color:#858b98;font-size:12px}
+    body.history-drawer-lock{overflow:hidden}
+    @@media(max-width:1100px){.history-stats{grid-template-columns:1fr 1fr}.history-table{min-width:1100px}}
+    @@media(max-width:700px){.history-page{padding:22px 16px 40px}.history-header{flex-direction:column}.history-header-actions{width:100%;justify-content:flex-start}.history-stats{grid-template-columns:1fr}.history-table{min-width:1100px}.history-drawer{width:100vw}.history-drawer-head,.history-drawer-body,.history-drawer-footer,.history-archive-body{padding-left:16px;padding-right:16px}.history-profile-pair{grid-template-columns:1fr}}
 </style>
 
 <div class="history-page">
-
     <div class="history-breadcrumb">
-        <i class="bi bi-clock-history"></i>
-        <span>Operations</span>
-        <i class="bi bi-chevron-right"></i>
-        <span>Service History</span>
+        <i class="bi bi-clock-history"></i><span>Operations</span><i class="bi bi-chevron-right"></i><span>Service History</span>
     </div>
 
     <div class="history-header">
-
         <div>
             <h1>Service History</h1>
-            <p>Review completed and ongoing service records for customer vehicles.</p>
+            <p>Review completed repair services automatically retained for customer vehicles.</p>
         </div>
+        <div class="history-header-actions">
+            <button type="button" class="history-archive-btn" onclick="openArchivedServiceRecordsDrawer()" aria-label="View archived service records">
+                <i class="bi bi-archive"></i> Archived <span class="history-header-count">@archivedRecords.Count</span>
+            </button>
+        </div>
+    </div>
 
-        <a asp-action="Create"
-           class="btn history-add-btn">
-            <i class="bi bi-plus-lg me-1"></i>
-            New Service Record
-        </a>
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success border-0 shadow-sm mb-3" role="alert"><i class="bi bi-check-circle-fill me-2"></i>@successMessage</div>
+    }
 
+    <div class="history-auto-note">
+        <i class="bi bi-stars"></i>
+        <div><strong>Automatically recorded.</strong> Service History is populated from completed Repair Job Orders. When a repair is completed, its service date, mileage, complaint, diagnosis, repair notes, parts, and cost information are retained here for future reference.</div>
     </div>
 
     <div class="history-stats">
-
-        <div class="history-stat">
-            <div class="history-stat-icon">
-                <i class="bi bi-clock-history"></i>
-            </div>
-
-            <div>
-                <div class="history-stat-label">Total Records</div>
-                <div class="history-stat-value">@records.Count</div>
-            </div>
-        </div>
-
-        <div class="history-stat">
-            <div class="history-stat-icon success">
-                <i class="bi bi-check-circle"></i>
-            </div>
-
-            <div>
-                <div class="history-stat-label">Completed</div>
-                <div class="history-stat-value">@completedCount</div>
-            </div>
-        </div>
-
-        <div class="history-stat">
-            <div class="history-stat-icon warning">
-                <i class="bi bi-wrench-adjustable"></i>
-            </div>
-
-            <div>
-                <div class="history-stat-label">In Progress</div>
-                <div class="history-stat-value">@inProgressCount</div>
-            </div>
-        </div>
-
-        <div class="history-stat">
-            <div class="history-stat-icon danger">
-                <i class="bi bi-x-circle"></i>
-            </div>
-
-            <div>
-                <div class="history-stat-label">Cancelled</div>
-                <div class="history-stat-value">@cancelledCount</div>
-            </div>
-        </div>
-
+        <div class="history-stat"><div class="history-stat-icon"><i class="bi bi-clock-history"></i></div><div><div class="history-stat-label">Total Services</div><div class="history-stat-value">@totalRecords</div></div></div>
+        <div class="history-stat"><div class="history-stat-icon success"><i class="bi bi-check-circle"></i></div><div><div class="history-stat-label">Completed</div><div class="history-stat-value">@completedCount</div></div></div>
+        <div class="history-stat"><div class="history-stat-icon info"><i class="bi bi-car-front"></i></div><div><div class="history-stat-label">Vehicles Serviced</div><div class="history-stat-value">@vehiclesServiced</div></div></div>
+        <div class="history-stat"><div class="history-stat-icon warning"><i class="bi bi-calendar-check"></i></div><div><div class="history-stat-label">Latest Service</div><div class="history-stat-value small">@(latestService == null ? "—" : latestService.ServiceRecord.ServiceDate.ToLocalTime().ToString("MMM d, yyyy"))</div></div></div>
     </div>
 
     <div class="history-card">
-
         <div class="history-card-header">
-
-            <div class="history-card-title">
-                <i class="bi bi-journal-text"></i>
-                <h2>Service Records</h2>
-            </div>
-
-            <span class="history-count">
-                @records.Count record@(records.Count == 1 ? "" : "s")
-            </span>
-
+            <div class="history-card-title"><i class="bi bi-journal-text"></i><h2>Completed Service Records</h2></div>
+            <span class="history-count">@totalRecords service@(totalRecords == 1 ? "" : "s")</span>
         </div>
 
         @if (!records.Any())
         {
             <div class="history-empty">
-
-                <div class="history-empty-icon">
-                    <i class="bi bi-journal-medical"></i>
-                </div>
-
+                <div class="history-empty-icon"><i class="bi bi-journal-medical"></i></div>
                 <h3>No Service History Yet</h3>
-
-                <p>
-                    Service history will appear here once service records are
-                    created for customer vehicles. Create the first record to
-                    begin tracking maintenance and repair history.
-                </p>
-
-                <a asp-action="Create"
-                   class="btn history-add-btn">
-                    <i class="bi bi-plus-lg me-1"></i>
-                    Create First Service Record
-                </a>
-
+                <p>Completed Repair Job Orders will appear here automatically. There is no separate service-history entry to create.</p>
             </div>
         }
         else
         {
             <div class="table-responsive">
-
                 <table class="table history-table align-middle">
-
-                    <thead>
-                        <tr>
-                            <th>Vehicle</th>
-                            <th>Service Date</th>
-                            <th>Mileage</th>
-                            <th>Complaint</th>
-                            <th>Diagnosis</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-
+                    <thead><tr><th>Owner</th><th>Vehicle</th><th>Service Date</th><th>Mileage</th><th>Complaint</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
                     <tbody>
-
                     @foreach (var item in records)
                     {
-                        var statusClass = item.Status switch
-                        {
-                            "Completed" => "completed",
-                            "In Progress" => "progress",
-                            "Cancelled" => "cancelled",
-                            _ => "default"
-                        };
-
+                        var customer = item.CustomerName;
                         <tr>
-
                             <td>
-
-                                <div class="vehicle-block">
-
-                                    <div class="vehicle-icon">
-                                        <i class="bi bi-car-front"></i>
-                                    </div>
-
-                                    <div>
-
-                                        @if (item.Vehicle != null)
-                                        {
-                                            <div class="vehicle-name">
-                                                @item.Vehicle.Make @item.Vehicle.Model
-                                            </div>
-
-                                            <div class="vehicle-plate">
-                                                <i class="bi bi-credit-card-2-front me-1"></i>
-                                                @item.Vehicle.PlateNumber
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="vehicle-name history-muted">
-                                                Vehicle unavailable
-                                            </div>
-                                        }
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-                            <td>
-                                <div class="history-date">
-                                    <i class="bi bi-calendar3 me-1"></i>
-                                    @item.ServiceDate.ToLocalTime().ToString("MMM dd, yyyy")
+                                <div class="history-identity">
+                                    @if (!string.IsNullOrWhiteSpace(item.CustomerImageUrl))
+                                    { <img class="history-avatar" src="@item.CustomerImageUrl" alt="@customer" /> }
+                                    else
+                                    { <div class="history-avatar">@Initials(customer)</div> }
+                                    <div class="history-identity-copy"><div class="history-identity-name">@customer</div><div class="history-identity-meta">Customer</div></div>
                                 </div>
                             </td>
-
                             <td>
-
-                                @if (item.Mileage.HasValue)
+                                <div class="history-vehicle-stack">
+                                    @if (!string.IsNullOrWhiteSpace(item.VehicleImageUrl))
+                                    { <img class="history-avatar vehicle" src="@item.VehicleImageUrl" alt="@item.VehicleName" /> }
+                                    else
+                                    { <div class="history-avatar vehicle"><i class="bi bi-car-front"></i></div> }
+                                    <div class="history-identity-copy"><div class="history-vehicle-name">@item.VehicleName</div><div class="history-vehicle-plate">@item.PlateNumber</div></div>
+                                </div>
+                            </td>
+                            <td><div class="history-date"><i class="bi bi-calendar3 me-1"></i>@item.ServiceRecord.ServiceDate.ToLocalTime().ToString("MMM dd, yyyy")</div></td>
+                            <td>
+                                @if (item.ServiceRecord.Mileage.HasValue)
                                 {
-                                    <div class="history-mileage">
-                                        @item.Mileage.Value.ToString("N0")
-                                    </div>
+                                    <div class="history-mileage">@item.ServiceRecord.Mileage.Value.ToString("N0")</div>
                                 }
                                 else
                                 {
                                     <span class="history-muted">—</span>
                                 }
-
                             </td>
-
                             <td>
-
-                                @if (!string.IsNullOrWhiteSpace(item.Complaint))
+                                @if (!string.IsNullOrWhiteSpace(item.ServiceRecord.Complaint))
                                 {
-                                    <div class="history-text">
-                                        @item.Complaint
-                                    </div>
+                                    <div class="history-text" title="@item.ServiceRecord.Complaint">@item.ServiceRecord.Complaint</div>
                                 }
                                 else
                                 {
                                     <span class="history-muted">No complaint recorded</span>
                                 }
-
                             </td>
-
+                            <td><span class="history-status @StatusClass(item.Status)"><span class="history-dot"></span>@item.Status</span></td>
                             <td>
-
-                                @if (!string.IsNullOrWhiteSpace(item.Diagnosis))
-                                {
-                                    <div class="history-text">
-                                        @item.Diagnosis
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="history-muted">No diagnosis recorded</span>
-                                }
-
-                            </td>
-
-                            <td>
-
-                                <span class="history-status @statusClass">
-
-                                    <span class="history-dot"></span>
-
-                                    @item.Status
-
-                                </span>
-
-                            </td>
-
-                            <td>
-
                                 <div class="history-actions">
-
-                                    <a asp-action="Details"
-                                       asp-route-id="@item.ServiceRecordId"
-                                       class="history-action view"
-                                       title="View service record">
-                                        <i class="bi bi-eye"></i>
-                                        <span>View</span>
-                                    </a>
-
-                                    <a asp-action="Edit"
-                                       asp-route-id="@item.ServiceRecordId"
-                                       class="history-action edit"
-                                       title="Edit service record">
-                                        <i class="bi bi-pencil"></i>
-                                        <span>Edit</span>
-                                    </a>
-
-                                    <a asp-action="Delete"
-                                       asp-route-id="@item.ServiceRecordId"
-                                       class="history-action delete"
-                                       title="Delete service record">
-                                        <i class="bi bi-trash3"></i>
-                                        <span>Delete</span>
-                                    </a>
-
+                                    <a class="history-action view" href="@QueryUrl("details", item.ServiceRecordId)" title="View service details" aria-label="View service details"><i class="bi bi-eye"></i></a>
+                                    <a class="history-action archive" href="@QueryUrl("archive", item.ServiceRecordId)" title="Archive service record" aria-label="Archive service record"><i class="bi bi-archive"></i></a>
                                 </div>
-
                             </td>
-
                         </tr>
                     }
-
                     </tbody>
-
                 </table>
-
             </div>
         }
-
     </div>
-
 </div>
+
+<div id="archivedServiceRecordsBackdrop" class="history-drawer-backdrop" aria-hidden="true" style="display:none;">
+    <aside class="history-drawer" role="dialog" aria-modal="true" aria-labelledby="archivedServiceRecordsTitle">
+        <div class="history-archive-shell">
+            <header class="history-drawer-head">
+                <div><div class="history-drawer-kicker">Service History</div><h2 id="archivedServiceRecordsTitle">Archived Service Records</h2><p>@archivedRecords.Count archived service record@(archivedRecords.Count == 1 ? "" : "s").</p></div>
+                <button type="button" class="history-drawer-close" onclick="closeArchivedServiceRecordsDrawer()" aria-label="Close archived service records"><i class="bi bi-x-lg"></i></button>
+            </header>
+            <div class="history-archive-body">
+                @if (archivedRecords.Any())
+                {
+                    @foreach (var archived in archivedRecords)
+                    {
+                        <div class="history-archived-card">
+                            <div class="history-archived-info">
+                                @if (!string.IsNullOrWhiteSpace(archived.CustomerImageUrl))
+                                { <img class="history-avatar" src="@archived.CustomerImageUrl" alt="@archived.CustomerName" /> }
+                                else
+                                { <div class="history-avatar">@Initials(archived.CustomerName)</div> }
+                                <div><strong>@archived.CustomerName</strong><span>@archived.VehicleName · @archived.PlateNumber</span><small>@archived.ServiceRecord.ServiceDate.ToLocalTime().ToString("MMM d, yyyy")</small></div>
+                            </div>
+                            <div class="history-archived-actions">
+                                <a class="history-action view" href="@QueryUrl("details", archived.ServiceRecordId)" title="View details" aria-label="View details"><i class="bi bi-eye"></i></a>
+                                <form asp-action="Restore" method="post" class="history-inline-form">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@archived.ServiceRecordId" />
+                                    <button type="submit" class="history-action restore" title="Restore service record" aria-label="Restore service record"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="history-archive-empty"><div class="history-archive-empty-icon"><i class="bi bi-archive"></i></div><h3>No Archived Service Records</h3><p>Archived service records will appear here.</p></div>
+                }
+            </div>
+        </div>
+    </aside>
+</div>
+
+@if (Model.DrawerRecord != null && !string.IsNullOrWhiteSpace(Model.Open))
+{
+    var drawer = Model.DrawerRecord;
+    var job = drawer.JobOrder;
+    var parts = job?.JobOrderParts?.ToList() ?? new List<AutoFlow.Web.Models.JobOrderPart>();
+    var partsTotal = parts.Sum(p => p.Quantity * p.UnitPriceAtTimeOfUse);
+    var totalCost = (job?.LaborCost ?? 0m) + partsTotal;
+
+    <div class="history-drawer-backdrop">
+        <aside class="history-drawer" role="dialog" aria-modal="true" aria-labelledby="serviceDrawerTitle">
+            @if (Model.Open.Equals("archive", StringComparison.OrdinalIgnoreCase))
+            {
+                <header class="history-drawer-head"><div><div class="history-drawer-kicker">Service History</div><h2 id="serviceDrawerTitle">Archive Service Record</h2><p>Keep the historical record while marking it archived.</p></div><a class="history-drawer-close" href="@QueryUrl()" aria-label="Close"><i class="bi bi-x-lg"></i></a></header>
+                <div class="history-drawer-body">
+                    <div class="history-confirm"><div class="history-confirm-icon"><i class="bi bi-archive"></i></div><h3>Archive this service record?</h3><p>The repair history stays stored in AutoFlow and can be restored later.</p></div>
+                    <div class="history-section" style="margin-top:22px"><div class="history-section-label">Owner & Vehicle</div><div class="history-profile-pair">
+                        <div class="history-profile-card">@if(!string.IsNullOrWhiteSpace(drawer.CustomerImageUrl)){<img class="history-avatar" src="@drawer.CustomerImageUrl" alt="@drawer.CustomerName"/>}else{<div class="history-avatar">@Initials(drawer.CustomerName)</div>}<div class="history-identity-copy"><div class="history-identity-name">@drawer.CustomerName</div><div class="history-identity-meta">Customer</div></div></div>
+                        <div class="history-profile-card">@if(!string.IsNullOrWhiteSpace(drawer.VehicleImageUrl)){<img class="history-avatar vehicle" src="@drawer.VehicleImageUrl" alt="@drawer.VehicleName"/>}else{<div class="history-avatar vehicle"><i class="bi bi-car-front"></i></div>}<div class="history-identity-copy"><div class="history-identity-name">@drawer.VehicleName</div><div class="history-identity-meta">@drawer.PlateNumber</div></div></div>
+                    </div></div>
+                </div>
+                <footer class="history-drawer-footer"><a class="history-drawer-btn secondary" href="@QueryUrl()">Cancel</a><form asp-action="ArchiveConfirmed" method="post" class="history-inline-form">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@drawer.ServiceRecordId"/><button type="submit" class="history-drawer-btn danger"><i class="bi bi-archive"></i>Archive Record</button></form></footer>
+            }
+            else
+            {
+                <header class="history-drawer-head"><div><div class="history-drawer-kicker">Completed Service</div><h2 id="serviceDrawerTitle">Service Details</h2><p>@(job == null ? "Historical service record" : $"Automatically linked to Repair Job Order #{job.JobOrderId}")</p></div><a class="history-drawer-close" href="@QueryUrl()" aria-label="Close"><i class="bi bi-x-lg"></i></a></header>
+                <div class="history-drawer-body">
+                    <div class="history-section"><div class="history-section-label">Owner & Vehicle</div><div class="history-profile-pair">
+                        <div class="history-profile-card">@if(!string.IsNullOrWhiteSpace(drawer.CustomerImageUrl)){<img class="history-avatar" src="@drawer.CustomerImageUrl" alt="@drawer.CustomerName"/>}else{<div class="history-avatar">@Initials(drawer.CustomerName)</div>}<div class="history-identity-copy"><div class="history-identity-name">@drawer.CustomerName</div><div class="history-identity-meta">Customer</div></div></div>
+                        <div class="history-profile-card">@if(!string.IsNullOrWhiteSpace(drawer.VehicleImageUrl)){<img class="history-avatar vehicle" src="@drawer.VehicleImageUrl" alt="@drawer.VehicleName"/>}else{<div class="history-avatar vehicle"><i class="bi bi-car-front"></i></div>}<div class="history-identity-copy"><div class="history-identity-name">@drawer.VehicleName</div><div class="history-identity-meta">@drawer.PlateNumber</div></div></div>
+                    </div></div>
+
+                    <div class="history-section"><div class="history-section-label">Service Summary</div><div class="history-info-grid">
+                        <div class="history-info-card"><div class="history-info-label">Service Date</div><div class="history-info-value">@drawer.ServiceRecord.ServiceDate.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div></div>
+                        <div class="history-info-card"><div class="history-info-label">Mileage</div><div class="history-info-value">@(drawer.ServiceRecord.Mileage.HasValue ? drawer.ServiceRecord.Mileage.Value.ToString("N0") + " km" : "—")</div></div>
+                        <div class="history-info-card"><div class="history-info-label">Status</div><div class="history-info-value">@drawer.Status</div></div>
+                        <div class="history-info-card"><div class="history-info-label">Repair Job</div><div class="history-info-value">@(job == null ? "Historical record" : $"#{job.JobOrderId}")</div></div>
+                    </div></div>
+
+                    @if (!string.IsNullOrWhiteSpace(drawer.ServiceRecord.Complaint)) { <div class="history-section"><div class="history-section-label">Complaint / Service Request</div><div class="history-detail-box">@drawer.ServiceRecord.Complaint</div></div> }
+                    @if (!string.IsNullOrWhiteSpace(drawer.ServiceRecord.Diagnosis)) { <div class="history-section"><div class="history-section-label">Diagnosis</div><div class="history-detail-box">@drawer.ServiceRecord.Diagnosis</div></div> }
+
+                    @if (job != null)
+                    {
+                        <div class="history-section"><div class="history-section-label">Repair Work</div><div class="history-job-card"><div class="history-job-title">Repair Job Order #@job.JobOrderId</div><div class="history-job-meta">Completed repair retained as service history</div></div></div>
+                        @if (!string.IsNullOrWhiteSpace(job.Notes)) { <div class="history-section"><div class="history-section-label">Repair Notes</div><div class="history-detail-box">@job.Notes</div></div> }
+                        <div class="history-section"><div class="history-section-label">Parts Used</div>
+                            @if (parts.Any())
+                            {
+                                <div class="history-parts">
+                                    @foreach (var part in parts)
+                                    {
+                                        <div class="history-part-row"><span class="history-part-name">@(part.Part?.Name ?? $"Part #{part.PartId}") × @part.Quantity</span><span class="history-part-cost">@((part.Quantity * part.UnitPriceAtTimeOfUse).ToString("C"))</span></div>
+                                    }
+                                    <div class="history-total-row"><span>Parts Total</span><span>@partsTotal.ToString("C")</span></div>
+                                </div>
+                            }
+                            else { <div class="history-detail-box">No parts were recorded for this repair.</div> }
+                        </div>
+                        <div class="history-section"><div class="history-section-label">Repair Cost</div><div class="history-info-grid">
+                            <div class="history-info-card"><div class="history-info-label">Labor</div><div class="history-info-value">@job.LaborCost.ToString("C")</div></div>
+                            <div class="history-info-card"><div class="history-info-label">Parts</div><div class="history-info-value">@partsTotal.ToString("C")</div></div>
+                            <div class="history-info-card"><div class="history-info-label">Repair Total</div><div class="history-info-value">@totalCost.ToString("C")</div></div>
+                            <div class="history-info-card"><div class="history-info-label">Source</div><div class="history-info-value">Repair Job Order</div></div>
+                        </div></div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(drawer.ServiceRecord.Notes))
+                    {
+                        <div class="history-section"><div class="history-section-label">Historical Notes</div><div class="history-detail-box">@drawer.ServiceRecord.Notes</div></div>
+                    }
+                </div>
+                <footer class="history-drawer-footer">
+                    <a class="history-drawer-btn secondary" href="@QueryUrl()">Close</a>
+                    @if (drawer.IsArchived)
+                    {
+                        <form asp-action="Restore" method="post" class="history-inline-form">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@drawer.ServiceRecordId"/><button type="submit" class="history-drawer-btn restore"><i class="bi bi-arrow-counterclockwise"></i>Restore</button></form>
+                    }
+                </footer>
+            }
+        </aside>
+    </div>
+}
+
+<script>
+(function () {
+    const archivedBackdrop = document.getElementById('archivedServiceRecordsBackdrop');
+    window.openArchivedServiceRecordsDrawer = function () {
+        if (!archivedBackdrop) return;
+        archivedBackdrop.style.display = 'flex';
+        archivedBackdrop.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('history-drawer-lock');
+    };
+    window.closeArchivedServiceRecordsDrawer = function () {
+        if (!archivedBackdrop) return;
+        archivedBackdrop.style.display = 'none';
+        archivedBackdrop.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('history-drawer-lock');
+    };
+    archivedBackdrop?.addEventListener('click', function (event) {
+        if (event.target === archivedBackdrop) window.closeArchivedServiceRecordsDrawer();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && archivedBackdrop?.style.display === 'flex') window.closeArchivedServiceRecordsDrawer();
+    });
+})();
+</script>

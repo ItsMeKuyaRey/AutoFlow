@@ -1,0 +1,707 @@
+@model AutoFlow.Web.Models.Supplier
+
+@{
+    var mode = (ViewData["SupplierDrawerMode"]?.ToString() ?? "details").ToLowerInvariant();
+    var isCreate = mode == "create";
+    var isEdit = mode == "edit";
+    var isArchive = mode == "archive";
+    var isDetails = mode == "details";
+    var partCount = Model.Parts?.Count() ?? 0;
+}
+
+<style>
+    .sd-shell {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+    }
+
+    .sd-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: rgba(255,255,255,.96);
+        border-bottom: 1px solid #eceef3;
+        padding: 18px 22px 16px;
+        backdrop-filter: blur(10px);
+    }
+
+    .sd-header-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .sd-heading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .sd-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 11px;
+        background: #f1ebff;
+        color: #7043c1;
+        font-size: 17px;
+    }
+
+    .sd-kicker {
+        color: #7043c1;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 3px;
+    }
+
+    .sd-title {
+        margin: 0;
+        color: #202431;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -.2px;
+    }
+
+    .sd-subtitle {
+        margin: 3px 0 0;
+        color: #8a92a0;
+        font-size: 11px;
+    }
+
+    .sd-close {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        border: 1px solid #e1e4ea;
+        border-radius: 9px;
+        background: #fff;
+        color: #707887;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+    }
+
+    .sd-close:hover {
+        background: #f7f7fa;
+        color: #202431;
+    }
+
+    .sd-body {
+        padding: 20px 22px 28px;
+        flex: 1;
+    }
+
+    .sd-section {
+        border: 1px solid #eceef3;
+        border-radius: 13px;
+        overflow: hidden;
+        margin-bottom: 14px;
+        background: #fff;
+    }
+
+    .sd-section-title {
+        padding: 13px 15px;
+        border-bottom: 1px solid #eef0f4;
+        color: #313746;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .sd-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .sd-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .sd-label {
+        display: block;
+        color: #8a92a0;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        margin-bottom: 6px;
+    }
+
+    .sd-value {
+        color: #303746;
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-muted {
+        color: #a0a6b0;
+        font-weight: 500;
+    }
+
+    .sd-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .sd-status.active {
+        color: #27834a;
+        background: #eaf8ef;
+    }
+
+    .sd-status.archived {
+        color: #687386;
+        background: #f0f2f5;
+    }
+
+    .sd-status.inactive {
+        color: #8a5b18;
+        background: #fff6df;
+    }
+
+    .sd-note {
+        margin: 16px;
+        padding: 13px 14px;
+        border-radius: 10px;
+        background: #faf8ff;
+        border: 1px solid #eee8ff;
+        color: #5d6472;
+        font-size: 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+    }
+
+    .sd-parts {
+        padding: 14px 16px 16px;
+        color: #6d7482;
+        font-size: 12px;
+    }
+
+    .sd-part-count {
+        font-size: 22px;
+        color: #252b38;
+        font-weight: 800;
+    }
+
+    .sd-form {
+        padding: 16px;
+    }
+
+    .sd-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px;
+    }
+
+    .sd-control {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid #dfe3ea;
+        border-radius: 9px;
+        padding: 8px 10px;
+        background: #fff;
+        color: #303746;
+        font-size: 12px;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    textarea.sd-control {
+        min-height: 82px;
+        resize: vertical;
+    }
+
+    .sd-control:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139,92,246,.10);
+    }
+
+    .sd-validation {
+        color: #b42318;
+        font-size: 11px;
+        margin-top: 5px;
+    }
+
+    .sd-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        padding: 13px 22px;
+        background: rgba(255,255,255,.97);
+        border-top: 1px solid #eceef3;
+        backdrop-filter: blur(10px);
+    }
+
+    .sd-btn {
+        min-height: 38px;
+        border-radius: 9px;
+        padding: 8px 14px;
+        border: 1px solid transparent;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .sd-btn-secondary {
+        background: #fff;
+        border-color: #dfe3ea;
+        color: #5f6878;
+    }
+
+    .sd-btn-primary {
+        background: #7043c1;
+        color: #fff;
+        box-shadow: 0 7px 18px rgba(112,67,193,.18);
+    }
+
+    .sd-btn-danger {
+        background: #dc3545;
+        color: #fff;
+        box-shadow: 0 7px 18px rgba(220,53,69,.16);
+    }
+
+    .sd-btn:hover { filter: brightness(.97); }
+
+    .sd-warning {
+        margin: 0 0 15px;
+        padding: 14px;
+        border: 1px solid #fed7aa;
+        border-radius: 11px;
+        background: #fff7ed;
+        color: #8a3b12;
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .sd-warning strong { color: #7c2d12; }
+
+    .sd-image-section {
+        padding: 16px;
+    }
+
+    .sd-image-card {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .sd-image-preview {
+        width: 92px;
+        height: 92px;
+        border-radius: 13px;
+        border: 1px solid #e5e7ed;
+        background: #f7f7fa;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        color: #8a92a0;
+        font-size: 24px;
+    }
+
+    .sd-image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        background: #f7f7fa;
+    }
+
+    .sd-image-copy strong,
+    .sd-image-copy small {
+        display: block;
+    }
+
+    .sd-image-copy strong {
+        color: #303746;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .sd-image-copy small {
+        color: #8a92a0;
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    .sd-image-picker {
+        position: relative;
+        margin-top: 9px;
+    }
+
+    .sd-image-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .sd-image-button {
+        min-height: 34px;
+        padding: 7px 11px;
+        border: 1px solid #ded2f5;
+        border-radius: 9px;
+        background: #faf8ff;
+        color: #7043c1;
+        font-size: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .sd-image-button:hover {
+        background: #f3efff;
+    }
+
+    .sd-image-message {
+        display: none;
+        margin-top: 7px;
+        color: #1b9a70;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .sd-image-message.show {
+        display: block;
+    }
+
+    .sd-details-image {
+        padding: 16px;
+    }
+
+    /* Keep supplier images compact and fully visible. */
+    .sd-details-image-frame {
+        width: 118px;
+        height: 118px;
+        margin: 0 auto;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #e5e7ed;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f7f7fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #8a92a0;
+        font-size: 26px;
+    }
+
+    .sd-details-image-frame img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+    }
+
+    .sd-details-image-note {
+        margin-top: 7px;
+        color: #8a92a0;
+        font-size: 10px;
+    }
+
+    @@media (max-width: 460px) {
+        .sd-grid,
+        .sd-form-grid { grid-template-columns: 1fr; }
+        .sd-field.full { grid-column: auto; }
+        .sd-header,
+        .sd-body,
+        .sd-actions { padding-left: 16px; padding-right: 16px; }
+    }
+</style>
+
+<div class="sd-shell">
+    <header class="sd-header">
+        <div class="sd-header-row">
+            <div class="sd-heading">
+                <div class="sd-icon">
+                    <i class="bi @(isArchive ? "bi-archive" : isEdit ? "bi-pencil-square" : isCreate ? "bi-truck" : "bi-building")"></i>
+                </div>
+                <div>
+                    <div class="sd-kicker">Supplier Management</div>
+                    <h2 class="sd-title" data-drawer-title>
+                        @(isCreate ? "Add New Supplier" : isEdit ? "Edit Supplier" : isArchive ? "Archive Supplier" : "Supplier Details")
+                    </h2>
+                    <p class="sd-subtitle">
+                        @(isCreate ? "Add a supplier to the shop's inventory network." : isEdit ? "Update supplier contact and business information." : isArchive ? "Move this supplier into the archived records." : $"Supplier ID #{Model.SupplierId}")
+                    </p>
+                </div>
+            </div>
+            <button type="button" class="sd-close" data-drawer-close aria-label="Close supplier drawer">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    @if (isDetails)
+    {
+        var statusClass = Model.Status == "Active" ? "active" : Model.Status == "Archived" ? "archived" : "inactive";
+        <div class="sd-body">
+            <section class="sd-section">
+                <div class="sd-section-title">Supplier Image</div>
+                <div class="sd-details-image">
+                    <div class="sd-details-image-frame">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@Model.Name supplier image" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-building"></i>
+                        }
+                    </div>
+                    <div class="sd-details-image-note">@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "No supplier image has been uploaded." : "Supplier image linked to this record.")</div>
+                </div>
+            </section>
+
+            <section class="sd-section">
+                <div class="sd-section-title">Supplier Overview</div>
+                <div class="sd-grid">
+                    <div class="sd-field full">
+                        <span class="sd-label">Supplier Name</span>
+                        <div class="sd-value">@Model.Name</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Contact Person</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.ContactPerson) ? "—" : Model.ContactPerson)</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Phone</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Email</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Status</span>
+                        <div class="sd-value"><span class="sd-status @statusClass"><span>●</span>@(Model.Status ?? "Unknown")</span></div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">City</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.City) ? "—" : Model.City)</div>
+                    </div>
+                    <div class="sd-field full">
+                        <span class="sd-label">Business Address</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.Address) ? "—" : Model.Address)</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-section">
+                <div class="sd-section-title">Parts Supplied</div>
+                <div class="sd-parts">
+                    <div class="sd-part-count">@partCount</div>
+                    <div>Associated inventory part@(partCount == 1 ? "" : "s")</div>
+                </div>
+            </section>
+
+            <section class="sd-section">
+                <div class="sd-section-title">Notes</div>
+                <div class="sd-note">@(string.IsNullOrWhiteSpace(Model.Notes) ? "No additional notes have been recorded for this supplier." : Model.Notes)</div>
+            </section>
+        </div>
+
+        <footer class="sd-actions">
+            <button type="button" class="sd-btn sd-btn-secondary" data-drawer-close>Close</button>
+            <button type="button" class="sd-btn sd-btn-primary" data-drawer-link data-drawer-url="@Url.Action("Edit", "Suppliers", new { id = Model.SupplierId })" data-drawer-title="Edit Supplier">
+                <i class="bi bi-pencil"></i> Edit Supplier
+            </button>
+        </footer>
+    }
+    else if (isArchive)
+    {
+        <div class="sd-body">
+            <div class="sd-warning">
+                <strong>Archive this supplier?</strong><br />
+                The supplier will remain in AutoFlow as an archived record. It will no longer be treated as an active supplier, and the record will not be permanently deleted.
+            </div>
+
+            <section class="sd-section">
+                <div class="sd-section-title">Supplier Image</div>
+                <div class="sd-details-image">
+                    <div class="sd-details-image-frame">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@Model.Name supplier image" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-building"></i>
+                        }
+                    </div>
+                    <div class="sd-details-image-note">@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "No supplier image has been uploaded." : "Supplier image will remain available in archived records.")</div>
+                </div>
+            </section>
+
+            <section class="sd-section">
+                <div class="sd-section-title">Supplier Record</div>
+                <div class="sd-grid">
+                    <div class="sd-field full">
+                        <span class="sd-label">Supplier Name</span>
+                        <div class="sd-value">@Model.Name</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Supplier ID</span>
+                        <div class="sd-value">#@Model.SupplierId</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Current Status</span>
+                        <div class="sd-value">@(Model.Status ?? "Unknown")</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Contact Person</span>
+                        <div class="sd-value">@(string.IsNullOrWhiteSpace(Model.ContactPerson) ? "—" : Model.ContactPerson)</div>
+                    </div>
+                    <div class="sd-field">
+                        <span class="sd-label">Associated Parts</span>
+                        <div class="sd-value">@partCount</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="sd-actions">
+            <button type="button" class="sd-btn sd-btn-secondary" data-drawer-close>Cancel</button>
+            <form asp-action="Delete" method="post" data-supplier-drawer-form class="m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.SupplierId" />
+                <button type="submit" class="sd-btn sd-btn-danger"><i class="bi bi-archive"></i> Archive Supplier</button>
+            </form>
+        </footer>
+    }
+    else
+    {
+        <div class="sd-body">
+            <form asp-action="@(isCreate ? "Create" : "Edit")" method="post" enctype="multipart/form-data" data-supplier-drawer-form>
+                @Html.AntiForgeryToken()
+                @if (isEdit)
+                {
+                    <input type="hidden" asp-for="SupplierId" />
+                }
+
+                <section class="sd-section">
+                    <div class="sd-section-title">Supplier Image</div>
+                    <div class="sd-image-section">
+                        <div class="sd-image-card">
+                            <div id="supplierImagePreview" class="sd-image-preview">
+                                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                                {
+                                    <img src="@Model.ImageUrl" alt="@Model.Name supplier image" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-image"></i>
+                                }
+                            </div>
+                            <div class="sd-image-copy">
+                                <strong id="supplierImageName">@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "No image selected" : "Current image saved")</strong>
+                                <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                                <div id="supplierImageMessage" class="sd-image-message"><i class="bi bi-check-circle-fill"></i> Image selected</div>
+                                <div class="sd-image-picker">
+                                    <input id="supplierImageInput" name="profileImage" class="sd-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                                    <button type="button" class="sd-image-button" id="supplierImageButton">
+                                        <i class="bi bi-image"></i> @(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "Choose Image" : "Replace Image")
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sd-section">
+                    <div class="sd-section-title">Supplier Information</div>
+                    <div class="sd-form">
+                        <div asp-validation-summary="ModelOnly" class="sd-validation"></div>
+                        <div class="sd-form-grid">
+                            <div class="sd-field full">
+                                <label asp-for="Name" class="sd-label">Supplier Name</label>
+                                <input asp-for="Name" class="sd-control" placeholder="Enter supplier business name" />
+                                <span asp-validation-for="Name" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field">
+                                <label asp-for="ContactPerson" class="sd-label">Contact Person</label>
+                                <input asp-for="ContactPerson" class="sd-control" placeholder="Enter contact person" />
+                                <span asp-validation-for="ContactPerson" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field">
+                                <label asp-for="Phone" class="sd-label">Phone</label>
+                                <input asp-for="Phone" class="sd-control" placeholder="+63 9XX XXX XXXX" />
+                                <span asp-validation-for="Phone" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field full">
+                                <label asp-for="Email" class="sd-label">Email</label>
+                                <input asp-for="Email" type="email" class="sd-control" placeholder="email@example.com" />
+                                <span asp-validation-for="Email" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field full">
+                                <label asp-for="Address" class="sd-label">Business Address</label>
+                                <textarea asp-for="Address" class="sd-control" placeholder="Full business address"></textarea>
+                                <span asp-validation-for="Address" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field">
+                                <label asp-for="City" class="sd-label">City</label>
+                                <input asp-for="City" class="sd-control" placeholder="Enter city" />
+                                <span asp-validation-for="City" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field">
+                                <label asp-for="Status" class="sd-label">Status</label>
+                                <select asp-for="Status" class="sd-control">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    @if (isEdit && Model.Status == "Archived")
+                                    {
+                                        <option value="Archived">Archived</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Status" class="sd-validation"></span>
+                            </div>
+                            <div class="sd-field full">
+                                <label asp-for="Notes" class="sd-label">Notes</label>
+                                <textarea asp-for="Notes" class="sd-control" placeholder="Additional supplier information..."></textarea>
+                                <span asp-validation-for="Notes" class="sd-validation"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <footer class="sd-actions">
+            <button type="button" class="sd-btn sd-btn-secondary" data-drawer-close>Cancel</button>
+            <button type="button" class="sd-btn sd-btn-primary" data-submit-drawer-form>
+                <i class="bi bi-check-lg"></i> @(isCreate ? "Add Supplier" : "Save Changes")
+            </button>
+        </footer>
+
+    }
+</div>

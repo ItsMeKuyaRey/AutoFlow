@@ -318,7 +318,7 @@ public class HomeController : Controller
                             : "Unknown Vehicle",
 
                     Concern =
-                        a.CustomerConcern ??
+                        a.Reason ??
                         string.Empty,
 
                     Status =
@@ -476,9 +476,9 @@ public class HomeController : Controller
 
                     Description =
                         string.IsNullOrWhiteSpace(
-                            a.CustomerConcern)
+                            a.Reason)
                             ? "Appointment updated."
-                            : a.CustomerConcern,
+                            : a.Reason,
 
                     Module =
                         "Service Appointments",

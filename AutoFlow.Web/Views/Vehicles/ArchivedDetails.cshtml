@@ -2,140 +2,309 @@
 
 @{
     ViewData["Title"] = "Archived Vehicle";
+    var vehicleName = $"{Model.Make} {Model.Model}".Trim();
 }
 
-<div class="customer-detail-page">
+<style>
+    .vehicle-archived-details-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+    }
 
-    <div class="customer-detail-header">
+    .vehicle-archived-details-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(245,247,251,.78);
+    }
 
-        <div>
-            <a asp-action="Archived" class="customer-back-link">
-                ← Back to Archived Vehicles
-            </a>
+    .vehicle-archived-details-drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(570px, 100%);
+        min-height: calc(100vh - 120px);
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -18px 0 45px rgba(15,23,42,.10);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+    }
 
-            <h1>Archived Vehicle</h1>
-            <p>View the stored information for this archived vehicle.</p>
-        </div>
+    .vehicle-archived-details-header {
+        padding: 22px 28px 20px;
+        border-bottom: 1px solid #edf0f4;
+    }
 
-        <div class="page-header-actions">
+    .vehicle-archived-details-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
 
-            <form asp-action="Restore"
-                  asp-route-id="@Model.VehicleId"
-                  method="post">
+    .vehicle-archived-details-close {
+        color: #9aa3b2;
+        text-decoration: none;
+        font-size: 18px;
+        line-height: 1;
+    }
 
-                <button type="submit"
-                        class="af-button af-button-primary">
-                    Restore Vehicle
-                </button>
+    .vehicle-archived-details-close:hover {
+        color: #7c3aed;
+    }
 
-            </form>
+    .vehicle-archived-restore {
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 7px;
+        border: 1px solid #ccefe1;
+        background: #f4fffa;
+        color: #059669;
+        font-size: 9px;
+        font-weight: 850;
+        cursor: pointer;
+    }
 
-        </div>
+    .vehicle-archived-restore:hover {
+        background: #ecfdf5;
+    }
 
-    </div>
+    .vehicle-archived-details-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 26px 28px 35px;
+    }
 
-    <div class="customer-profile-card">
+    .vehicle-archived-profile {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #edf0f4;
+    }
 
-        <div class="customer-profile-main">
+    .vehicle-archived-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: #f2f4f7;
+        color: #64748b;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 850;
+    }
 
-            <div class="customer-large-avatar">
-                🚗
+    .vehicle-archived-status {
+        display: inline-flex;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #fff1f0;
+        color: #d95548;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .vehicle-archived-name {
+        margin: 7px 0 0;
+        color: #111827;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .vehicle-archived-id {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .vehicle-archived-section {
+        margin-top: 25px;
+    }
+
+    .vehicle-archived-section-heading {
+        margin-bottom: 13px;
+    }
+
+    .vehicle-archived-section-heading h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .vehicle-archived-section-heading p {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .vehicle-archived-card {
+        overflow: hidden;
+        border: 1px solid #e8ebf0;
+        border-radius: 11px;
+        background: #fff;
+    }
+
+    .vehicle-archived-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 15px;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .vehicle-archived-row:last-child {
+        border-bottom: 0;
+    }
+
+    .vehicle-archived-row span {
+        color: #9aa3b2;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .vehicle-archived-row strong {
+        max-width: 65%;
+        color: #263143;
+        font-size: 10px;
+        font-weight: 800;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .vehicle-archived-note {
+        margin-top: 20px;
+        padding: 13px;
+        border: 1px solid #e8e1ff;
+        border-radius: 9px;
+        background: #faf8ff;
+        color: #67538d;
+        font-size: 9px;
+        line-height: 1.55;
+    }
+
+    @@media (max-width: 700px) {
+        .vehicle-archived-details-drawer {
+            width: 100%;
+            border-left: 0;
+        }
+
+        .vehicle-archived-details-header,
+        .vehicle-archived-details-body {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+
+    /* AutoFlow vehicle archived-details overlay */
+    .vehicle-archived-details-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5000 !important;
+    }
+
+    .vehicle-archived-details-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .22) !important;
+        backdrop-filter: blur(2px);
+    }
+
+    .vehicle-archived-details-drawer {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+        animation: afVehicleDrawerIn .20s ease-out;
+    }
+
+
+    .vehicle-archived-details-avatar { overflow:hidden; }
+    .vehicle-archived-details-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+</style>
+
+<div class="vehicle-archived-details-page">
+    <div class="vehicle-archived-details-backdrop"></div>
+
+    <aside class="vehicle-archived-details-drawer">
+        <div class="vehicle-archived-details-header">
+            <div class="vehicle-archived-details-top">
+                <form asp-action="Restore" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.VehicleId" />
+                    <button type="submit" class="vehicle-archived-restore">Restore Vehicle</button>
+                </form>
+                <a asp-action="Archived" class="vehicle-archived-details-close" title="Close">×</a>
             </div>
-
-            <div>
-
-                <span class="customer-status-badge">
-                    Archived
-                </span>
-
-                <h2>
-                    @Model.Make @Model.Model
-                </h2>
-
-                <p>
-                    @(Model.Year?.ToString() ?? "Year unknown")
-                    ·
-                    @Model.PlateNumber
-                </p>
-
-            </div>
-
         </div>
 
-        <div class="customer-information-grid">
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Owner</span>
-
-                <strong>
-                    @if (Model.Customer != null)
+        <div class="vehicle-archived-details-body">
+            <div class="vehicle-archived-profile">
+                <div class="vehicle-archived-avatar">
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
                     {
-                        @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
+                        <img src="@Model.ImageUrl" alt="@vehicleName" />
                     }
                     else
                     {
-                        <span>Not assigned</span>
+                        <i class="bi bi-car-front"></i>
                     }
-                </strong>
+                </div>
+                <div>
+                    <span class="vehicle-archived-status">Archived</span>
+                    <h1 class="vehicle-archived-name">@vehicleName</h1>
+                    <p class="vehicle-archived-id">Vehicle ID #@Model.VehicleId</p>
+                </div>
             </div>
 
-            <div class="customer-info-card">
-                <span class="customer-info-label">Plate Number</span>
-                <strong>@Model.PlateNumber</strong>
+            <section class="vehicle-archived-section">
+                <div class="vehicle-archived-section-heading">
+                    <h2>Preserved Vehicle Information</h2>
+                    <p>Historical vehicle details remain available.</p>
+                </div>
+                <div class="vehicle-archived-card">
+                    <div class="vehicle-archived-row"><span>Customer</span><strong>@(Model.Customer == null ? "No owner assigned" : $"{Model.Customer.FirstName} {Model.Customer.LastName}")</strong></div>
+                    <div class="vehicle-archived-row"><span>Plate Number</span><strong>@Model.PlateNumber</strong></div>
+                    <div class="vehicle-archived-row"><span>VIN</span><strong>@(string.IsNullOrWhiteSpace(Model.VIN) ? "Not recorded" : Model.VIN)</strong></div>
+                    <div class="vehicle-archived-row"><span>Make</span><strong>@Model.Make</strong></div>
+                    <div class="vehicle-archived-row"><span>Model</span><strong>@Model.Model</strong></div>
+                    <div class="vehicle-archived-row"><span>Year</span><strong>@(Model.Year?.ToString() ?? "Not provided")</strong></div>
+                    <div class="vehicle-archived-row"><span>Color</span><strong>@(string.IsNullOrWhiteSpace(Model.Color) ? "Not provided" : Model.Color)</strong></div>
+                    <div class="vehicle-archived-row"><span>Mileage</span><strong>@(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "Not recorded")</strong></div>
+                </div>
+            </section>
+
+            <section class="vehicle-archived-section">
+                <div class="vehicle-archived-section-heading">
+                    <h2>Archive Record</h2>
+                    <p>Preserved record history.</p>
+                </div>
+                <div class="vehicle-archived-card">
+                    <div class="vehicle-archived-row"><span>Vehicle ID</span><strong>#@Model.VehicleId</strong></div>
+                    <div class="vehicle-archived-row"><span>Created</span><strong>@Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</strong></div>
+                    <div class="vehicle-archived-row"><span>Archived / Updated</span><strong>@Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")</strong></div>
+                    <div class="vehicle-archived-row"><span>Current State</span><strong>Archived</strong></div>
+                </div>
+            </section>
+
+            <div class="vehicle-archived-note">
+                This vehicle record has been preserved rather than permanently deleted. Restoring the record will return it to the active Vehicle Records list.
             </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">VIN</span>
-
-                <strong>
-                    @(string.IsNullOrWhiteSpace(Model.VIN)
-                        ? "Not recorded"
-                        : Model.VIN)
-                </strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Make</span>
-                <strong>@Model.Make</strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Model</span>
-                <strong>@Model.Model</strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Year</span>
-                <strong>@(Model.Year?.ToString() ?? "—")</strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Color</span>
-                <strong>
-                    @(string.IsNullOrWhiteSpace(Model.Color)
-                        ? "—"
-                        : Model.Color)
-                </strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Mileage</span>
-                <strong>
-                    @(Model.Mileage.HasValue
-                        ? $"{Model.Mileage:N0} km"
-                        : "—")
-                </strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Archived</span>
-                <strong>
-                    @Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")
-                </strong>
-            </div>
-
         </div>
-
-    </div>
-
+    </aside>
 </div>

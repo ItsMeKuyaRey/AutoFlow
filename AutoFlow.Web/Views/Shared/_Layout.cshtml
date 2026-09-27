@@ -233,6 +233,10 @@
           href="~/css/site.css"
           asp-append-version="true" />
 
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
     <!-- AutoFlow layout CSS -->
     <style>
 
@@ -249,6 +253,16 @@
             --af-text: #171b26;
             --af-muted: #858c9d;
             --af-border: #e6e9ef;
+
+            /* Personalization variables */
+            --af-accent: #7544f5;
+            --af-accent-dark: #6336d8;
+            --af-accent-light: #eee8ff;
+            --af-accent-soft: rgba(117, 68, 245, 0.12);
+            --af-accent-border: rgba(117, 68, 245, 0.28);
+            --af-purple: var(--af-accent);
+            --af-purple-dark: var(--af-accent-dark);
+            --af-purple-light: var(--af-accent-light);
         }
 
         /* Global */
@@ -431,6 +445,12 @@
             font-size: 15px;
         }
 
+        /* Parts Inventory uses a slightly larger glyph so its visual size matches the other module icons. */
+        .af-nav-icon-parts {
+            font-size: 17px;
+            line-height: 1;
+        }
+
         .af-nav-label {
             flex: 1;
             min-width: 0;
@@ -596,7 +616,7 @@
             min-height: 78px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             gap: 20px;
             padding: 0 34px;
             background: #ffffff;
@@ -863,7 +883,860 @@
             }
         }
 
-    </style>
+
+
+        /* ============================================================
+           AutoFlow Profile & Appearance Personalization
+           ============================================================ */
+
+        .af-profile-trigger {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            border: 0;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            border-radius: 14px;
+            outline: none;
+        }
+
+        .af-profile-trigger:focus-visible {
+            box-shadow: 0 0 0 3px var(--af-accent-soft);
+        }
+
+        .af-profile-trigger:hover .af-profile-avatar {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px var(--af-accent-soft);
+        }
+
+        .af-profile-trigger .af-profile-avatar {
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+        .af-profile-edit-hint {
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 2px;
+            border: 1px solid var(--af-border);
+            border-radius: 50%;
+            background: var(--af-white);
+            color: var(--af-muted);
+            font-size: 12px;
+            transition: color .18s ease, border-color .18s ease, background .18s ease;
+        }
+
+        .af-profile-trigger:hover .af-profile-edit-hint {
+            color: var(--af-accent);
+            border-color: var(--af-accent-border);
+            background: var(--af-accent-light);
+        }
+
+        .af-profile-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1998;
+            background: rgba(15, 23, 42, .42);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .22s ease, visibility .22s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .af-profile-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .af-profile-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1999;
+            width: min(430px, 94vw);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 28px;
+            background: var(--af-white);
+            color: var(--af-text);
+            border-left: 1px solid var(--af-border);
+            box-shadow: -18px 0 50px rgba(15, 23, 42, .16);
+            transform: translateX(105%);
+            transition: transform .25s ease;
+        }
+
+        .af-profile-drawer.open {
+            transform: translateX(0);
+        }
+
+        .af-drawer-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            padding-bottom: 22px;
+            border-bottom: 1px solid var(--af-border);
+        }
+
+        .af-drawer-eyebrow {
+            color: var(--af-accent);
+            font-size: 10px;
+            font-weight: 850;
+            letter-spacing: 1.4px;
+        }
+
+        .af-drawer-title {
+            margin: 5px 0 0;
+            color: var(--af-text);
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.4px;
+        }
+
+        .af-drawer-subtitle {
+            max-width: 340px;
+            margin: 7px 0 0;
+            color: var(--af-muted);
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .af-drawer-close {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--af-border);
+            border-radius: 10px;
+            background: var(--af-surface, #fff);
+            color: var(--af-muted);
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .af-drawer-close:hover {
+            color: var(--af-accent);
+            border-color: var(--af-accent-border);
+            background: var(--af-accent-light);
+        }
+
+        .af-drawer-section {
+            padding: 22px 0;
+            border-bottom: 1px solid var(--af-border);
+        }
+
+        .af-drawer-section:last-child {
+            border-bottom: 0;
+        }
+
+        .af-drawer-section-title {
+            margin-bottom: 12px;
+            color: var(--af-text);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .9px;
+        }
+
+        .af-current-role-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 15px;
+            border: 1px solid var(--af-accent-border);
+            border-radius: 14px;
+            background: var(--af-accent-light);
+        }
+
+        .af-drawer-role-avatar {
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid var(--af-accent-border);
+            border-radius: 14px;
+            background: var(--af-accent);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 850;
+        }
+
+        .af-drawer-role-avatar img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .af-current-role-name {
+            margin: 0;
+            color: var(--af-text);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .af-current-role-description {
+            margin: 4px 0 0;
+            color: var(--af-muted);
+            font-size: 11px;
+        }
+
+        .af-upload-button,
+        .af-remove-photo,
+        .af-drawer-reset,
+        .af-color-option,
+        .af-theme-option {
+            font-family: inherit;
+        }
+
+        .af-upload-button {
+            width: 100%;
+            min-height: 42px;
+            margin-top: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--af-accent);
+            border-radius: 10px;
+            background: var(--af-accent);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 750;
+            cursor: pointer;
+            transition: background .18s ease, transform .18s ease;
+        }
+
+        .af-upload-button:hover {
+            background: var(--af-accent-dark);
+            transform: translateY(-1px);
+        }
+
+        .af-upload-input {
+            display: none;
+        }
+
+        .af-remove-photo {
+            width: 100%;
+            min-height: 38px;
+            margin-top: 8px;
+            border: 0;
+            background: transparent;
+            color: var(--af-muted);
+            font-size: 12px;
+            font-weight: 650;
+            cursor: pointer;
+        }
+
+        .af-remove-photo:hover {
+            color: #c2415d;
+        }
+
+        .af-color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .af-color-option {
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 11px;
+            border: 1px solid var(--af-border);
+            border-radius: 11px;
+            background: var(--af-white);
+            color: var(--af-text);
+            text-align: left;
+            cursor: pointer;
+            transition: border-color .18s ease, background .18s ease, transform .18s ease;
+        }
+
+        .af-color-option:hover {
+            border-color: var(--af-accent-border);
+            background: var(--af-accent-light);
+            transform: translateY(-1px);
+        }
+
+        .af-color-option.active {
+            border-color: var(--af-accent);
+            background: var(--af-accent-light);
+            box-shadow: 0 0 0 2px var(--af-accent-soft);
+        }
+
+        .af-color-swatch {
+            width: 23px;
+            height: 23px;
+            flex-shrink: 0;
+            border-radius: 7px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+        }
+
+        .af-color-name {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .af-theme-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+        }
+
+        .af-theme-option {
+            min-height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--af-border);
+            border-radius: 11px;
+            background: var(--af-white);
+            color: var(--af-text);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .af-theme-option:hover,
+        .af-theme-option.active {
+            border-color: var(--af-accent);
+            background: var(--af-accent-light);
+        }
+
+        .af-theme-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            background: var(--af-accent-soft);
+            color: var(--af-accent);
+            font-size: 15px;
+        }
+
+        .af-drawer-reset {
+            width: 100%;
+            min-height: 40px;
+            border: 1px dashed var(--af-border);
+            border-radius: 10px;
+            background: transparent;
+            color: var(--af-muted);
+            font-size: 12px;
+            font-weight: 650;
+            cursor: pointer;
+        }
+
+        .af-drawer-reset:hover {
+            color: var(--af-accent);
+            border-color: var(--af-accent-border);
+            background: var(--af-accent-light);
+        }
+
+        /* Theme propagation into common AutoFlow / Bootstrap controls. */
+        .af-nav-item.active {
+            background: linear-gradient(90deg, var(--af-accent-dark), var(--af-accent));
+            box-shadow: 0 6px 17px var(--af-accent-soft);
+        }
+
+        .af-footer-links a:hover,
+        .af-profile-role,
+        .af-search-icon {
+            color: var(--af-muted);
+        }
+
+        a:not(.af-nav-item):not(.af-footer-links a) {
+            color: var(--af-accent);
+        }
+
+        .btn-primary {
+            --bs-btn-bg: var(--af-accent);
+            --bs-btn-border-color: var(--af-accent);
+            --bs-btn-hover-bg: var(--af-accent-dark);
+            --bs-btn-hover-border-color: var(--af-accent-dark);
+            --bs-btn-active-bg: var(--af-accent-dark);
+            --bs-btn-active-border-color: var(--af-accent-dark);
+        }
+
+        .form-control:focus,
+        .form-select:focus,
+        select:focus,
+        input:focus,
+        textarea:focus {
+            border-color: var(--af-accent);
+            box-shadow: 0 0 0 .2rem var(--af-accent-soft);
+            outline: none;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--af-accent);
+            border-color: var(--af-accent);
+        }
+
+        .table thead th {
+            border-bottom-color: var(--af-accent-border);
+        }
+
+        .badge.bg-primary {
+            background-color: var(--af-accent) !important;
+        }
+
+        .text-primary {
+            color: var(--af-accent) !important;
+        }
+
+        .border-primary {
+            border-color: var(--af-accent) !important;
+        }
+
+        /* Dark mode */
+        html[data-af-theme="dark"],
+        body.af-dark {
+            --af-background: #0b1120;
+            --af-white: #111827;
+            --af-text: #e5e7eb;
+            --af-muted: #9aa4b2;
+            --af-border: #263244;
+            --af-accent-soft: color-mix(in srgb, var(--af-accent) 14%, transparent);
+        }
+
+        body.af-dark {
+            background: var(--af-background);
+            color: var(--af-text);
+        }
+
+        body.af-dark .af-topbar,
+        body.af-dark .af-footer,
+        body.af-dark .af-profile-drawer,
+        body.af-dark .af-color-option,
+        body.af-dark .af-theme-option,
+        body.af-dark .af-drawer-close,
+        body.af-dark .af-profile-edit-hint {
+            background: #111827;
+            color: var(--af-text);
+            border-color: var(--af-border);
+        }
+
+        body.af-dark .af-search {
+            background: #0f172a;
+            border-color: var(--af-border);
+            color: #8f9aaa;
+        }
+
+        body.af-dark .af-profile-name,
+        body.af-dark .af-drawer-title,
+        body.af-dark .af-drawer-section-title,
+        body.af-dark .af-current-role-name,
+        body.af-dark .af-color-name {
+            color: var(--af-text);
+        }
+
+        body.af-dark .af-current-role-card {
+            background: color-mix(in srgb, var(--af-accent) 14%, #111827);
+            border-color: var(--af-accent-border);
+        }
+
+        body.af-dark .af-drawer-section,
+        body.af-dark .af-drawer-header {
+            border-color: var(--af-border);
+        }
+
+        body.af-dark .af-profile-avatar {
+            background: color-mix(in srgb, var(--af-accent) 20%, #111827);
+            color: var(--af-accent);
+        }
+
+        body.af-dark :is(.card, .modal-content, .dropdown-menu, .list-group-item) {
+            background-color: #111827;
+            color: var(--af-text);
+            border-color: var(--af-border);
+        }
+
+        body.af-dark :is(.table, .table td, .table th) {
+            color: var(--af-text);
+            border-color: var(--af-border);
+        }
+
+        body.af-dark :is(input, select, textarea, .form-control, .form-select) {
+            background-color: #0f172a;
+            color: var(--af-text);
+            border-color: var(--af-border);
+        }
+
+        body.af-dark ::placeholder {
+            color: #778397;
+        }
+
+        body.af-dark :is(.text-dark, .text-body) {
+            color: var(--af-text) !important;
+        }
+
+        @@supports not (color: color-mix(in srgb, black, white)) {
+            html[data-af-theme="dark"] { --af-accent-soft: rgba(117, 68, 245, .14); }
+        }
+
+        @@media (max-width: 600px) {
+            .af-profile-drawer {
+                width: 100vw;
+                padding: 20px;
+            }
+
+            .af-color-grid,
+            .af-theme-row {
+                grid-template-columns: 1fr;
+            }
+
+            .af-profile-edit-hint {
+                display: none;
+            }
+        }
+
+    
+
+
+
+        /* ============================================================
+           AutoFlow Primary Action Readability
+           
+           Primary action backgrounds continue using the selected
+           AutoFlow accent color.
+
+           Text and icons on the selected actions remain WHITE.
+           Borders are NOT modified here.
+           ============================================================ */
+
+        /* Customer Follow-ups */
+        .af-main .crm-primary-btn.af-permanent-white-action,
+        .af-main .crm-primary-btn.af-permanent-white-action:hover,
+        .af-main .crm-primary-btn.af-permanent-white-action:focus,
+        .af-main .crm-primary-btn.af-permanent-white-action:active,
+
+        /* Supplier */
+        .af-main .supplier-primary-button.af-permanent-white-action,
+        .af-main .supplier-primary-button.af-permanent-white-action:hover,
+        .af-main .supplier-primary-button.af-permanent-white-action:focus,
+        .af-main .supplier-primary-button.af-permanent-white-action:active,
+
+        /* Service History */
+        .af-main .service-primary-button.af-permanent-white-action,
+        .af-main .service-primary-button.af-permanent-white-action:hover,
+        .af-main .service-primary-button.af-permanent-white-action:focus,
+        .af-main .service-primary-button.af-permanent-white-action:active {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .af-main .crm-primary-btn.af-permanent-white-action *,
+        .af-main .supplier-primary-button.af-permanent-white-action *,
+        .af-main .service-primary-button.af-permanent-white-action * {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .af-main .crm-primary-btn.af-permanent-white-action svg,
+        .af-main .supplier-primary-button.af-permanent-white-action svg,
+        .af-main .service-primary-button.af-permanent-white-action svg {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+
+        /*
+           Billing & Payments:
+           Create Invoice follows the AutoFlow accent instead of
+           having its own hard-coded blue background.
+        */
+        .af-main .billing-primary-button {
+            background: var(--af-accent) !important;
+            background-color: var(--af-accent) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .af-main .billing-primary-button:hover,
+        .af-main .billing-primary-button:focus {
+            background: var(--af-accent-dark) !important;
+            background-color: var(--af-accent-dark) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .af-main .billing-primary-button *,
+        .af-main .billing-primary-button:hover *,
+        .af-main .billing-primary-button:focus * {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .af-main .billing-primary-button svg {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+        }
+
+
+
+        /* AutoFlow Sidebar/Icon-Only Color System */
+        :root {
+            --af-fixed-primary: #7544f5;
+            --af-fixed-primary-dark: #6336d8;
+            --af-icon-accent: #7544f5;
+            --af-icon-accent-dark: #6336d8;
+        }
+
+        /* Color picker changes ONLY icons + sidebar */
+        .af-sidebar .af-nav-item.active,
+        .af-sidebar .af-nav-item:hover {
+            background: var(--af-icon-accent) !important;
+        }
+
+        .af-sidebar .af-nav-item i,
+        .af-sidebar .af-nav-item svg,
+        .af-sidebar .af-nav-item .bi {
+            color: var(--af-icon-accent) !important;
+        }
+
+        .af-sidebar .af-nav-item.active i,
+        .af-sidebar .af-nav-item.active svg,
+        .af-sidebar .af-nav-item.active .bi {
+            color: #ffffff !important;
+        }
+
+        /* All normal application icons follow the selected color */
+        .af-main i.bi,
+        .af-main svg {
+            color: var(--af-icon-accent);
+        }
+
+        /* Do NOT let the selected color recolor normal text/UI */
+        .af-main {
+            --af-accent: var(--af-fixed-primary) !important;
+            --af-accent-dark: var(--af-fixed-primary-dark) !important;
+            --af-accent-light: #eee8ff !important;
+            --af-accent-border: rgba(117,68,245,.28) !important;
+            --af-purple: var(--af-fixed-primary) !important;
+            --af-purple-dark: var(--af-fixed-primary-dark) !important;
+            --af-purple-light: #eee8ff !important;
+        }
+
+        /* Primary module buttons stay permanently violet */
+        .af-main .btn-primary,
+        .af-main button.btn-primary,
+        .af-main a.btn-primary,
+        .af-main .primary-btn,
+        .af-main .primary-button {
+            background: var(--af-fixed-primary) !important;
+            background-color: var(--af-fixed-primary) !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border-color: var(--af-fixed-primary) !important;
+        }
+
+        .af-main .btn-primary *,
+        .af-main button.btn-primary *,
+        .af-main a.btn-primary *,
+        .af-main .primary-btn *,
+        .af-main .primary-button * {
+            color: #ffffff !important;
+        }
+
+        /* These action buttons never inherit the color picker */
+        .crm-primary-btn,
+        .supplier-primary-button,
+        .service-primary-button {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            background-image: none !important;
+            color: #1f2937 !important;
+            border-color: #d9dee8 !important;
+        }
+
+        .crm-primary-btn *,
+        .supplier-primary-button *,
+        .service-primary-button * {
+            color: #1f2937 !important;
+        }
+
+
+
+        /* AutoFlow fixed primary action buttons
+           These buttons ALWAYS remain violet with white text/icons.
+           Accent color selector does not affect them. */
+
+        .af-fixed-primary-action,
+        .af-fixed-primary-action:hover,
+        .af-fixed-primary-action:focus,
+        .af-fixed-primary-action:active,
+        .crm-primary-btn,
+        .crm-primary-btn:hover,
+        .crm-primary-btn:focus,
+        .crm-primary-btn:active,
+        .supplier-primary-button,
+        .supplier-primary-button:hover,
+        .supplier-primary-button:focus,
+        .supplier-primary-button:active,
+        .service-primary-button,
+        .service-primary-button:hover,
+        .service-primary-button:focus,
+        .service-primary-button:active {
+            background: #7544f5 !important;
+            background-color: #7544f5 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border-color: #7544f5 !important;
+            opacity: 1 !important;
+            box-shadow: none !important;
+        }
+
+        .af-fixed-primary-action *,
+        .crm-primary-btn *,
+        .supplier-primary-button *,
+        .service-primary-button * {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+
+
+        /* =========================================================
+           AutoFlow FINAL PRIMARY BUTTON LOCK
+           Primary action buttons are ALWAYS AutoFlow violet.
+           Personalization colors do NOT change these buttons.
+           ========================================================= */
+
+        .crm-primary-btn,
+        .supplier-primary-button,
+        .service-primary-button,
+        .billing-primary-button {
+            background: #7544f5 !important;
+            background-color: #7544f5 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border-color: #7544f5 !important;
+            opacity: 1 !important;
+            box-shadow: none !important;
+        }
+
+        .crm-primary-btn:hover,
+        .supplier-primary-button:hover,
+        .service-primary-button:hover,
+        .billing-primary-button:hover,
+        .crm-primary-btn:focus,
+        .supplier-primary-button:focus,
+        .service-primary-button:focus,
+        .billing-primary-button:focus,
+        .crm-primary-btn:active,
+        .supplier-primary-button:active,
+        .service-primary-button:active,
+        .billing-primary-button:active {
+            background: #7544f5 !important;
+            background-color: #7544f5 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            border-color: #7544f5 !important;
+        }
+
+        .crm-primary-btn *,
+        .supplier-primary-button *,
+        .service-primary-button *,
+        .billing-primary-button * {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+            opacity: 1 !important;
+        }
+
+
+
+/* AutoFlow profile image fit fix */
+.af-profile-avatar,
+.af-avatar,
+.af-current-role-avatar,
+.af-drawer-role-avatar {
+    overflow: hidden !important;
+}
+
+.af-profile-avatar img,
+.af-avatar img,
+.af-current-role-avatar img,
+.af-drawer-role-avatar img,
+.af-role-profile-image,
+.af-role-avatar-image {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    transform: none !important;
+    border-radius: inherit !important;
+}
+
+.af-profile-avatar img,
+.af-current-role-avatar img,
+.af-drawer-role-avatar img {
+    background: transparent !important;
+}
+
+/* Profile change notification */
+.af-profile-toast {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 9999;
+    min-width: 280px;
+    max-width: 360px;
+    padding: 13px 16px;
+    border: 1px solid #d9dee8;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #172033;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .16);
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.af-profile-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.af-profile-toast-icon {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #e8f8ef;
+    color: #15945b;
+    vertical-align: middle;
+}
+
+</style>
 
     @RenderSection(
         "Styles",
@@ -871,7 +1744,10 @@
 
 </head>
 
-<body>
+<body
+      data-af-current-role="@userRole"
+      data-af-role-image="@roleImage"
+      data-af-role-initials="@initials">
 
 <div class="af-app">
 
@@ -914,19 +1790,22 @@
                     Command Center
                 </div>
 
-                <a asp-controller="Home"
-                   asp-action="Index"
-                   class="af-nav-item @(dashboardActive ? "active" : "")">
+                @if (isAdministrator)
+                {
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       class="af-nav-item @(dashboardActive ? "active" : "")">
 
-                    <span class="af-nav-icon">
-                        ◢
-                    </span>
+                        <span class="af-nav-icon">
+                            ◢
+                        </span>
 
-                    <span class="af-nav-label">
-                        Dashboard
-                    </span>
+                        <span class="af-nav-label">
+                            Dashboard
+                        </span>
 
-                </a>
+                    </a>
+                }
 
             </div>
 
@@ -1058,7 +1937,7 @@
                        asp-action="Index"
                        class="af-nav-item @(partsActive ? "active" : "")">
 
-                        <span class="af-nav-icon">
+                        <span class="af-nav-icon af-nav-icon-parts">
                             ▣
                         </span>
 
@@ -1104,7 +1983,6 @@
 
                 @if (
                     isAdministrator ||
-                    isServiceAdvisor ||
                     isCashier)
                 {
                     <a asp-controller="Billings"
@@ -1317,47 +2195,14 @@
 
         <header class="af-topbar">
 
-            <!-- Search -->
+            <!-- Current authenticated profile / personalization trigger -->
 
-            <div class="af-search">
-
-                <span class="af-search-icon">
-                    ⌕
-                </span>
-
-                <span>
-                    Search AutoFlow... (Cmd + K)
-                </span>
-
-            </div>
-
-            <!-- Top actions -->
-
-            <div class="af-top-actions">
-
-                <!-- Quick action -->
-
-                <div class="af-top-button"
-                     title="Quick Actions">
-
-                    ⚡
-
-                </div>
-
-                <!-- Notifications -->
-
-                <div class="af-top-button af-notification"
-                     title="Notifications">
-
-                    ♟
-
-                    <span class="af-notification-dot"></span>
-
-                </div>
-
-                <div class="af-top-divider"></div>
-
-                <!-- Profile -->
+            <button type="button"
+                    class="af-profile-trigger"
+                    id="afProfileTrigger"
+                    aria-label="Open profile and appearance settings"
+                    aria-controls="afProfileDrawer"
+                    aria-expanded="false">
 
                 <div class="af-profile">
 
@@ -1373,7 +2218,7 @@
 
                     </div>
 
-                    <div class="af-profile-avatar">
+                    <div class="af-profile-avatar" id="afCurrentRoleAvatar">
                         @if (!string.IsNullOrWhiteSpace(roleImage))
                         {
                             <img src="@roleImage"
@@ -1388,9 +2233,128 @@
 
                 </div>
 
-            </div>
+
+            </button>
 
         </header>
+
+        <!-- AutoFlow Personalization Drawer: current authenticated role only -->
+
+        <div class="af-profile-backdrop" id="afProfileBackdrop" aria-hidden="true"></div>
+
+        <aside class="af-profile-drawer"
+               id="afProfileDrawer"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="afDrawerTitle"
+               aria-hidden="true">
+
+            <div class="af-drawer-header">
+                <div>
+                    <div class="af-drawer-eyebrow">AUTOFLOW PERSONALIZATION</div>
+                    <h2 class="af-drawer-title" id="afDrawerTitle">Profile &amp; Appearance</h2>
+                    <p class="af-drawer-subtitle">
+                        Personalize the profile currently signed in to AutoFlow.
+                        Your changes stay on this browser for this role.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="af-drawer-close"
+                        id="afProfileClose"
+                        aria-label="Close profile settings">×</button>
+            </div>
+
+            <div class="af-drawer-section">
+                <div class="af-drawer-section-title">Current role</div>
+
+                <div class="af-current-role-card">
+                    <div class="af-drawer-role-avatar" id="afDrawerRoleAvatar">
+                        @initials
+                    </div>
+
+                    <div>
+                        <p class="af-current-role-name">@displayName</p>
+                        <p class="af-current-role-description">@roleDisplay</p>
+                    </div>
+                </div>
+
+                <label class="af-upload-button" for="afRoleImageInput">
+                    Change profile picture
+                </label>
+                <input class="af-upload-input"
+                       id="afRoleImageInput"
+                       type="file"
+                       accept="image/png,image/jpeg,image/webp,image/gif" />
+
+                <button type="button"
+                        class="af-remove-photo"
+                        id="afRemoveRoleImage">
+                    Remove custom picture
+                </button>
+            </div>
+
+            <div class="af-drawer-section">
+                <div class="af-drawer-section-title">Interface color</div>
+
+                <div class="af-color-grid" id="afColorGrid">
+                    <button type="button" class="af-color-option" data-color="purple">
+                        <span class="af-color-swatch" style="background:#7544f5"></span>
+                        <span class="af-color-name">Purple</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="blue">
+                        <span class="af-color-swatch" style="background:#2563eb"></span>
+                        <span class="af-color-name">Blue</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="cyan">
+                        <span class="af-color-swatch" style="background:#0891b2"></span>
+                        <span class="af-color-name">Cyan</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="emerald">
+                        <span class="af-color-swatch" style="background:#059669"></span>
+                        <span class="af-color-name">Emerald</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="rose">
+                        <span class="af-color-swatch" style="background:#e11d48"></span>
+                        <span class="af-color-name">Rose</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="amber">
+                        <span class="af-color-swatch" style="background:#d97706"></span>
+                        <span class="af-color-name">Amber</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="indigo">
+                        <span class="af-color-swatch" style="background:#4f46e5"></span>
+                        <span class="af-color-name">Indigo</span>
+                    </button>
+                    <button type="button" class="af-color-option" data-color="slate">
+                        <span class="af-color-swatch" style="background:#475569"></span>
+                        <span class="af-color-name">Slate</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="af-drawer-section">
+                <div class="af-drawer-section-title">Appearance</div>
+
+                <div class="af-theme-row" id="afThemeOptions">
+                    <button type="button" class="af-theme-option" data-theme="light">
+                        <span class="af-theme-icon">☀</span>
+                        <span>Light mode</span>
+                    </button>
+                    <button type="button" class="af-theme-option" data-theme="dark">
+                        <span class="af-theme-icon">☾</span>
+                        <span>Dark mode</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="af-drawer-section">
+                <button type="button" class="af-drawer-reset" id="afResetAppearance">
+                    Reset appearance to AutoFlow default
+                </button>
+            </div>
+
+        </aside>
 
         <!-- Page body -->
 
@@ -1433,12 +2397,656 @@
 
 </div>
 
+<!-- AutoFlow profile / appearance behavior -->
+<script>
+(function () {
+    "use strict";
+
+    /* ========================================================
+       AutoFlow - Permanent white action buttons
+       ======================================================== */
+
+    /*
+       These actions keep their CURRENT background/border.
+       Only their text and icons are permanently white.
+    */
+    function applyPermanentWhiteActions() {
+        document.querySelectorAll("button, a").forEach(element => {
+            const text = (element.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase();
+
+            if (!text) return;
+
+            const isSupplier =
+                text.includes("add supplier");
+
+            const isService =
+                text.includes("new service record") ||
+                text.includes("newservice record") ||
+                text.includes("new service history") ||
+                text.includes("newservice history");
+
+            const isFollowUp =
+                text.includes("new follow-up") ||
+                text.includes("new follow up");
+
+            if (isSupplier || isService || isFollowUp) {
+                element.classList.add("af-permanent-white-action");
+            }
+        });
+    }
+
+    applyPermanentWhiteActions();
+
+
+
+    const body = document.body;
+    const root = document.documentElement;
+    const currentRole = body.dataset.afCurrentRole || "";
+    const roleImageFallback = body.dataset.afRoleImage || "";
+    const roleInitials = body.dataset.afRoleInitials || "AF";
+
+    const colors = {
+        purple: ["#7544f5", "#6336d8", "#eee8ff", "rgba(117,68,245,.28)"] ,
+        blue: ["#2563eb", "#1d4ed8", "#dbeafe", "rgba(37,99,235,.28)"],
+        cyan: ["#0891b2", "#0e7490", "#cffafe", "rgba(8,145,178,.28)"],
+        emerald: ["#059669", "#047857", "#d1fae5", "rgba(5,150,105,.28)"],
+        rose: ["#e11d48", "#be123c", "#ffe4e6", "rgba(225,29,72,.28)"],
+        amber: ["#d97706", "#b45309", "#fef3c7", "rgba(217,119,6,.28)"],
+        indigo: ["#4f46e5", "#4338ca", "#e0e7ff", "rgba(79,70,229,.28)"],
+        slate: ["#475569", "#334155", "#e2e8f0", "rgba(71,85,105,.28)"]
+    };
+
+    const roleKey = (currentRole || "AuthorizedUser")
+        .replace(/[^a-zA-Z0-9_-]/g, "_");
+
+    const colorStorageKey = "autoflow.appearance.color";
+    const modeStorageKey = "autoflow.appearance.mode";
+    const imageStorageKey = "autoflow.profile.image." + roleKey;
+
+    const overlay = document.getElementById("afProfileBackdrop");
+    const drawer = document.getElementById("afProfileDrawer");
+    const trigger = document.getElementById("afProfileTrigger");
+    const closeButton = document.getElementById("afProfileClose");
+    const imageInput = document.getElementById("afRoleImageInput");
+    const removeImageButton = document.getElementById("afRemoveRoleImage");
+    const drawerAvatar = document.getElementById("afDrawerRoleAvatar");
+    const topAvatar = document.getElementById("afCurrentRoleAvatar");
+
+    function getSavedImage() {
+        try {
+            return localStorage.getItem(imageStorageKey) || roleImageFallback || "";
+        } catch (_) {
+            return roleImageFallback || "";
+        }
+    }
+
+    function setAvatar(element, image) {
+        if (!element) return;
+
+        element.innerHTML = "";
+
+        if (image) {
+            const img = document.createElement("img");
+            img.src = image;
+            img.alt = "Current role profile picture";
+            element.appendChild(img);
+        } else {
+            element.textContent = roleInitials;
+        }
+    }
+
+    function renderImage() {
+        const image = getSavedImage();
+
+        setAvatar(topAvatar, image);
+        setAvatar(drawerAvatar, image);
+
+        // Keep the selected profile image consistent everywhere
+        document.querySelectorAll(
+            ".af-role-avatar-image, .af-role-profile-image"
+        ).forEach(img => {
+            if (image) {
+                img.src = image;
+            } else if (roleImageFallback) {
+                img.src = roleImageFallback;
+            }
+        });
+    }
+
+    function applyColor(name, save) {
+        const color = colors[name] || colors.purple;
+
+        root.style.setProperty("--af-accent", color[0]);
+        root.style.setProperty("--af-accent-dark", color[1]);
+        root.style.setProperty("--af-accent-light", color[2]);
+        root.style.setProperty("--af-accent-border", color[3]);
+        root.style.setProperty("--af-purple", color[0]);
+        root.style.setProperty("--af-purple-dark", color[1]);
+        root.style.setProperty("--af-purple-light", color[2]);
+
+        document.querySelectorAll(".af-color-option").forEach(option => {
+            option.classList.toggle("active", option.dataset.color === name);
+        });
+
+        if (save) {
+            try { localStorage.setItem(colorStorageKey, name); } catch (_) { }
+        }
+    }
+
+    function applyMode(mode, save) {
+        const value = mode === "dark" ? "dark" : "light";
+
+        root.dataset.afTheme = value;
+        body.classList.toggle("af-dark", value === "dark");
+
+        document.querySelectorAll(".af-theme-option").forEach(option => {
+            option.classList.toggle("active", option.dataset.theme === value);
+        });
+
+        if (save) {
+            try { localStorage.setItem(modeStorageKey, value); } catch (_) { }
+        }
+    }
+
+    function openDrawer() {
+        if (!drawer || !overlay) return;
+
+        renderImage();
+        drawer.classList.add("open");
+        overlay.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+        overlay.setAttribute("aria-hidden", "false");
+        trigger?.setAttribute("aria-expanded", "true");
+        body.style.overflow = "hidden";
+
+        setTimeout(() => closeButton?.focus(), 50);
+    }
+
+    function closeDrawer() {
+        if (!drawer || !overlay) return;
+
+        drawer.classList.remove("open");
+        overlay.classList.remove("open");
+        drawer.setAttribute("aria-hidden", "true");
+        overlay.setAttribute("aria-hidden", "true");
+        trigger?.setAttribute("aria-expanded", "false");
+        body.style.overflow = "";
+    }
+
+    trigger?.addEventListener("click", openDrawer);
+    closeButton?.addEventListener("click", closeDrawer);
+    overlay?.addEventListener("click", closeDrawer);
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && drawer?.classList.contains("open")) {
+            closeDrawer();
+        }
+    });
+
+    imageInput?.addEventListener("change", () => {
+        const file = imageInput.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("Please choose an image file.");
+            imageInput.value = "";
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Please choose an image smaller than 5 MB.");
+            imageInput.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            try {
+                localStorage.setItem(imageStorageKey, reader.result);
+                renderImage();
+            } catch (_) {
+                alert("The image is too large for browser storage. Please choose a smaller image.");
+            }
+        };
+
+        reader.readAsDataURL(file);
+        imageInput.value = "";
+    });
+
+    removeImageButton?.addEventListener("click", () => {
+        try { localStorage.removeItem(imageStorageKey); } catch (_) { }
+        renderImage();
+    });
+
+    document.querySelectorAll(".af-color-option").forEach(option => {
+        option.addEventListener("click", () => {
+            applyColor(option.dataset.color || "purple", true);
+        });
+    });
+
+    document.querySelectorAll(".af-theme-option").forEach(option => {
+        option.addEventListener("click", () => {
+            applyMode(option.dataset.theme || "light", true);
+        });
+    });
+
+    document.getElementById("afResetAppearance")?.addEventListener("click", () => {
+        try {
+            localStorage.removeItem(colorStorageKey);
+            localStorage.removeItem(modeStorageKey);
+            localStorage.removeItem(imageStorageKey);
+        } catch (_) { }
+
+        applyColor("purple", false);
+        applyMode("light", false);
+        renderImage();
+    });
+
+    let savedColor = "purple";
+    let savedMode = "light";
+
+    try {
+        savedColor = localStorage.getItem(colorStorageKey) || "purple";
+        savedMode = localStorage.getItem(modeStorageKey) || "light";
+    } catch (_) { }
+
+    applyColor(savedColor, false);
+    applyMode(savedMode, false);
+    renderImage();
+})();
+</script>
+
 <!-- Page scripts -->
 
 @await RenderSectionAsync(
     "Scripts",
     required: false)
 
+
+
+
+
+<script>
+
+// AutoFlow Icon-Only Color Picker
+(function () {
+    const originalApplyColor = window.__afOriginalApplyColor;
+
+    /*
+       We do not touch the existing color picker storage.
+       We simply make its selected color feed the sidebar/icon
+       accent while keeping the application itself violet.
+    */
+
+    const colorMap = {
+        purple: "#7544f5",
+        blue: "#2563eb",
+        cyan: "#0891b2",
+        emerald: "#059669",
+        rose: "#e11d48",
+        amber: "#d97706",
+        indigo: "#4f46e5",
+        slate: "#475569"
+    };
+
+    function syncIconColor() {
+        let selected = "purple";
+
+        try {
+            selected = localStorage.getItem("autoflow.appearance.color") || "purple";
+        } catch (_) {}
+
+        const color = colorMap[selected] || colorMap.purple;
+
+        document.documentElement.style.setProperty(
+            "--af-icon-accent",
+            color
+        );
+
+        document.documentElement.style.setProperty(
+            "--af-icon-accent-dark",
+            color
+        );
+
+        /* Keep application accent permanently violet */
+        document.documentElement.style.setProperty(
+            "--af-fixed-primary",
+            "#7544f5"
+        );
+
+        document.documentElement.style.setProperty(
+            "--af-fixed-primary-dark",
+            "#6336d8"
+        );
+    }
+
+    function fixFixedButtons() {
+        document.querySelectorAll("button, a").forEach(function (el) {
+            const text = (el.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            /* Create Invoice = permanent violet + white text */
+            if (text === "Create Invoice" || text.includes("Create Invoice")) {
+                el.style.setProperty("background", "#7544f5", "important");
+                el.style.setProperty("background-color", "#7544f5", "important");
+                el.style.setProperty("color", "#ffffff", "important");
+                el.style.setProperty("border-color", "#7544f5", "important");
+
+                el.querySelectorAll("*").forEach(function (child) {
+                    child.style.setProperty("color", "#ffffff", "important");
+                });
+            }
+
+            /* New Follow-up = permanent violet + WHITE text */
+            if (text === "New Follow-up" || text.includes("New Follow-up")) {
+                el.style.setProperty("background", "#7544f5", "important");
+                el.style.setProperty("background-color", "#7544f5", "important");
+                el.style.setProperty("color", "#ffffff", "important");
+                el.style.setProperty("border-color", "#7544f5", "important");
+
+                el.querySelectorAll("*").forEach(function (child) {
+                    child.style.setProperty("color", "#ffffff", "important");
+                });
+            }
+
+            /* Service History button */
+            if (
+                text === "New Service Record" ||
+                text.includes("New Service Record") ||
+                text.includes("NewService Record")
+            ) {
+                el.style.setProperty("background", "#ffffff", "important");
+                el.style.setProperty("background-color", "#ffffff", "important");
+                el.style.setProperty("color", "#1f2937", "important");
+                el.style.setProperty("border-color", "#d9dee8", "important");
+
+                el.querySelectorAll("*").forEach(function (child) {
+                    child.style.setProperty("color", "#1f2937", "important");
+                });
+            }
+
+            /* Supplier button */
+            if (text === "Add Supplier" || text.includes("Add Supplier")) {
+                el.style.setProperty("background", "#ffffff", "important");
+                el.style.setProperty("background-color", "#ffffff", "important");
+                el.style.setProperty("color", "#1f2937", "important");
+                el.style.setProperty("border-color", "#d9dee8", "important");
+
+                el.querySelectorAll("*").forEach(function (child) {
+                    child.style.setProperty("color", "#1f2937", "important");
+                });
+            }
+        });
+    }
+
+    syncIconColor();
+    fixFixedButtons();
+
+    const observer = new MutationObserver(function () {
+        syncIconColor();
+        fixFixedButtons();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+
+</script>
+
+
+<script>
+/* AutoFlow fixed primary action buttons */
+(function () {
+
+    const fixedPrimaryLabels = [
+        "Create Invoice",
+        "Add Supplier",
+        "New Follow-up",
+        "New Service Record",
+        "NewService Record"
+    ];
+
+    function applyFixedPrimaryButtons() {
+
+        document.querySelectorAll("button, a").forEach(function (el) {
+
+            const text = (el.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            const matched = fixedPrimaryLabels.some(function (label) {
+                return text === label || text.includes(label);
+            });
+
+            if (!matched) return;
+
+            el.classList.add("af-fixed-primary-action");
+
+            el.style.setProperty("background", "#7544f5", "important");
+            el.style.setProperty("background-color", "#7544f5", "important");
+            el.style.setProperty("background-image", "none", "important");
+            el.style.setProperty("color", "#ffffff", "important");
+            el.style.setProperty("border-color", "#7544f5", "important");
+            el.style.setProperty("opacity", "1", "important");
+            el.style.setProperty("box-shadow", "none", "important");
+
+            el.querySelectorAll("*").forEach(function (child) {
+                child.style.setProperty("color", "#ffffff", "important");
+                child.style.setProperty("fill", "#ffffff", "important");
+                child.style.setProperty("stroke", "#ffffff", "important");
+                child.style.setProperty("opacity", "1", "important");
+            });
+        });
+    }
+
+    applyFixedPrimaryButtons();
+
+    const observer = new MutationObserver(function () {
+        applyFixedPrimaryButtons();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+})();
+</script>
+
+
+
+<script>
+// AutoFlow FINAL PRIMARY BUTTON LOCK JS
+(function () {
+    const violet = "#7544f5";
+
+    const labels = [
+        "Create Invoice",
+        "Add Supplier",
+        "New Follow-up",
+        "New Service Record",
+        "NewService Record"
+    ];
+
+    function normalize(text) {
+        return (text || "")
+            .replace(/\s+/g, " ")
+            .replace(/NewService\s+Record/gi, "New Service Record")
+            .trim()
+            .toLowerCase();
+    }
+
+    function lockPrimaryButtons() {
+        document.querySelectorAll("button, a").forEach(function (el) {
+            const text = normalize(el.textContent);
+
+            const matched =
+                labels.some(function (label) {
+                    return text === normalize(label);
+                }) ||
+                el.classList.contains("crm-primary-btn") ||
+                el.classList.contains("supplier-primary-button") ||
+                el.classList.contains("service-primary-button") ||
+                el.classList.contains("billing-primary-button");
+
+            if (!matched) return;
+
+            el.style.setProperty("background", violet, "important");
+            el.style.setProperty("background-color", violet, "important");
+            el.style.setProperty("background-image", "none", "important");
+            el.style.setProperty("color", "#ffffff", "important");
+            el.style.setProperty("border-color", violet, "important");
+            el.style.setProperty("opacity", "1", "important");
+            el.style.setProperty("box-shadow", "none", "important");
+
+            el.querySelectorAll("*").forEach(function (child) {
+                child.style.setProperty("color", "#ffffff", "important");
+                child.style.setProperty("fill", "#ffffff", "important");
+                child.style.setProperty("stroke", "#ffffff", "important");
+                child.style.setProperty("opacity", "1", "important");
+            });
+        });
+    }
+
+    lockPrimaryButtons();
+
+    if (document.body) {
+        const observer = new MutationObserver(function () {
+            lockPrimaryButtons();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+})();
+</script>
+
+
+
+<script>
+/* AutoFlow Billing Action Buttons Fix */
+(function () {
+    const forceBillingActionButtons = function () {
+
+        document.querySelectorAll("button, a").forEach(function (el) {
+
+            const text = (el.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            if (text !== "Record Payment" && text !== "View") {
+                return;
+            }
+
+            /*
+             * Only affect Billing action buttons.
+             * Find the invoice row containing Record Payment / View.
+             */
+            const row = el.closest("tr");
+
+            if (!row) {
+                return;
+            }
+
+            const rowText = (row.textContent || "")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            if (!rowText.includes("INV-")) {
+                return;
+            }
+
+            el.style.setProperty("background", "#ffffff", "important");
+            el.style.setProperty("background-color", "#ffffff", "important");
+            el.style.setProperty("background-image", "none", "important");
+            el.style.setProperty("color", "#1f2937", "important");
+            el.style.setProperty("border", "1px solid #d9dee8", "important");
+            el.style.setProperty("box-shadow", "none", "important");
+            el.style.setProperty("opacity", "1", "important");
+
+            el.querySelectorAll("*").forEach(function (child) {
+                child.style.setProperty("color", "#1f2937", "important");
+                child.style.setProperty("fill", "currentColor", "important");
+                child.style.setProperty("stroke", "currentColor", "important");
+                child.style.setProperty("opacity", "1", "important");
+            });
+        });
+    };
+
+    forceBillingActionButtons();
+
+    const observer = new MutationObserver(function () {
+        forceBillingActionButtons();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+</script>
+
+
+<script>
+
+// AutoFlow profile change toast
+(function () {
+    let toastTimer = null;
+
+    function showProfileToast() {
+        let toast = document.getElementById("afProfileToast");
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "afProfileToast";
+            toast.className = "af-profile-toast";
+            toast.innerHTML =
+                '<span class="af-profile-toast-icon">✓</span>' +
+                '<span>Profile picture changed successfully.</span>';
+
+            document.body.appendChild(toast);
+        }
+
+        toast.classList.add("show");
+
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+        }
+
+        toastTimer = setTimeout(function () {
+            toast.classList.remove("show");
+        }, 3200);
+    }
+
+    const input = document.getElementById("afRoleImageInput");
+
+    if (input) {
+        input.addEventListener("change", function () {
+            const file = input.files && input.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            if (!file.type.startsWith("image/")) {
+                return;
+            }
+
+            setTimeout(showProfileToast, 150);
+        });
+    }
+})();
+
+</script>
 </body>
 
 </html>

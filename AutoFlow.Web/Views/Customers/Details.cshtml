@@ -2,135 +2,441 @@
 
 @{
     ViewData["Title"] = "Customer Details";
+
+    var firstInitial =
+        string.IsNullOrWhiteSpace(Model.FirstName)
+            ? "?"
+            : Model.FirstName.Substring(0, 1);
+
+    var lastInitial =
+        string.IsNullOrWhiteSpace(Model.LastName)
+            ? ""
+            : Model.LastName.Substring(0, 1);
 }
 
-<div class="customer-detail-page">
+<style>
+    .customer-details-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+    }
 
-    <div class="customer-detail-header">
-        <div>
-            <a asp-action="Index" class="customer-back-link">
-                <span>←</span> Back to Customers
-            </a>
+    .customer-details-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(245,247,251,.78);
+    }
 
-            <h1>Customer Details</h1>
-            <p>View customer information and account details.</p>
-        </div>
+    .customer-details-drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(570px, 100%);
+        min-height: calc(100vh - 120px);
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -18px 0 45px rgba(15,23,42,.10);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+    }
 
-        <div class="customer-detail-actions">
-            <a asp-action="Edit"
-               asp-route-id="@Model.CustomerId"
-               class="customer-secondary-button">
-                Edit Customer
-            </a>
+    .customer-details-header {
+        padding: 22px 28px 20px;
+        border-bottom: 1px solid #edf0f4;
+    }
 
-            <a asp-action="Delete"
-               asp-route-id="@Model.CustomerId"
-               class="customer-danger-button">
-                Archive
-            </a>
-        </div>
-    </div>
+    .customer-details-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
 
-    <div class="customer-profile-card">
+    .customer-details-close {
+        color: #9aa3b2;
+        text-decoration: none;
+        font-size: 18px;
+        line-height: 1;
+    }
 
-        <div class="customer-profile-main">
-            <div class="customer-large-avatar">
-                @Model.FirstName.Substring(0, 1)@Model.LastName.Substring(0, 1)
+    .customer-details-close:hover {
+        color: #7c3aed;
+    }
+
+    .customer-details-actions {
+        display: flex;
+        gap: 7px;
+    }
+
+    .customer-details-action {
+        height: 30px;
+        padding: 0 11px;
+        border: 1px solid #e1e5eb;
+        border-radius: 7px;
+        background: #fff;
+        color: #586477;
+        font-size: 9px;
+        font-weight: 800;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .customer-details-action:hover {
+        border-color: #c4b5fd;
+        color: #7c3aed;
+    }
+
+    .customer-details-action-danger {
+        color: #dc2626;
+    }
+
+    .customer-details-action-danger:hover {
+        color: #b91c1c;
+        border-color: #fecaca;
+    }
+
+    .customer-details-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 26px 28px 35px;
+    }
+
+    .customer-details-profile {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .customer-details-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: #eee7ff;
+        color: #7c3aed;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .customer-details-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #059669;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .customer-details-name {
+        margin: 7px 0 0;
+        color: #111827;
+        font-size: 18px;
+        font-weight: 850;
+    }
+
+    .customer-details-id {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .customer-details-section {
+        margin-top: 25px;
+    }
+
+    .customer-details-section-heading {
+        margin-bottom: 13px;
+    }
+
+    .customer-details-section-heading h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .customer-details-section-heading p {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .customer-details-card {
+        border: 1px solid #e8ebf0;
+        border-radius: 11px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .customer-details-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 15px;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .customer-details-row:last-child {
+        border-bottom: 0;
+    }
+
+    .customer-details-row span {
+        color: #9aa3b2;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .customer-details-row strong {
+        max-width: 65%;
+        color: #263143;
+        font-size: 10px;
+        font-weight: 800;
+        text-align: right;
+        word-break: break-word;
+    }
+
+    .customer-details-record {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .customer-details-record-box {
+        padding: 15px;
+        border: 1px solid #e8ebf0;
+        border-radius: 10px;
+        background: #fbfcfe;
+    }
+
+    .customer-details-record-box span {
+        display: block;
+        color: #9aa3b2;
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .customer-details-record-box strong {
+        display: block;
+        margin-top: 6px;
+        color: #172033;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    @@media (max-width: 700px) {
+        .customer-details-drawer {
+            width: 100%;
+            border-left: 0;
+        }
+
+        .customer-details-header,
+        .customer-details-body {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+
+    /* AutoFlow customer overlay */
+    .customer-details-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5000 !important;
+    }
+
+    .customer-details-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .22) !important;
+        backdrop-filter: blur(2px);
+    }
+
+    .customer-details-drawer {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+        animation: afCustomerDrawerIn .20s ease-out;
+    }
+
+    .customer-details-avatar { overflow:hidden; }
+    .customer-details-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+</style>
+
+<div class="customer-details-page">
+
+    <div class="customer-details-backdrop"></div>
+
+    <aside class="customer-details-drawer">
+
+        <div class="customer-details-header">
+
+            <div class="customer-details-top">
+
+                <div class="customer-details-actions">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.CustomerId"
+                       class="customer-details-action">
+                        Edit
+                    </a>
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.CustomerId"
+                       class="customer-details-action customer-details-action-danger">
+                        Archive
+                    </a>
+
+                </div>
+
+                <a asp-action="Index"
+                   class="customer-details-close"
+                   title="Close">
+                    ×
+                </a>
+
             </div>
 
-            <div>
-                <span class="customer-status-badge active">
-                    Active
-                </span>
-
-                <h2>
-                    @Model.FirstName @Model.LastName
-                </h2>
-
-                <p>
-                    Customer ID #@Model.CustomerId
-                </p>
-            </div>
         </div>
 
-    </div>
+        <div class="customer-details-body">
 
-    <div class="customer-information-grid">
+            <div class="customer-details-profile">
 
-        <section class="customer-info-card">
-            <div class="customer-card-heading">
-                <div class="customer-card-icon">☎</div>
+                <div class="customer-details-avatar">
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="@Model.FirstName @Model.LastName" />
+                    }
+                    else
+                    {
+                        @firstInitial@lastInitial
+                    }
+                </div>
+
                 <div>
-                    <h3>Contact Information</h3>
-                    <p>Customer contact details</p>
-                </div>
-            </div>
 
-            <div class="customer-info-list">
+                    <span class="customer-details-status">
+                        <span>●</span>
+                        Active
+                    </span>
 
-                <div class="customer-info-item">
-                    <span>Phone</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Phone)
-                            ? "Not provided"
-                            : Model.Phone)
-                    </strong>
-                </div>
+                    <h1 class="customer-details-name">
+                        @Model.FirstName @Model.LastName
+                    </h1>
 
-                <div class="customer-info-item">
-                    <span>Email</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Email)
-                            ? "Not provided"
-                            : Model.Email)
-                    </strong>
-                </div>
+                    <p class="customer-details-id">
+                        Customer ID #@Model.CustomerId
+                    </p>
 
-                <div class="customer-info-item">
-                    <span>Address</span>
-                    <strong>
-                        @(string.IsNullOrWhiteSpace(Model.Address)
-                            ? "Not provided"
-                            : Model.Address)
-                    </strong>
                 </div>
 
             </div>
-        </section>
 
-        <section class="customer-info-card">
-            <div class="customer-card-heading">
-                <div class="customer-card-icon">◷</div>
-                <div>
-                    <h3>Account Information</h3>
-                    <p>Customer record information</p>
-                </div>
-            </div>
+            <section class="customer-details-section">
 
-            <div class="customer-info-list">
-
-                <div class="customer-info-item">
-                    <span>Customer ID</span>
-                    <strong>#@Model.CustomerId</strong>
+                <div class="customer-details-section-heading">
+                    <h2>Contact Information</h2>
+                    <p>Current customer contact details.</p>
                 </div>
 
-                <div class="customer-info-item">
-                    <span>Created</span>
-                    <strong>
-                        @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
-                    </strong>
+                <div class="customer-details-card">
+
+                    <div class="customer-details-row">
+                        <span>Phone</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Phone)
+                                ? "Not provided"
+                                : Model.Phone)
+                        </strong>
+                    </div>
+
+                    <div class="customer-details-row">
+                        <span>Email</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Email)
+                                ? "Not provided"
+                                : Model.Email)
+                        </strong>
+                    </div>
+
+                    <div class="customer-details-row">
+                        <span>Home Address</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Address)
+                                ? "Not provided"
+                                : Model.Address)
+                        </strong>
+                    </div>
+
                 </div>
 
-                <div class="customer-info-item">
-                    <span>Last Updated</span>
-                    <strong>
-                        @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
-                    </strong>
+            </section>
+
+            <section class="customer-details-section">
+
+                <div class="customer-details-section-heading">
+                    <h2>Account Information</h2>
+                    <p>Customer record metadata.</p>
                 </div>
 
-            </div>
-        </section>
+                <div class="customer-details-record">
 
-    </div>
+                    <div class="customer-details-record-box">
+                        <span>Customer ID</span>
+                        <strong>#@Model.CustomerId</strong>
+                    </div>
+
+                    <div class="customer-details-record-box">
+                        <span>Status</span>
+                        <strong>Active</strong>
+                    </div>
+
+                    <div class="customer-details-record-box">
+                        <span>Created</span>
+                        <strong>
+                            @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                        </strong>
+                    </div>
+
+                    <div class="customer-details-record-box">
+                        <span>Last Updated</span>
+                        <strong>
+                            @Model.UpdatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </aside>
 
 </div>

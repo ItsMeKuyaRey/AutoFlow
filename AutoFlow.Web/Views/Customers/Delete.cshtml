@@ -2,61 +2,269 @@
 
 @{
     ViewData["Title"] = "Archive Customer";
+
+    var firstInitial =
+        string.IsNullOrWhiteSpace(Model.FirstName)
+            ? "?"
+            : Model.FirstName.Substring(0, 1);
+
+    var lastInitial =
+        string.IsNullOrWhiteSpace(Model.LastName)
+            ? ""
+            : Model.LastName.Substring(0, 1);
 }
 
-<div class="customer-archive-page">
+<style>
+    .customer-archive-modal-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        padding: 30px;
+        box-sizing: border-box;
+    }
 
-    <div class="customer-archive-card">
+    .customer-archive-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 24, 39, .34);
+        backdrop-filter: blur(5px);
+    }
 
-        <div class="customer-archive-icon">
-            📦
+    .customer-archive-modal {
+        position: relative;
+        z-index: 2;
+        width: min(410px, 100%);
+        background: #fff;
+        border: 1px solid rgba(255,255,255,.7);
+        border-radius: 15px;
+        box-shadow: 0 25px 70px rgba(15,23,42,.22);
+        padding: 26px;
+        text-align: center;
+    }
+
+    .customer-archive-modal-icon {
+        width: 45px;
+        height: 45px;
+        margin: 0 auto 15px;
+        border-radius: 11px;
+        background: #fff1f0;
+        color: #ef5b4d;
+        display: grid;
+        place-items: center;
+        font-size: 17px;
+    }
+
+    .customer-archive-modal h1 {
+        margin: 0;
+        color: #172033;
+        font-size: 17px;
+        font-weight: 850;
+    }
+
+    .customer-archive-modal-description {
+        margin: 8px auto 19px;
+        max-width: 320px;
+        color: #8b95a7;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .customer-archive-profile {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #e9edf2;
+        border-radius: 10px;
+        background: #fbfcfe;
+        text-align: left;
+    }
+
+    .customer-archive-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #eee7ff;
+        color: #7c3aed;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 850;
+        flex: 0 0 auto;
+    }
+
+    .customer-archive-profile strong {
+        display: block;
+        color: #172033;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .customer-archive-profile span {
+        display: block;
+        margin-top: 3px;
+        color: #9aa3b2;
+        font-size: 8px;
+    }
+
+    .customer-archive-warning {
+        padding: 11px 12px;
+        margin-bottom: 18px;
+        border: 1px solid #fde2df;
+        border-radius: 8px;
+        background: #fff9f8;
+        color: #9f4038;
+        font-size: 9px;
+        line-height: 1.55;
+        text-align: left;
+    }
+
+    .customer-archive-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .customer-archive-button {
+        height: 38px;
+        min-width: 112px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .customer-archive-cancel {
+        border: 1px solid #e1e5eb;
+        background: #fff;
+        color: #5f6b7c;
+    }
+
+    .customer-archive-confirm {
+        border: 1px solid #ed5b4d;
+        background: #ed5b4d;
+        color: #fff;
+        box-shadow: 0 7px 17px rgba(237,91,77,.17);
+    }
+
+    .customer-archive-confirm:hover {
+        background: #dc4f42;
+    }
+
+    @@media (max-width: 520px) {
+        .customer-archive-modal-page {
+            padding: 18px;
+        }
+
+        .customer-archive-modal {
+            padding: 22px;
+        }
+
+        .customer-archive-actions {
+            flex-direction: column-reverse;
+        }
+
+        .customer-archive-button {
+            width: 100%;
+        }
+    }
+
+    /* AutoFlow customer archive modal overlay */
+    .customer-archive-modal-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5100 !important;
+        display: grid !important;
+        place-items: center !important;
+    }
+
+    .customer-archive-overlay {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .36) !important;
+        backdrop-filter: blur(4px);
+    }
+
+    .customer-archive-modal {
+        animation: afCustomerModalIn .18s ease-out;
+    }
+
+    @@keyframes afCustomerModalIn {
+        from { transform: translateY(8px) scale(.985); opacity: .92; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .customer-archive-avatar { overflow:hidden; }
+    .customer-archive-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+</style>
+
+<div class="customer-archive-modal-page">
+
+    <div class="customer-archive-overlay"></div>
+
+    <div class="customer-archive-modal">
+
+        <div class="customer-archive-modal-icon">
+            <i class="bi bi-archive"></i>
         </div>
-
-        <span class="customer-status-badge active">
-            Active Customer
-        </span>
 
         <h1>Archive Customer?</h1>
 
-        <p class="customer-archive-message">
-            You are about to archive
-            <strong>
-                @Model.FirstName @Model.LastName
-            </strong>.
-            This customer will be removed from the active customer list,
-            but their records and history will be preserved.
+        <p class="customer-archive-modal-description">
+            This customer will be removed from the active customer list.
+            Their record and service history will remain preserved in AutoFlow.
         </p>
 
-        <div class="customer-archive-summary">
+        <div class="customer-archive-profile">
 
-            <div>
-                <span>Customer ID</span>
-                <strong>#@Model.CustomerId</strong>
+            <div class="customer-archive-avatar">
+                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" alt="@Model.FirstName @Model.LastName" />
+                }
+                else
+                {
+                    @firstInitial@lastInitial
+                }
             </div>
 
             <div>
-                <span>Phone</span>
                 <strong>
-                    @(string.IsNullOrWhiteSpace(Model.Phone)
-                        ? "Not provided"
-                        : Model.Phone)
+                    @Model.FirstName @Model.LastName
                 </strong>
-            </div>
 
-            <div>
-                <span>Email</span>
-                <strong>
-                    @(string.IsNullOrWhiteSpace(Model.Email)
-                        ? "Not provided"
-                        : Model.Email)
-                </strong>
+                <span>
+                    Customer ID #@Model.CustomerId
+                </span>
             </div>
 
         </div>
 
+        <div class="customer-archive-warning">
+            <strong>Archive only.</strong>
+            This does not permanently delete the customer record.
+            An Administrator or authorized user can restore the record from Archived Customers.
+        </div>
+
         <form asp-action="Delete"
-              method="post"
-              class="customer-archive-actions">
+              method="post">
 
             @Html.AntiForgeryToken()
 
@@ -64,15 +272,19 @@
                    name="id"
                    value="@Model.CustomerId" />
 
-            <a asp-action="Index"
-               class="customer-cancel-button">
-                Cancel
-            </a>
+            <div class="customer-archive-actions">
 
-            <button type="submit"
-                    class="customer-danger-button">
-                Archive Customer
-            </button>
+                <a asp-action="Index"
+                   class="customer-archive-button customer-archive-cancel">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="customer-archive-button customer-archive-confirm">
+                    Archive Customer
+                </button>
+
+            </div>
 
         </form>
 

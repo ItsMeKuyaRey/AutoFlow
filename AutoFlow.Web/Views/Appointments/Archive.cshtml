@@ -1,0 +1,185 @@
+@model AutoFlow.Web.Models.Appointment
+
+@{
+    ViewData["Title"] = "Delete Appointment";
+}
+
+<style>
+    .appointment-delete-page {
+        position: fixed;
+        inset: 0;
+        z-index: 2200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .appointment-delete-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(16,24,40,.48);
+        backdrop-filter: blur(2px);
+    }
+    .appointment-delete-modal {
+        position: relative;
+        width: min(460px, 100%);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 24px 70px rgba(16,24,40,.22);
+        padding: 24px;
+        animation: appointmentModalIn .2s ease-out;
+    }
+    .appointment-delete-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: #fff1f0;
+        color: #b42318;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        margin-bottom: 14px;
+    }
+    .appointment-delete-modal h2 {
+        margin: 0 0 6px;
+        color: #101828;
+        font-size: 19px;
+    }
+    .appointment-delete-modal p {
+        color: #667085;
+        font-size: 13px;
+        margin: 0 0 17px;
+    }
+    .appointment-delete-summary {
+        border: 1px solid #eef0f4;
+        border-radius: 12px;
+        padding: 13px 14px;
+        margin-bottom: 19px;
+    }
+    .appointment-delete-summary div + div {
+        margin-top: 8px;
+    }
+    .appointment-delete-summary span {
+        display: block;
+        color: #98a2b3;
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: .05em;
+    }
+    .appointment-delete-summary strong {
+        color: #344054;
+        font-size: 13px;
+    }
+    .appointment-delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+    }
+    .appointment-secondary-btn {
+        height: 42px;
+        padding: 0 15px;
+        border: 1px solid #d0d5dd;
+        background: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        color: #344054;
+        cursor: pointer;
+    }
+    .appointment-danger-btn {
+        height: 42px;
+        padding: 0 16px;
+        border: 0;
+        background: #d92d20;
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    @@keyframes appointmentModalIn {
+        from { transform: translateY(7px); opacity: .6; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+/* AutoFlow Premium Appointment UI */
+.appointment-page{color:#182033;letter-spacing:-.01em}
+.appointment-header{margin-bottom:20px}
+.appointment-title-block h1{font-size:27px;letter-spacing:-.045em;color:#111827}
+.appointment-title-block p{color:#7b8496;font-size:12px}
+.appointment-button{min-height:40px;padding:0 16px;border-radius:10px;font-size:11px;border-color:#e4e7ef;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.appointment-button-primary{background:linear-gradient(135deg,#7c4dff,#6938ef);border-color:#7142f4;box-shadow:0 8px 18px rgba(105,56,239,.20)}
+.appointment-button-primary:hover{background:linear-gradient(135deg,#7142f4,#5f31df);transform:translateY(-1px)}
+.appointment-toolbar{padding:10px 12px;margin-bottom:14px;border-color:#e6e9f0;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.035)}
+.appointment-period-label{font-size:14px;color:#1f2937}
+.appointment-period button,.appointment-today{border-color:#e3e7ef;border-radius:9px;transition:.16s ease}
+.appointment-period button:hover,.appointment-today:hover{border-color:#d8d0fa;background:#faf8ff;color:#6336d8}
+.appointment-calendar-card{border-color:#e2e6ee;border-radius:16px;box-shadow:0 12px 34px rgba(15,23,42,.045)}
+.appointment-corner,.appointment-day-head{background:linear-gradient(180deg,#fbfcfe,#f7f8fb)}
+.appointment-day-head{min-height:66px}
+.appointment-day-name{color:#8b93a3;font-size:8px;letter-spacing:.12em}
+.appointment-day-number{width:31px;height:31px;font-size:12px}
+.appointment-day-head.is-today .appointment-day-number{background:linear-gradient(135deg,#8058ff,#6838e9);box-shadow:0 6px 14px rgba(105,56,239,.25)}
+.appointment-time{background:#fafbfc;color:#929bab}
+.appointment-slot{min-height:68px;padding:5px}
+.appointment-slot:hover{background:#fbfaff}
+.appointment-event{min-height:56px;padding:8px 9px;border-radius:9px;border-color:#e6defe;border-left-width:3px;background:linear-gradient(135deg,#faf8ff,#f5f1ff);box-shadow:0 2px 5px rgba(105,56,239,.04)}
+.appointment-event:hover{border-color:#d3c5fa;background:linear-gradient(135deg,#f7f3ff,#f0eaff);box-shadow:0 7px 16px rgba(105,56,239,.10)}
+.appointment-event-time{color:#7657ba;font-size:8px}
+.appointment-event-customer{color:#292044;font-size:10px}
+.appointment-event-vehicle{color:#777f91}
+.appointment-event-status{padding:3px 6px;background:#ece7ff;color:#6941c6}
+.appointment-overlay-host .appointment-create-backdrop,.appointment-overlay-host .appointment-details-backdrop,.appointment-overlay-host .appointment-edit-backdrop{background:rgba(15,23,42,.42);backdrop-filter:blur(3px)}
+.appointment-overlay-host .appointment-create-drawer,.appointment-overlay-host .appointment-details-drawer,.appointment-overlay-host .appointment-edit-drawer{width:min(520px,96vw);border-left:1px solid #e8e9ef;box-shadow:-24px 0 60px rgba(15,23,42,.20)}
+.appointment-create-head,.appointment-edit-head,.appointment-details-head{padding:22px 24px 18px;border-bottom-color:#e8eaf0}
+.appointment-create-head h2,.appointment-edit-head h2,.appointment-details-head h2{font-size:20px;letter-spacing:-.025em}
+.appointment-create-head p,.appointment-edit-head p,.appointment-details-head p{font-size:12px;color:#7b8495}
+.appointment-close{width:34px;height:34px;border-radius:10px;transition:.16s ease}
+.appointment-close:hover{border-color:#d8d0fa;background:#faf8ff;color:#6838e9}
+.appointment-create-body,.appointment-edit-body,.appointment-details-body{padding:24px}
+.appointment-field{margin-bottom:18px}
+.appointment-field label{margin-bottom:7px;color:#344054;font-size:11px;font-weight:800;letter-spacing:.02em}
+.appointment-field input,.appointment-field select,.appointment-field textarea{min-height:45px;border-color:#dfe3eb;border-radius:11px;background:#fbfcfe;transition:.16s ease}
+.appointment-field input:hover,.appointment-field select:hover,.appointment-field textarea:hover{border-color:#cfd4df;background:#fff}
+.appointment-field input:focus,.appointment-field select:focus,.appointment-field textarea:focus{border-color:#8058ff;background:#fff;box-shadow:0 0 0 3px rgba(128,88,255,.10),0 3px 10px rgba(15,23,42,.035)}
+.appointment-field textarea{min-height:104px}
+.appointment-actions{padding:15px 24px;border-top-color:#e8eaf0;box-shadow:0 -8px 20px rgba(15,23,42,.025)}
+.appointment-primary-btn{height:43px;padding:0 18px;border-radius:10px;background:linear-gradient(135deg,#7c4dff,#6938ef);box-shadow:0 7px 16px rgba(105,56,239,.18)}
+.appointment-primary-btn:hover{background:linear-gradient(135deg,#7142f4,#5f31df);transform:translateY(-1px)}
+.appointment-secondary-btn{height:43px;border-radius:10px}
+.appointment-error{font-size:11px}
+
+</style>
+
+<div class="appointment-delete-page">
+    <div class="appointment-delete-backdrop"></div>
+
+    <section class="appointment-delete-modal" role="dialog" aria-modal="true" aria-labelledby="appointmentDeleteTitle">
+        <div class="appointment-delete-icon">!</div>
+        <h2 id="appointmentDeleteTitle">Delete Appointment?</h2>
+        <p>This will permanently remove the selected appointment from the schedule.</p>
+
+        <div class="appointment-delete-summary">
+            <div>
+                <span>Customer</span>
+                <strong>@(Model.Customer == null ? "—" : $"{Model.Customer.FirstName} {Model.Customer.LastName}")</strong>
+            </div>
+            <div>
+                <span>Vehicle</span>
+                <strong>@(Model.Vehicle == null ? "—" : $"{Model.Vehicle.PlateNumber} — {Model.Vehicle.Make} {Model.Vehicle.Model}")</strong>
+            </div>
+            <div>
+                <span>Scheduled</span>
+                <strong>@Model.AppointmentDate.ToString("MMM dd, yyyy • h:mm tt")</strong>
+            </div>
+        </div>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="AppointmentId" />
+            <div class="appointment-delete-actions">
+                <button type="button" class="appointment-secondary-btn" data-appointment-close>Cancel</button>
+                <button type="submit" class="appointment-danger-btn">Delete Appointment</button>
+            </div>
+        </form>
+    </section>
+</div>

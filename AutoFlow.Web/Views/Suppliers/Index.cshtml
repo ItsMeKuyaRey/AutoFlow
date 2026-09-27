@@ -5,7 +5,8 @@
 
     var suppliers = Model.ToList();
     var activeSuppliers = suppliers.Count(s => s.Status == "Active");
-    var inactiveSuppliers = suppliers.Count(s => s.Status != "Active");
+    var archivedSuppliers = suppliers.Count(s => s.Status == "Archived");
+    var archivedSupplierList = suppliers.Where(s => s.Status == "Archived").ToList();
 }
 
 <style>
@@ -168,8 +169,16 @@
     }
 
     .supplier-table {
+        width: 100%;
         margin: 0;
+        table-layout: fixed;
     }
+
+    .supplier-table th:nth-child(1) { width: 25%; }
+    .supplier-table th:nth-child(2) { width: 22%; }
+    .supplier-table th:nth-child(3) { width: 25%; }
+    .supplier-table th:nth-child(4) { width: 13%; }
+    .supplier-table th:nth-child(5) { width: 15%; }
 
     .supplier-table thead th {
         background: #fafafd;
@@ -206,6 +215,16 @@
         font-weight: 800;
         font-size: 15px;
         flex-shrink: 0;
+    }
+
+    .supplier-avatar img,
+    .supplier-archived-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        border-radius: inherit;
+        background: #f7f7fa;
     }
 
     .supplier-name {
@@ -264,6 +283,11 @@
         background: #f1f2f5;
     }
 
+    .supplier-status.archived {
+        color: #c03952;
+        background: #fff0f2;
+    }
+
     .supplier-status-dot {
         width: 6px;
         height: 6px;
@@ -274,7 +298,53 @@
     .supplier-actions {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
         gap: 6px;
+        width: 100%;
+    }
+
+    .supplier-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 9px;
+        flex-wrap: wrap;
+    }
+
+    .supplier-archive-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 40px;
+        padding: 0 13px;
+        border: 1px solid #dfe3ea;
+        border-radius: 9px;
+        background: #fff;
+        color: #596273;
+        font-size: 11px;
+        font-weight: 750;
+        cursor: pointer;
+    }
+
+    .supplier-archive-btn:hover {
+        border-color: #cfc4fb;
+        background: #faf9ff;
+        color: #7544f5;
+    }
+
+    .supplier-header-count {
+        min-width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #f0f2f6;
+        color: #737b8b;
+        font-size: 9px;
+        font-weight: 800;
     }
 
     .supplier-action {
@@ -306,8 +376,260 @@
         background: #fff8f9;
     }
 
+    .supplier-action.restore {
+        color: #1b9a70;
+        border: 1px solid #ccefe1;
+        background: #f2fcf8;
+    }
+
+    .supplier-action.restore:hover {
+        color: #14815d;
+        background: #e9faf4;
+    }
+
     .supplier-action:hover {
         transform: translateY(-1px);
+    }
+
+    .supplier-inline-form {
+        display: inline-flex;
+        margin: 0;
+    }
+
+    .supplier-archive-drawer-shell {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+    }
+
+    .supplier-archive-drawer-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 22px 24px 20px;
+        border-bottom: 1px solid #eceef3;
+    }
+
+    .supplier-archive-drawer-kicker {
+        color: #7043c1;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 4px;
+    }
+
+    .supplier-archive-drawer-header h2 {
+        margin: 0;
+        color: #202431;
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -.2px;
+    }
+
+    .supplier-archive-drawer-header p {
+        margin: 4px 0 0;
+        color: #8a92a0;
+        font-size: 11px;
+    }
+
+    .supplier-archive-drawer-close {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        border: 1px solid #e1e4ea;
+        border-radius: 9px;
+        background: #fff;
+        color: #707887;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+    }
+
+    .supplier-archive-drawer-body {
+        flex: 1;
+        overflow: auto;
+        padding: 20px 24px 28px;
+    }
+
+    .supplier-archived-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #eceef3;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .supplier-archived-card-info {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .supplier-archived-avatar {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #f0f2f6;
+        color: #687181;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .supplier-archived-card-info strong,
+    .supplier-archived-card-info span,
+    .supplier-archived-card-info small {
+        display: block;
+    }
+
+    .supplier-archived-card-info strong {
+        color: #292e39;
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .supplier-archived-card-info span {
+        margin-top: 2px;
+        color: #8d94a1;
+        font-size: 10px;
+    }
+
+    .supplier-archived-card-info small {
+        margin-top: 5px;
+        color: #687181;
+        font-size: 10px;
+    }
+
+    .supplier-restore-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid #ccefe1;
+        border-radius: 9px;
+        background: #f2fcf8;
+        color: #1b9a70;
+        font-size: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .supplier-restore-btn:hover {
+        background: #e9faf4;
+        color: #14815d;
+    }
+
+    .supplier-archived-empty {
+        min-height: 260px;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        text-align: center;
+    }
+
+    .supplier-archived-empty-icon {
+        width: 58px;
+        height: 58px;
+        margin-bottom: 14px;
+        border-radius: 16px;
+        background: #f1ebff;
+        color: #7043c1;
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+    }
+
+    .supplier-archived-empty h3 {
+        margin: 0 0 5px;
+        color: #292e39;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .supplier-archived-empty p {
+        margin: 0;
+        color: #858b98;
+        font-size: 12px;
+    }
+
+    /* Supplier drawer interaction: keep the directory visible and blur it behind the drawer. */
+    .supplier-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: flex;
+        justify-content: flex-end;
+        background: rgba(17, 24, 39, .18);
+        backdrop-filter: blur(7px);
+        -webkit-backdrop-filter: blur(7px);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity .22s ease, visibility .22s ease;
+    }
+
+    .supplier-drawer-backdrop.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .supplier-drawer {
+        width: min(520px, 100vw);
+        height: 100%;
+        background: #fff;
+        border-left: 1px solid #e7e8ee;
+        box-shadow: -18px 0 45px rgba(25, 20, 45, .16);
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform .25s cubic-bezier(.22, .61, .36, 1);
+    }
+
+    .supplier-drawer-backdrop.open .supplier-drawer {
+        transform: translateX(0);
+    }
+
+    .supplier-drawer-loading {
+        min-height: 180px;
+        display: grid;
+        place-items: center;
+        color: #7d8492;
+        font-size: 13px;
+    }
+
+    .supplier-drawer-content {
+        height: 100%;
+        overflow: auto;
+    }
+
+    body.supplier-drawer-lock {
+        overflow: hidden;
+    }
+
+    @@media (max-width: 560px) {
+        .supplier-drawer {
+            width: 100vw;
+        }
+
+        .supplier-archive-drawer-header,
+        .supplier-archive-drawer-body {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
     }
 
     .supplier-empty {
@@ -341,6 +663,153 @@
         margin-bottom: 18px;
     }
 
+
+
+    .supplier-filter-panel {
+        margin: 0 0 18px;
+        padding: 14px;
+        background: #fff;
+        border: 1px solid #ececf1;
+        border-radius: 16px;
+        box-shadow: 0 5px 20px rgba(30, 25, 50, .05);
+        display: grid;
+        grid-template-columns: minmax(260px, 1.7fr) minmax(180px, 1fr) auto auto;
+        align-items: end;
+        gap: 10px;
+    }
+
+    .supplier-filter-field {
+        min-width: 0;
+    }
+
+    .supplier-filter-label {
+        display: block;
+        color: #777e8b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin: 0 0 7px 2px;
+    }
+
+    .supplier-search-wrap {
+        position: relative;
+    }
+
+    .supplier-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #079bc0;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .supplier-search-input,
+    .supplier-status-select {
+        width: 100%;
+        height: 40px;
+        border: 1px solid #dfe2e9;
+        border-radius: 9px;
+        background: #fff;
+        color: #3d4350;
+        font-size: 12px;
+        outline: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .supplier-search-input {
+        padding: 0 13px 0 38px;
+    }
+
+    .supplier-status-select {
+        padding: 0 12px;
+    }
+
+    .supplier-search-input:focus,
+    .supplier-status-select:focus {
+        border-color: #7043c1;
+        box-shadow: 0 0 0 3px rgba(112, 67, 193, .09);
+    }
+
+    .supplier-filter-btn,
+    .supplier-clear-btn {
+        height: 40px;
+        border-radius: 9px;
+        padding: 0 15px;
+        font-size: 12px;
+        font-weight: 750;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    .supplier-filter-btn {
+        border: 1px solid #7043c1;
+        background: #7043c1;
+        color: #fff;
+    }
+
+    .supplier-filter-btn:hover {
+        background: #5d35a6;
+        border-color: #5d35a6;
+        color: #fff;
+    }
+
+    .supplier-clear-btn {
+        border: 1px solid #dfe2e9;
+        background: #fff;
+        color: #667085;
+    }
+
+    .supplier-clear-btn:hover {
+        border-color: #c9ccd5;
+        color: #292e39;
+        background: #fafafd;
+    }
+
+    .supplier-filter-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 22px 12px;
+        color: #858b98;
+        font-size: 11px;
+    }
+
+    .supplier-filter-summary strong {
+        color: #4b5160;
+        font-weight: 800;
+    }
+
+    .supplier-no-results {
+        display: none;
+    }
+
+    .supplier-no-results td {
+        padding: 38px 20px !important;
+        text-align: center;
+        color: #858b98;
+    }
+
+    .supplier-no-results-icon {
+        width: 42px;
+        height: 42px;
+        margin: 0 auto 10px;
+        border-radius: 12px;
+        background: #f3effc;
+        color: #7043c1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
     @@media (max-width: 900px) {
         .supplier-summary {
             grid-template-columns: 1fr;
@@ -356,6 +825,23 @@
     }
 
     @@media (max-width: 700px) {
+
+        .supplier-filter-panel {
+            grid-template-columns: 1fr;
+            margin: 0 16px 16px;
+        }
+
+        .supplier-filter-btn,
+        .supplier-clear-btn {
+            width: 100%;
+        }
+
+        .supplier-filter-summary {
+            margin: 0 16px 10px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
         .suppliers-page {
             padding: 22px 16px 40px;
         }
@@ -399,11 +885,24 @@
             <p>Manage parts suppliers and maintain vendor relationships.</p>
         </div>
 
-        <a asp-action="Create"
-           class="btn supplier-add-btn">
-            <i class="bi bi-plus-lg me-1"></i>
-            Add Supplier
-        </a>
+        <div class="supplier-header-actions">
+            <button type="button"
+                    class="supplier-archive-btn"
+                    onclick="openArchivedSuppliersDrawer()"
+                    aria-label="View archived suppliers">
+                <i class="bi bi-archive"></i>
+                Archived
+                <span class="supplier-header-count">@archivedSuppliers</span>
+            </button>
+
+            <a asp-action="Create"
+               class="btn supplier-add-btn supplier-drawer-link"
+               data-drawer-url="@Url.Action("Create", "Suppliers")"
+               data-drawer-title="Add New Supplier">
+                <i class="bi bi-plus-lg me-1"></i>
+                Add Supplier
+            </a>
+        </div>
 
     </div>
 
@@ -437,11 +936,57 @@
             </div>
 
             <div>
-                <div class="supplier-stat-label">Inactive</div>
-                <div class="supplier-stat-value">@inactiveSuppliers</div>
+                <div class="supplier-stat-label">Archived Suppliers</div>
+                <div class="supplier-stat-value">@archivedSuppliers</div>
             </div>
         </div>
 
+    </div>
+
+    <div class="supplier-filter-panel">
+        <div class="supplier-filter-field">
+            <label class="supplier-filter-label" for="supplierSearchInput">Search</label>
+            <div class="supplier-search-wrap">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="supplierSearchInput"
+                       type="search"
+                       class="supplier-search-input"
+                       placeholder="Search by supplier name, contact, phone, email..."
+                       autocomplete="off"
+                       aria-label="Search suppliers" />
+            </div>
+        </div>
+
+        <div class="supplier-filter-field">
+            <label class="supplier-filter-label" for="supplierStatusFilter">Status</label>
+            <select id="supplierStatusFilter"
+                    class="supplier-status-select"
+                    aria-label="Filter suppliers by status">
+                <option value="all">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Archived">Archived</option>
+            </select>
+        </div>
+
+        <button type="button"
+                id="supplierFilterButton"
+                class="supplier-filter-btn">
+            <i class="bi bi-funnel"></i>
+            Filter
+        </button>
+
+        <button type="button"
+                id="supplierClearFilters"
+                class="supplier-clear-btn">
+            <i class="bi bi-x-lg"></i>
+            Clear
+        </button>
+    </div>
+
+    <div class="supplier-filter-summary">
+        <span id="supplierFilterState">Showing all supplier records</span>
+        <span><strong id="supplierVisibleCount">@suppliers.Count</strong> visible</span>
     </div>
 
     <div class="suppliers-card">
@@ -453,7 +998,7 @@
                 <h2>Supplier Directory</h2>
             </div>
 
-            <span class="suppliers-count">
+            <span class="suppliers-count" id="supplierDirectoryCount">
                 @suppliers.Count supplier@(suppliers.Count == 1 ? "" : "s")
             </span>
 
@@ -474,7 +1019,9 @@
                 </p>
 
                 <a asp-action="Create"
-                   class="btn supplier-add-btn">
+                   class="btn supplier-add-btn supplier-drawer-link"
+                   data-drawer-url="@Url.Action("Create", "Suppliers")"
+                   data-drawer-title="Add New Supplier">
                     <i class="bi bi-plus-lg me-1"></i>
                     Add Your First Supplier
                 </a>
@@ -506,14 +1053,23 @@
                             : item.Name.Trim().Substring(0, 1).ToUpper();
 
                         var isActive = item.Status == "Active";
+                        var isArchived = item.Status == "Archived";
 
-                        <tr>
+                        <tr data-supplier-search="@($"{item.Name} {item.ContactPerson} {item.Phone} {item.Email} {item.City} {item.Address} {item.SupplierId}").ToLowerInvariant()"
+                            data-supplier-status="@(string.IsNullOrWhiteSpace(item.Status) ? "Unknown" : item.Status)">
 
                             <td>
                                 <div class="d-flex align-items-center gap-3">
 
                                     <div class="supplier-avatar">
-                                        @initials
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.Name supplier image" />
+                                        }
+                                        else
+                                        {
+                                            @initials
+                                        }
                                     </div>
 
                                     <div>
@@ -575,7 +1131,7 @@
 
                             <td>
 
-                                <span class="supplier-status @(isActive ? "active" : "inactive")">
+                                <span class="supplier-status @(isArchived ? "archived" : isActive ? "active" : "inactive")">
 
                                     <span class="supplier-status-dot"></span>
 
@@ -593,24 +1149,46 @@
 
                                     <a asp-action="Details"
                                        asp-route-id="@item.SupplierId"
-                                       class="supplier-action view"
+                                       class="supplier-action view supplier-drawer-link"
+                                       data-drawer-url="@Url.Action("Details", "Suppliers", new { id = item.SupplierId })"
+                                       data-drawer-title="Supplier Details"
                                        title="View supplier">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
                                     <a asp-action="Edit"
                                        asp-route-id="@item.SupplierId"
-                                       class="supplier-action edit"
+                                       class="supplier-action edit supplier-drawer-link"
+                                       data-drawer-url="@Url.Action("Edit", "Suppliers", new { id = item.SupplierId })"
+                                       data-drawer-title="Edit Supplier"
                                        title="Edit supplier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
 
-                                    <a asp-action="Delete"
-                                       asp-route-id="@item.SupplierId"
-                                       class="supplier-action delete"
-                                       title="Delete supplier">
-                                        <i class="bi bi-trash3"></i>
-                                    </a>
+                                    @if (!isArchived)
+                                    {
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.SupplierId"
+                                           class="supplier-action delete supplier-drawer-link"
+                                           data-drawer-url="@Url.Action("Delete", "Suppliers", new { id = item.SupplierId })"
+                                           data-drawer-title="Archive Supplier"
+                                           title="Archive supplier">
+                                            <i class="bi bi-archive"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Restore" method="post" class="supplier-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.SupplierId" />
+                                            <button type="submit"
+                                                    class="supplier-action restore"
+                                                    aria-label="Restore @item.Name"
+                                                    title="Restore supplier">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    }
 
                                 </div>
 
@@ -618,6 +1196,16 @@
 
                         </tr>
                     }
+
+                        <tr id="supplierNoResults" class="supplier-no-results">
+                            <td colspan="5">
+                                <div class="supplier-no-results-icon">
+                                    <i class="bi bi-search" aria-hidden="true"></i>
+                                </div>
+                                <strong>No matching suppliers</strong>
+                                <div>Try a different search term or clear the filters.</div>
+                            </td>
+                        </tr>
 
                     </tbody>
 
@@ -629,3 +1217,356 @@
     </div>
 
 </div>
+
+<div id="archivedSuppliersBackdrop" class="supplier-drawer-backdrop" aria-hidden="true">
+    <aside id="archivedSuppliersDrawer" class="supplier-drawer" role="dialog" aria-modal="true" aria-labelledby="archivedSuppliersTitle">
+        <div class="supplier-archive-drawer-shell">
+            <header class="supplier-archive-drawer-header">
+                <div>
+                    <div class="supplier-archive-drawer-kicker">Supplier Management</div>
+                    <h2 id="archivedSuppliersTitle">Archived Suppliers</h2>
+                    <p>@archivedSuppliers archived supplier record@(archivedSuppliers == 1 ? "" : "s").</p>
+                </div>
+                <button type="button" class="supplier-archive-drawer-close" onclick="closeArchivedSuppliersDrawer()" aria-label="Close archived suppliers">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </header>
+
+            <div class="supplier-archive-drawer-body">
+                @if (archivedSupplierList.Any())
+                {
+                    @foreach (var archivedSupplier in archivedSupplierList)
+                    {
+                        <div class="supplier-archived-card">
+                            <div class="supplier-archived-card-info">
+                                <div class="supplier-archived-avatar">
+                                    @if (!string.IsNullOrWhiteSpace(archivedSupplier.ImageUrl))
+                                    {
+                                        <img src="@archivedSupplier.ImageUrl" alt="@archivedSupplier.Name supplier image" />
+                                    }
+                                    else
+                                    {
+                                        @(string.IsNullOrWhiteSpace(archivedSupplier.Name) ? "S" : archivedSupplier.Name.Trim().Substring(0, 1).ToUpper())
+                                    }
+                                </div>
+                                <div>
+                                    <strong>@archivedSupplier.Name</strong>
+                                    <span>Supplier ID #@archivedSupplier.SupplierId</span>
+                                    <small>@(string.IsNullOrWhiteSpace(archivedSupplier.ContactPerson) ? "No contact person" : archivedSupplier.ContactPerson) • @(string.IsNullOrWhiteSpace(archivedSupplier.City) ? "No city" : archivedSupplier.City)</small>
+                                </div>
+                            </div>
+                            <form asp-action="Restore" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@archivedSupplier.SupplierId" />
+                                <button type="submit" class="supplier-restore-btn">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    Restore
+                                </button>
+                            </form>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="supplier-archived-empty">
+                        <div class="supplier-archived-empty-icon"><i class="bi bi-archive"></i></div>
+                        <h3>No Archived Suppliers</h3>
+                        <p>Archived supplier records will appear here.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </aside>
+</div>
+
+<div id="supplierDrawerBackdrop" class="supplier-drawer-backdrop" aria-hidden="true">
+    <aside id="supplierDrawer" class="supplier-drawer" role="dialog" aria-modal="true" aria-labelledby="supplierDrawerTitle">
+        <div id="supplierDrawerContent" class="supplier-drawer-content">
+            <div class="supplier-drawer-loading">Loading supplier workspace…</div>
+        </div>
+    </aside>
+</div>
+
+
+<script>
+(function () {
+    const searchInput = document.getElementById('supplierSearchInput');
+    const statusFilter = document.getElementById('supplierStatusFilter');
+    const filterButton = document.getElementById('supplierFilterButton');
+    const clearButton = document.getElementById('supplierClearFilters');
+    const visibleCount = document.getElementById('supplierVisibleCount');
+    const directoryCount = document.getElementById('supplierDirectoryCount');
+    const filterState = document.getElementById('supplierFilterState');
+    const noResults = document.getElementById('supplierNoResults');
+
+    if (!searchInput || !statusFilter || !filterButton || !clearButton) return;
+
+    const rows = Array.from(document.querySelectorAll('.supplier-table tbody tr[data-supplier-search]'));
+
+    function applySupplierFilters() {
+        const search = searchInput.value.trim().toLowerCase();
+        const status = statusFilter.value;
+        let matches = 0;
+
+        rows.forEach(row => {
+            const haystack = row.dataset.supplierSearch || '';
+            const rowStatus = row.dataset.supplierStatus || '';
+            const searchMatches = !search || haystack.includes(search);
+            const statusMatches = status === 'all' || rowStatus === status;
+            const show = searchMatches && statusMatches;
+
+            row.style.display = show ? '' : 'none';
+            if (show) matches++;
+        });
+
+        if (visibleCount) visibleCount.textContent = matches;
+        if (directoryCount) {
+            directoryCount.textContent = matches + ' supplier' + (matches === 1 ? '' : 's');
+        }
+        if (noResults) noResults.style.display = matches === 0 ? 'table-row' : 'none';
+
+        if (filterState) {
+            if (!search && status === 'all') {
+                filterState.textContent = 'Showing all supplier records';
+            } else {
+                const parts = [];
+                if (search) parts.push('search: "' + searchInput.value.trim() + '"');
+                if (status !== 'all') parts.push('status: ' + status);
+                filterState.textContent = 'Filtered by ' + parts.join(' · ');
+            }
+        }
+    }
+
+    // Search updates automatically while the user types.
+    searchInput.addEventListener('input', applySupplierFilters);
+    statusFilter.addEventListener('change', applySupplierFilters);
+    filterButton.addEventListener('click', applySupplierFilters);
+
+    clearButton.addEventListener('click', function () {
+        searchInput.value = '';
+        statusFilter.value = 'all';
+        applySupplierFilters();
+        searchInput.focus();
+    });
+
+    searchInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            applySupplierFilters();
+        }
+    });
+
+    applySupplierFilters();
+})();
+</script>
+
+<script>
+(function () {
+    const backdrop = document.getElementById('supplierDrawerBackdrop');
+    const content = document.getElementById('supplierDrawerContent');
+
+    if (!backdrop || !content) return;
+
+    let lastFocused = null;
+
+    function openDrawer(url, title) {
+        lastFocused = document.activeElement;
+        backdrop.classList.add('open');
+        backdrop.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('supplier-drawer-lock');
+        content.innerHTML = '<div class="supplier-drawer-loading">Loading supplier workspace…</div>';
+
+        let requestUrl;
+        try {
+            requestUrl = new URL(url, window.location.origin);
+            requestUrl.searchParams.set('drawer', '1');
+        } catch {
+            content.innerHTML = '<div class="supplier-drawer-loading">Unable to load supplier workspace.</div>';
+            return;
+        }
+
+        fetch(requestUrl.toString(), {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Unable to load supplier workspace.');
+            return response.text();
+        })
+        .then(html => {
+            content.innerHTML = html;
+            const heading = content.querySelector('[data-drawer-title]');
+            if (heading && title) heading.textContent = title;
+            wireDrawer();
+        })
+        .catch(error => {
+            content.innerHTML = '<div class="supplier-drawer-loading">' + error.message + '</div>';
+        });
+    }
+
+    function closeDrawer() {
+        backdrop.classList.remove('open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('supplier-drawer-lock');
+        window.setTimeout(() => {
+            content.innerHTML = '<div class="supplier-drawer-loading">Loading supplier workspace…</div>';
+        }, 250);
+        if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+    }
+
+    function wireSupplierImagePicker() {
+        const input = content.querySelector('#supplierImageInput');
+        const button = content.querySelector('#supplierImageButton');
+        const preview = content.querySelector('#supplierImagePreview');
+        const name = content.querySelector('#supplierImageName');
+        const message = content.querySelector('#supplierImageMessage');
+
+        if (!input || !button || !preview || button.dataset.wired === 'true') return;
+
+        button.dataset.wired = 'true';
+        button.addEventListener('click', function () {
+            input.click();
+        });
+
+        input.addEventListener('change', function () {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                input.value = '';
+                if (message) {
+                    message.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> Image must be 5 MB or smaller.';
+                    message.style.color = '#b42318';
+                    message.classList.add('show');
+                }
+                return;
+            }
+
+            const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+            if (!allowed.includes((file.type || '').toLowerCase())) {
+                input.value = '';
+                if (message) {
+                    message.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> Please choose a PNG, JPG, WEBP, or GIF image.';
+                    message.style.color = '#b42318';
+                    message.classList.add('show');
+                }
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                preview.innerHTML = '<img src="' + event.target.result + '" alt="Supplier preview" />';
+                if (name) name.textContent = file.name;
+                if (message) {
+                    message.innerHTML = '<i class="bi bi-check-circle-fill"></i> Image selected';
+                    message.style.color = '#1b9a70';
+                    message.classList.add('show');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function wireDrawer() {
+        wireSupplierImagePicker();
+
+        content.querySelectorAll('[data-drawer-close]').forEach(button => {
+            button.addEventListener('click', closeDrawer);
+        });
+
+        content.querySelectorAll('[data-drawer-link]').forEach(link => {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                openDrawer(this.dataset.drawerUrl || this.href, this.dataset.drawerTitle || 'Supplier');
+            });
+        });
+
+        content.querySelectorAll('form[data-supplier-drawer-form]').forEach(form => {
+            if (form.dataset.wired === 'true') return;
+            form.dataset.wired = 'true';
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const submit = form.querySelector('button[type="submit"]');
+                if (submit) {
+                    submit.disabled = true;
+                    submit.dataset.originalText = submit.innerHTML;
+                    submit.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Saving…';
+                }
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (response.redirected || response.url.includes('/Suppliers/Index')) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    const html = await response.text();
+                    content.innerHTML = html;
+                    wireDrawer();
+                } catch (error) {
+                    content.innerHTML = '<div class="supplier-drawer-loading">Unable to save this supplier. Please try again.</div>';
+                }
+            });
+        });
+
+        content.querySelectorAll('[data-submit-drawer-form]').forEach(button => {
+            if (button.dataset.wired === 'true') return;
+            button.dataset.wired = 'true';
+            button.addEventListener('click', function () {
+                const form = content.querySelector('form[data-supplier-drawer-form]');
+                if (form) form.requestSubmit();
+            });
+        });
+    }
+
+    document.querySelectorAll('.supplier-drawer-link').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            openDrawer(this.dataset.drawerUrl || this.href, this.dataset.drawerTitle || 'Supplier');
+        });
+    });
+
+    backdrop.addEventListener('click', function (event) {
+        if (event.target === backdrop) closeDrawer();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && backdrop.classList.contains('open')) closeDrawer();
+        const archivedBackdrop = document.getElementById('archivedSuppliersBackdrop');
+        if (event.key === 'Escape' && archivedBackdrop?.classList.contains('open')) closeArchivedSuppliersDrawer();
+    });
+
+    window.openArchivedSuppliersDrawer = function () {
+        const archivedBackdrop = document.getElementById('archivedSuppliersBackdrop');
+        if (!archivedBackdrop) return;
+        archivedBackdrop.classList.add('open');
+        archivedBackdrop.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('supplier-drawer-lock');
+    };
+
+    window.closeArchivedSuppliersDrawer = function () {
+        const archivedBackdrop = document.getElementById('archivedSuppliersBackdrop');
+        if (!archivedBackdrop) return;
+        archivedBackdrop.classList.remove('open');
+        archivedBackdrop.setAttribute('aria-hidden', 'true');
+        if (!backdrop.classList.contains('open')) {
+            document.body.classList.remove('supplier-drawer-lock');
+        }
+    };
+
+    const archivedBackdrop = document.getElementById('archivedSuppliersBackdrop');
+    archivedBackdrop?.addEventListener('click', function (event) {
+        if (event.target === archivedBackdrop) closeArchivedSuppliersDrawer();
+    });
+})();
+</script>

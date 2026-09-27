@@ -1,1180 +1,776 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
 @model IEnumerable<AutoFlow.Web.Models.CustomerFollowUp>
 
 @{
-    ViewData["Title"] = "Customer Follow-ups";
+    ViewData["Title"] = "Customer Follow-ups CRM";
 
     var search = ViewBag.Search as string ?? string.Empty;
     var status = ViewBag.Status as string ?? string.Empty;
     var followUpType = ViewBag.FollowUpType as string ?? string.Empty;
+    var open = ViewBag.Open as string ?? string.Empty;
+    var openId = ViewBag.OpenId as int?;
+    var drawer = ViewBag.DrawerFollowUp as AutoFlow.Web.Models.CustomerFollowUp;
+    var archivedFollowUps = ViewBag.ArchivedFollowUps as IEnumerable<AutoFlow.Web.Models.CustomerFollowUp> ?? Array.Empty<AutoFlow.Web.Models.CustomerFollowUp>();
+    var archivedCount = (int?)ViewBag.ArchivedCount ?? archivedFollowUps.Count();
 
-    var statuses = ViewBag.Statuses as IEnumerable<string>
-                   ?? Array.Empty<string>();
+    var statuses = ViewBag.Statuses as IEnumerable<SelectListItem> ?? Array.Empty<SelectListItem>();
+    var followUpTypes = ViewBag.FollowUpTypes as IEnumerable<SelectListItem> ?? Array.Empty<SelectListItem>();
+    var customerOptions = ViewBag.CustomerId as IEnumerable<SelectListItem> ?? Array.Empty<SelectListItem>();
+    var vehicleOptions = ViewBag.VehicleId as IEnumerable<SelectListItem> ?? Array.Empty<SelectListItem>();
 
-    var followUpTypes = ViewBag.FollowUpTypes as IEnumerable<string>
-                        ?? Array.Empty<string>();
+    var totalCount = (int?)ViewBag.TotalCount ?? 0;
+    var page = (int?)ViewBag.Page ?? 1;
+    var pageCount = (int?)ViewBag.PageCount ?? 1;
+    var pageSize = (int?)ViewBag.PageSize ?? 10;
+    var showingFrom = totalCount == 0 ? 0 : ((page - 1) * pageSize) + 1;
+    var showingTo = Math.Min(page * pageSize, totalCount);
+
+    string QueryUrl(int targetPage = 1, string? targetOpen = null, int? targetId = null) =>
+        Url.Action("Index", "CustomerFollowUps", new
+        {
+            search = string.IsNullOrWhiteSpace(search) ? null : search,
+            status = string.IsNullOrWhiteSpace(status) ? null : status,
+            followUpType = string.IsNullOrWhiteSpace(followUpType) ? null : followUpType,
+            page = targetPage,
+            open = string.IsNullOrWhiteSpace(targetOpen) ? null : targetOpen,
+            id = targetId
+        }) ?? Url.Action("Index", "CustomerFollowUps") ?? "/CustomerFollowUps/Index";
 }
 
-<div class="page-container">
-
-    <!-- Page Header -->
-    <div class="page-header">
+<div class="crm-page">
+    <div class="crm-header">
         <div>
-            <div class="breadcrumb">
-                <a asp-controller="Home" asp-action="Index">Dashboard</a>
-                <i class="bi bi-chevron-right"></i>
-                <span>Customer Follow-ups</span>
+            <div class="crm-breadcrumb">
+                <a asp-controller="Home" asp-action="Index">CRM</a>
+                <span>›</span>
+                <span>Follow-ups</span>
             </div>
-
-            <div class="page-title-row">
-                <div class="title-icon">
-                    <i class="bi bi-person-lines-fill"></i>
-                </div>
-
-                <div>
-                    <h1>Customer Follow-ups</h1>
-                    <p>Manage customer communication, service follow-ups, and CRM activities.</p>
-                </div>
-            </div>
+            <h1>Customer Follow-ups CRM</h1>
+            <p>Manage customer follow-ups and maintain service relationships.</p>
         </div>
 
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            New Follow-up
-        </a>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="summary-grid">
-        <div class="summary-card">
-            <div class="summary-icon purple">
-                <i class="bi bi-list-check"></i>
-            </div>
-
-            <div>
-                <span class="summary-label">Total Follow-ups</span>
-                <strong>@Model.Count()</strong>
-            </div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon orange">
-                <i class="bi bi-clock-history"></i>
-            </div>
-
-            <div>
-                <span class="summary-label">Pending</span>
-                <strong>
-                    @Model.Count(x =>
-                        string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
-                </strong>
-            </div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon green">
-                <i class="bi bi-check-circle"></i>
-            </div>
-
-            <div>
-                <span class="summary-label">Completed</span>
-                <strong>
-                    @Model.Count(x =>
-                        string.Equals(x.Status, "Completed", StringComparison.OrdinalIgnoreCase))
-                </strong>
-            </div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon blue">
-                <i class="bi bi-calendar-event"></i>
-            </div>
-
-            <div>
-                <span class="summary-label">Scheduled Next</span>
-                <strong>
-                    @Model.Count(x => x.NextFollowUpDate.HasValue)
-                </strong>
-            </div>
+        <div class="crm-header-actions">
+            <button type="button" class="crm-archive-btn" onclick="openArchivedFollowUpsDrawer()">
+                <i class="bi bi-archive"></i>
+                Archived
+                <span>@archivedCount</span>
+            </button>
+            <a class="crm-primary-btn" href="@QueryUrl(1, "create")">
+                <i class="bi bi-plus-lg"></i>
+                New Follow-up
+            </a>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filter-card">
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="crm-alert success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>@successMessage</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="crm-alert error">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            <span>@errorMessage</span>
+        </div>
+    }
+
+    <div class="crm-summary-grid">
+        <div class="crm-summary-card">
+            <div class="crm-summary-icon purple"><i class="bi bi-calendar-event"></i></div>
+            <div><span>Due Today</span><strong>@ViewBag.DueTodayCount</strong><small>records</small></div>
+        </div>
+        <div class="crm-summary-card">
+            <div class="crm-summary-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+            <div><span>Upcoming</span><strong>@ViewBag.UpcomingCount</strong><small>scheduled</small></div>
+        </div>
+        <div class="crm-summary-card">
+            <div class="crm-summary-icon red"><i class="bi bi-arrow-counterclockwise"></i></div>
+            <div><span>Overdue</span><strong>@ViewBag.OverdueCount</strong><small>pending</small></div>
+        </div>
+    </div>
+
+    <div class="crm-filter-card">
         <form asp-action="Index" method="get">
-
-            <div class="filter-main">
-
-                <div class="search-box">
+            <div class="crm-filter-row">
+                <div class="crm-search">
                     <i class="bi bi-search"></i>
+                    <input name="search" value="@search" placeholder="Search customer, subject, or follow-up..." aria-label="Search follow-ups" />
+                </div>
 
-                    <input type="text"
-                           name="search"
-                           value="@search"
-                           placeholder="Search customer, vehicle, subject, notes..." />
-
-                    @if (!string.IsNullOrWhiteSpace(search))
+                <select name="followUpType" class="crm-select" aria-label="Follow-up type">
+                    <option value="">Follow-up Type</option>
+                    @foreach (var item in followUpTypes)
                     {
-                        <a asp-action="Index"
-                           asp-route-status="@status"
-                           asp-route-followUpType="@followUpType"
-                           class="clear-search"
-                           title="Clear search">
-                            <i class="bi bi-x-circle"></i>
-                        </a>
+                        @if (item.Selected)
+                        {
+                            <option value="@item.Value" selected="selected">@item.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
                     }
-                </div>
+                </select>
 
-                <div class="filter-field">
-                    <label for="status">Status</label>
-
-                    <select id="status"
-                            name="status"
-                            class="form-select">
-                        <option value="">All Statuses</option>
-
-                        @foreach (var item in statuses)
+                <select name="status" class="crm-select" aria-label="Status">
+                    <option value="">Status</option>
+                    @foreach (var item in statuses)
+                    {
+                        @if (item.Selected)
                         {
-                            <option value="@item"
-                                    selected="@(string.Equals(status, item, StringComparison.OrdinalIgnoreCase))">
-                                @item
-                            </option>
+                            <option value="@item.Value" selected="selected">@item.Text</option>
                         }
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label for="followUpType">Follow-up Type</label>
-
-                    <select id="followUpType"
-                            name="followUpType"
-                            class="form-select">
-                        <option value="">All Types</option>
-
-                        @foreach (var item in followUpTypes)
+                        else
                         {
-                            <option value="@item"
-                                    selected="@(string.Equals(followUpType, item, StringComparison.OrdinalIgnoreCase))">
-                                @item
-                            </option>
+                            <option value="@item.Value">@item.Text</option>
                         }
-                    </select>
-                </div>
+                    }
+                </select>
 
-                <button type="submit" class="btn btn-primary filter-btn">
-                    <i class="bi bi-funnel"></i>
-                    Apply
-                </button>
+                <button type="submit" class="crm-filter-btn"><i class="bi bi-funnel"></i> Apply</button>
+
+                @if (!string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(status) || !string.IsNullOrWhiteSpace(followUpType))
+                {
+                    <a class="crm-clear" href="@Url.Action("Index", "CustomerFollowUps")">Clear Filters</a>
+                }
             </div>
-
-            @if (!string.IsNullOrWhiteSpace(search) ||
-                 !string.IsNullOrWhiteSpace(status) ||
-                 !string.IsNullOrWhiteSpace(followUpType))
-            {
-                <div class="active-filters">
-                    <span class="active-label">
-                        <i class="bi bi-funnel-fill"></i>
-                        Active filters:
-                    </span>
-
-                    @if (!string.IsNullOrWhiteSpace(search))
-                    {
-                        <span class="filter-chip">
-                            Search: "@search"
-                        </span>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(status))
-                    {
-                        <span class="filter-chip">
-                            Status: @status
-                        </span>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(followUpType))
-                    {
-                        <span class="filter-chip">
-                            Type: @followUpType
-                        </span>
-                    }
-
-                    <a asp-action="Index" class="clear-filters">
-                        Clear all
-                    </a>
-                </div>
-            }
         </form>
     </div>
 
-    <!-- Follow-up Table -->
-    <div class="table-card">
-
-        <div class="table-header">
+    <div class="crm-table-card">
+        <div class="crm-table-heading">
             <div>
                 <h2>Follow-up Records</h2>
-                <p>
-                    Showing <strong>@Model.Count()</strong>
-                    follow-up@(Model.Count() == 1 ? "" : "s")
-                </p>
-            </div>
-
-            <div class="table-header-action">
-                <a asp-action="Create" class="btn btn-light">
-                    <i class="bi bi-plus-lg"></i>
-                    Add Follow-up
-                </a>
+                <p>Showing @showingFrom–@showingTo of @totalCount records</p>
             </div>
         </div>
 
         @if (Model.Any())
         {
-            <div class="table-responsive">
-                <table class="followup-table">
+            <div class="crm-table-scroll">
+                <table class="crm-table">
                     <thead>
                         <tr>
                             <th>Customer</th>
                             <th>Vehicle</th>
-                            <th>Follow-up</th>
-                            <th>Schedule</th>
+                            <th>Follow-up Type</th>
+                            <th>Subject</th>
+                            <th>Follow-up Date</th>
                             <th>Status</th>
-                            <th class="actions-column">Actions</th>
+                            <th>Next Follow-up</th>
+                            <th class="crm-actions-col">Actions</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        @foreach (var item in Model)
+                    @foreach (var item in Model)
+                    {
+                        var customerName = item.Customer == null
+                            ? "Unknown Customer"
+                            : $"{item.Customer.FirstName} {item.Customer.LastName}".Trim();
+                        var vehicleName = item.Vehicle == null
+                            ? "Unknown Vehicle"
+                            : $"{item.Vehicle.Make} {item.Vehicle.Model}".Trim();
+                        var initials = string.Concat(customerName
+                            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                            .Take(2)
+                            .Select(x => x[0])).ToUpperInvariant();
+                        if (string.IsNullOrWhiteSpace(initials)) initials = "UC";
+                        var statusClass = item.Status switch
                         {
-                            var customerName = item.Customer != null
-                                ? $"{item.Customer.FirstName} {item.Customer.LastName}".Trim()
-                                : "Unknown Customer";
+                            "Completed" => "completed",
+                            "Cancelled" => "cancelled",
+                            _ => "pending"
+                        };
 
-                            var vehicleName = item.Vehicle != null
-                                ? $"{item.Vehicle.Make} {item.Vehicle.Model}".Trim()
-                                : "Unknown Vehicle";
-
-                            var statusClass = item.Status switch
-                            {
-                                "Completed" => "status-completed",
-                                "Cancelled" => "status-cancelled",
-                                "Overdue" => "status-overdue",
-                                _ => "status-pending"
-                            };
-
-                            <tr>
-                                <!-- Customer -->
-                                <td>
-                                    <div class="customer-cell">
-                                        <div class="avatar">
-                                            @{
-                                                var initials = customerName == "Unknown Customer"
-                                                    ? "UC"
-                                                    : string.Concat(
-                                                        customerName
-                                                            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                                            .Take(2)
-                                                            .Select(x => x[0])
-                                                    ).ToUpper();
-                                            }
-
+                        <tr class="@(item.Status.Equals("Archived", StringComparison.OrdinalIgnoreCase) ? "crm-row-archived" : "")">
+                            <td>
+                                <div class="crm-person">
+                                    <div class="crm-avatar">
+                                        @if (!string.IsNullOrWhiteSpace(item.Customer?.ImageUrl))
+                                        {
+                                            <img src="@item.Customer.ImageUrl" alt="@customerName" loading="lazy" />
+                                        }
+                                        else
+                                        {
                                             @initials
-                                        </div>
-
-                                        <div class="cell-content">
-                                            <span class="primary-text">
-                                                @customerName
-                                            </span>
-
-                                            @if (item.Customer != null &&
-                                                 !string.IsNullOrWhiteSpace(item.Customer.Phone))
-                                            {
-                                                <span class="secondary-text">
-                                                    @item.Customer.Phone
-                                                </span>
-                                            }
-                                            else if (item.Customer != null &&
-                                                     !string.IsNullOrWhiteSpace(item.Customer.Email))
-                                            {
-                                                <span class="secondary-text">
-                                                    @item.Customer.Email
-                                                </span>
-                                            }
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Vehicle -->
-                                <td>
-                                    <div class="vehicle-cell">
-                                        <div class="vehicle-icon">
-                                            <i class="bi bi-car-front"></i>
-                                        </div>
-
-                                        <div class="cell-content">
-                                            <span class="primary-text">
-                                                @vehicleName
-                                            </span>
-
-                                            @if (item.Vehicle != null)
-                                            {
-                                                <span class="secondary-text">
-                                                    @item.Vehicle.PlateNumber
-                                                </span>
-                                            }
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Follow-up -->
-                                <td>
-                                    <div class="followup-cell">
-                                        <span class="type-badge">
-                                            @item.FollowUpType
-                                        </span>
-
-                                        <span class="subject-text">
-                                            @item.Subject
-                                        </span>
-
-                                        @if (!string.IsNullOrWhiteSpace(item.Notes))
-                                        {
-                                            <span class="secondary-text notes-preview">
-                                                @item.Notes
-                                            </span>
                                         }
                                     </div>
-                                </td>
-
-                                <!-- Schedule -->
-                                <td>
-                                    <div class="schedule-cell">
-                                        <div class="schedule-date">
-                                            <i class="bi bi-calendar3"></i>
-
-                                            <span>
-                                                @item.FollowUpDate.ToString("MMM dd, yyyy")
-                                            </span>
-                                        </div>
-
-                                        <span class="secondary-text">
-                                            @item.FollowUpDate.ToString("hh:mm tt")
-                                        </span>
-
-                                        @if (item.NextFollowUpDate.HasValue)
+                                    <div>
+                                        <strong>@customerName</strong>
+                                        <span>@(item.Customer?.Phone ?? item.Customer?.Email ?? "No contact information")</span>
+                                        @if (item.Status.Equals("Archived", StringComparison.OrdinalIgnoreCase))
                                         {
-                                            <span class="next-date">
-                                                <i class="bi bi-arrow-right"></i>
-                                                Next:
-                                                @item.NextFollowUpDate.Value.ToString("MMM dd")
-                                            </span>
+                                            <span class="crm-archived-label"><i class="bi bi-archive"></i> Archived</span>
                                         }
                                     </div>
-                                </td>
-
-                                <!-- Status -->
-                                <td>
-                                    <span class="status-badge @statusClass">
-                                        <span class="status-dot"></span>
-                                        @item.Status
-                                    </span>
-                                </td>
-
-                                <!-- Actions -->
-                                <td>
-                                    <div class="action-buttons">
-
-                                        <a asp-action="Details"
-                                           asp-route-id="@item.FollowUpId"
-                                           class="action-btn"
-                                           title="View details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-
-                                        <a asp-action="Edit"
-                                           asp-route-id="@item.FollowUpId"
-                                           class="action-btn"
-                                           title="Edit follow-up">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-
-                                        <a asp-action="Delete"
-                                           asp-route-id="@item.FollowUpId"
-                                           class="action-btn action-delete"
-                                           title="Delete follow-up">
-                                            <i class="bi bi-trash3"></i>
-                                        </a>
-
+                                </div>
+                            </td>
+                            <td>
+                                <div class="crm-vehicle">
+                                    <div class="crm-vehicle-icon">
+                                        @if (!string.IsNullOrWhiteSpace(item.Vehicle?.ImageUrl))
+                                        {
+                                            <img src="@item.Vehicle.ImageUrl" alt="@vehicleName" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-car-front-fill"></i>
+                                        }
                                     </div>
-                                </td>
-                            </tr>
-                        }
+                                    <div><strong>@vehicleName</strong><span>@(item.Vehicle?.PlateNumber ?? "—")</span></div>
+                                </div>
+                            </td>
+                            <td><span class="crm-type">@item.FollowUpType</span></td>
+                            <td><span class="crm-subject" title="@item.Subject">@item.Subject</span></td>
+                            <td>
+                                <div class="crm-date">
+                                    <strong>@item.FollowUpDate.ToString("MMM d, yyyy")</strong>
+                                    <span>@item.FollowUpDate.ToString("h:mm tt")</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.Status.Equals("Archived", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="crm-status archived"><i></i>Archived</span>
+                                }
+                                else
+                                {
+                                    <span class="crm-status @statusClass"><i></i>@item.Status</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.NextFollowUpDate.HasValue)
+                                {
+                                    <div class="crm-next-date">@item.NextFollowUpDate.Value.ToString("MMM d, yyyy")</div>
+                                }
+                                else
+                                {
+                                    <span class="crm-dash">—</span>
+                                }
+                            </td>
+                            <td class="crm-actions-col">
+                                <div class="crm-actions">
+                                    <a href="@QueryUrl(page, "details", item.FollowUpId)" class="crm-action view" title="View details" aria-label="View details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="@QueryUrl(page, "edit", item.FollowUpId)" class="crm-action edit" title="Edit follow-up" aria-label="Edit follow-up">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if (item.Status.Equals("Archived", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <form asp-action="Restore" method="post" class="crm-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.FollowUpId" />
+                                            <button type="submit" class="crm-action restore" title="Restore follow-up" aria-label="Restore follow-up">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Delete" method="post" class="crm-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.FollowUpId" />
+                                            <button type="submit" class="crm-action archive" title="Archive follow-up" aria-label="Archive follow-up">
+                                                <i class="bi bi-archive"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
                     </tbody>
                 </table>
             </div>
         }
         else
         {
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="bi bi-person-lines-fill"></i>
-                </div>
+            <div class="crm-empty">
+                <div class="crm-empty-icon"><i class="bi bi-telephone"></i></div>
+                <h3>@(totalCount == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(status) && string.IsNullOrWhiteSpace(followUpType) ? "No follow-ups yet" : "No follow-ups found")</h3>
+                <p>@(totalCount == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(status) && string.IsNullOrWhiteSpace(followUpType) ? "Create a follow-up to start maintaining customer relationships." : "Try changing your search or filter criteria.")</p>
+                <a class="crm-primary-btn" href="@QueryUrl(1, "create")"><i class="bi bi-plus-lg"></i> New Follow-up</a>
+            </div>
+        }
 
-                <h3>
-                    @(string.IsNullOrWhiteSpace(search) &&
-                      string.IsNullOrWhiteSpace(status) &&
-                      string.IsNullOrWhiteSpace(followUpType)
-                        ? "No follow-ups yet"
-                        : "No follow-ups found")
-                </h3>
-
-                <p>
-                    @(string.IsNullOrWhiteSpace(search) &&
-                      string.IsNullOrWhiteSpace(status) &&
-                      string.IsNullOrWhiteSpace(followUpType)
-                        ? "Create your first customer follow-up to start managing CRM activities."
-                        : "Try changing your search or filter criteria.")
-                </p>
-
-                @if (string.IsNullOrWhiteSpace(search) &&
-                     string.IsNullOrWhiteSpace(status) &&
-                     string.IsNullOrWhiteSpace(followUpType))
+        @if (pageCount > 1)
+        {
+            <div class="crm-pagination">
+                <a class="crm-page-btn @(page <= 1 ? "disabled" : "")" href="@(page <= 1 ? "#" : QueryUrl(page - 1))" aria-label="Previous"><i class="bi bi-chevron-left"></i></a>
+                @for (var p = 1; p <= pageCount; p++)
                 {
-                    <a asp-action="Create" class="btn btn-primary">
-                        <i class="bi bi-plus-lg"></i>
-                        Create Follow-up
-                    </a>
+                    <a class="crm-page-btn @(p == page ? "active" : "")" href="@QueryUrl(p)">@p</a>
                 }
-                else
-                {
-                    <a asp-action="Index" class="btn btn-light">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                        Clear Filters
-                    </a>
-                }
+                <a class="crm-page-btn @(page >= pageCount ? "disabled" : "")" href="@(page >= pageCount ? "#" : QueryUrl(page + 1))" aria-label="Next"><i class="bi bi-chevron-right"></i></a>
             </div>
         }
     </div>
 </div>
 
+<div id="archivedFollowUpsBackdrop" class="crm-archive-backdrop" aria-hidden="true">
+    <aside id="archivedFollowUpsDrawer" class="crm-archive-drawer" role="dialog" aria-modal="true" aria-labelledby="archivedFollowUpsTitle">
+        <div class="crm-archive-drawer-shell">
+            <header class="crm-archive-drawer-header">
+                <div>
+                    <div class="crm-archive-kicker">Customer Follow-ups CRM</div>
+                    <h2 id="archivedFollowUpsTitle">Archived Follow-ups</h2>
+                    <p>@archivedCount archived follow-up record@(archivedCount == 1 ? "" : "s").</p>
+                </div>
+                <button type="button" class="crm-archive-close" onclick="closeArchivedFollowUpsDrawer()" aria-label="Close archived follow-ups">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </header>
+
+            <div class="crm-archive-drawer-body">
+                @if (archivedFollowUps.Any())
+                {
+                    @foreach (var archived in archivedFollowUps)
+                    {
+                        var archivedCustomer = archived.Customer == null
+                            ? "Unknown Customer"
+                            : $"{archived.Customer.FirstName} {archived.Customer.LastName}".Trim();
+                        var archivedVehicle = archived.Vehicle == null
+                            ? "Unknown Vehicle"
+                            : $"{archived.Vehicle.Make} {archived.Vehicle.Model}".Trim();
+
+                        <div class="crm-archived-card">
+                            <div class="crm-archived-card-info">
+                                <div class="crm-archived-profile-pair">
+                                    <div class="crm-archived-avatar">
+                                        @if (!string.IsNullOrWhiteSpace(archived.Customer?.ImageUrl))
+                                        {
+                                            <img src="@archived.Customer.ImageUrl" alt="@archivedCustomer" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            @string.Concat(archivedCustomer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant()
+                                        }
+                                    </div>
+                                    <div class="crm-archived-vehicle">
+                                        @if (!string.IsNullOrWhiteSpace(archived.Vehicle?.ImageUrl))
+                                        {
+                                            <img src="@archived.Vehicle.ImageUrl" alt="@archivedVehicle" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-car-front-fill"></i>
+                                        }
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong>@archived.Subject</strong>
+                                    <span>@archivedCustomer</span>
+                                    <small>@archivedVehicle · @archived.FollowUpDate.ToString("MMM d, yyyy")</small>
+                                    <em><i class="bi bi-archive"></i> Archived</em>
+                                </div>
+                            </div>
+                            <div class="crm-archived-card-actions">
+                                <a class="crm-action view" href="@QueryUrl(page, "details", archived.FollowUpId)" title="View details" aria-label="View details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form asp-action="Restore" method="post" class="crm-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@archived.FollowUpId" />
+                                    <button type="submit" class="crm-action restore" title="Restore follow-up" aria-label="Restore follow-up">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="crm-archive-empty">
+                        <div class="crm-archive-empty-icon"><i class="bi bi-archive"></i></div>
+                        <h3>No Archived Follow-ups</h3>
+                        <p>Archived customer follow-up records will appear here.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </aside>
+</div>
+
+@if (drawer != null && !string.IsNullOrWhiteSpace(open))
+{
+    <div class="crm-drawer-backdrop" onclick="closeCrmDrawer(event)"></div>
+    <aside class="crm-drawer" aria-modal="true" role="dialog">
+        <div class="crm-drawer-head">
+            <div>
+                @if (open.Equals("create", StringComparison.OrdinalIgnoreCase))
+                {
+                    <h2>New Customer Follow-up</h2>
+                    <p>Record a customer follow-up activity.</p>
+                }
+                else if (open.Equals("edit", StringComparison.OrdinalIgnoreCase))
+                {
+                    <h2>Edit Customer Follow-up</h2>
+                    <p>Update the follow-up activity and schedule.</p>
+                }
+                else if (open.Equals("delete", StringComparison.OrdinalIgnoreCase))
+                {
+                    <h2>Archive Follow-up</h2>
+                    <p>Review this record before archiving it.</p>
+                }
+                else
+                {
+                    <h2>Follow-up Details</h2>
+                    <p>Record and customer communication history.</p>
+                }
+            </div>
+            <a class="crm-drawer-close" href="@QueryUrl(page)" aria-label="Close"><i class="bi bi-x-lg"></i></a>
+        </div>
+
+        @if (open.Equals("create", StringComparison.OrdinalIgnoreCase) || open.Equals("edit", StringComparison.OrdinalIgnoreCase))
+        {
+            <form action="@Url.Action(open.Equals("edit", StringComparison.OrdinalIgnoreCase) ? "Edit" : "Create", "CustomerFollowUps")" method="post" class="crm-drawer-form">
+                @if (open.Equals("edit", StringComparison.OrdinalIgnoreCase))
+                {
+                    <input type="hidden" name="FollowUpId" value="@drawer.FollowUpId" />
+                }
+                @Html.AntiForgeryToken()
+
+                <div class="crm-drawer-section">
+                    <div class="crm-section-label">CUSTOMER</div>
+                    <label for="drawerCustomer">Customer <b>*</b></label>
+                    <select id="drawerCustomer" name="CustomerId" class="crm-drawer-input" required>
+                        <option value="">Search and select existing customer...</option>
+                        @foreach (var option in customerOptions)
+                        {
+                            @if (option.Selected)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                    <small>Select the customer who will receive the follow-up.</small>
+                </div>
+
+                <div class="crm-drawer-grid">
+                    <div>
+                        <label for="drawerDate">Follow-up Date <b>*</b></label>
+                        <input id="drawerDate" name="FollowUpDate" type="datetime-local" class="crm-drawer-input" value="@drawer.FollowUpDate.ToString("yyyy-MM-ddTHH:mm")" required />
+                    </div>
+                    <div>
+                        <label for="drawerType">Follow-up Type <b>*</b></label>
+                        <select id="drawerType" name="FollowUpType" class="crm-drawer-input" required>
+                            @foreach (var option in followUpTypes)
+                            {
+                                @if (option.Selected)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="crm-drawer-section">
+                    <label for="drawerSubject">Subject <b>*</b></label>
+                    <input id="drawerSubject" name="Subject" class="crm-drawer-input" value="@drawer.Subject" maxlength="150" placeholder="Short subject/purpose" required />
+                </div>
+
+                <div class="crm-drawer-section">
+                    <label for="drawerVehicle">Vehicle <b>*</b></label>
+                    <select id="drawerVehicle" name="VehicleId" class="crm-drawer-input" required data-selected="@drawer.VehicleId">
+                        <option value="">Select vehicle...</option>
+                        @foreach (var option in vehicleOptions)
+                        {
+                            @if (option.Selected)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                        }
+                    </select>
+                    <small>The vehicle must belong to the selected customer.</small>
+                    <div id="crmLinkedProfiles" class="crm-linked-profiles" hidden>
+                        <div class="crm-linked-profile">
+                            <div id="crmLinkedCustomerImage" class="crm-linked-avatar"></div>
+                            <div><span>OWNER</span><strong id="crmLinkedCustomerName">—</strong></div>
+                        </div>
+                        <div class="crm-linked-profile">
+                            <div id="crmLinkedVehicleImage" class="crm-linked-vehicle"></div>
+                            <div><span>VEHICLE</span><strong id="crmLinkedVehicleName">—</strong><small id="crmLinkedVehiclePlate">—</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="crm-drawer-section">
+                    <label for="drawerNotes">Notes</label>
+                    <textarea id="drawerNotes" name="Notes" class="crm-drawer-input crm-drawer-textarea" maxlength="1000" placeholder="Additional notes about the interaction...">@drawer.Notes</textarea>
+                </div>
+
+                <div class="crm-drawer-grid">
+                    <div>
+                        <label for="drawerStatus">Status <b>*</b></label>
+                        <select id="drawerStatus" name="Status" class="crm-drawer-input" required>
+                            @foreach (var option in statuses)
+                            {
+                                @if (option.Selected)
+                            {
+                                <option value="@option.Value" selected="selected">@option.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@option.Value">@option.Text</option>
+                            }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label for="drawerNextDate">Next Follow-up (optional)</label>
+                        <input id="drawerNextDate" name="NextFollowUpDate" type="datetime-local" class="crm-drawer-input" value="@(drawer.NextFollowUpDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")" />
+                    </div>
+                </div>
+
+                <div class="crm-drawer-footer">
+                    <a class="crm-secondary-btn" href="@QueryUrl(page)">Cancel</a>
+                    <button class="crm-primary-btn" type="submit"><i class="bi bi-check-lg"></i>@(open.Equals("edit", StringComparison.OrdinalIgnoreCase) ? "Save Changes" : "Create Follow-up")</button>
+                </div>
+            </form>
+        }
+        else if (open.Equals("delete", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="crm-delete-body">
+                <div class="crm-delete-warning"><i class="bi bi-exclamation-triangle"></i><div><strong>Archive this follow-up?</strong><p>This archives the selected CRM follow-up while keeping the record available for review and restoration.</p></div></div>
+                <div class="crm-detail-title">@drawer.Subject</div>
+                <div class="crm-delete-grid">
+                    <div><span>Customer</span><strong>@drawer.Customer?.FirstName @drawer.Customer?.LastName</strong></div>
+                    <div><span>Vehicle</span><strong>@drawer.Vehicle?.Make @drawer.Vehicle?.Model</strong></div>
+                    <div><span>Status</span><strong>@drawer.Status</strong></div>
+                    <div><span>Follow-up</span><strong>@drawer.FollowUpDate.ToString("MMM d, yyyy")</strong></div>
+                </div>
+                <form asp-action="Delete" method="post" class="crm-delete-actions">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@drawer.FollowUpId" />
+                    <a class="crm-secondary-btn" href="@QueryUrl(page)">Cancel</a>
+                    <button class="crm-archive-confirm-btn" type="submit"><i class="bi bi-archive"></i> Archive Follow-up</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            var customerName = $"{drawer.Customer?.FirstName} {drawer.Customer?.LastName}".Trim();
+            var vehicleName = $"{drawer.Vehicle?.Make} {drawer.Vehicle?.Model}".Trim();
+            var statusClass = drawer.Status switch { "Completed" => "completed", "Cancelled" => "cancelled", _ => "pending" };
+
+            <div class="crm-detail-body">
+                <div class="crm-context-card">
+                    <div class="crm-avatar large">
+                        @if (!string.IsNullOrWhiteSpace(drawer.Customer?.ImageUrl))
+                        {
+                            <img src="@drawer.Customer.ImageUrl" alt="@customerName" />
+                        }
+                        else
+                        {
+                            @string.Concat(customerName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant()
+                        }
+                    </div>
+                    <div><strong>@customerName</strong><span>@vehicleName</span><div><a asp-controller="Customers" asp-action="Details" asp-route-id="@drawer.CustomerId">View Customer</a></div></div>
+                </div>
+
+                <div class="crm-detail-grid">
+                    <div><span>DATE</span><strong>@drawer.FollowUpDate.ToString("MMM d, yyyy h:mm tt")</strong></div>
+                    <div><span>TYPE</span><strong>@drawer.FollowUpType</strong></div>
+                    <div><span>SUBJECT</span><strong>@drawer.Subject</strong></div>
+                    <div><span>STATUS</span><strong class="crm-status @statusClass"><i></i>@drawer.Status</strong></div>
+                    <div><span>NEXT FOLLOW-UP</span><strong>@(drawer.NextFollowUpDate?.ToString("MMM d, yyyy") ?? "—")</strong></div>
+                    <div><span>VEHICLE</span><strong>@drawer.Vehicle?.PlateNumber</strong></div>
+                </div>
+
+                <div class="crm-detail-notes">
+                    <span>NOTES</span>
+                    <p>@(string.IsNullOrWhiteSpace(drawer.Notes) ? "No notes were recorded for this follow-up." : drawer.Notes)</p>
+                </div>
+
+                <div class="crm-activity">
+                    <div class="crm-activity-head"><span>ACTIVITY HISTORY</span></div>
+                    <div class="crm-activity-item"><span class="dot"></span><div><strong>@drawer.FollowUpDate.ToString("MMM d, yyyy")</strong><small>@drawer.FollowUpType recorded</small></div></div>
+</div>
+            </div>
+
+            <div class="crm-drawer-footer detail-footer">
+                <a class="crm-secondary-btn" href="@QueryUrl(page, "edit", drawer.FollowUpId)"><i class="bi bi-pencil"></i> Edit</a>
+                <a class="crm-primary-btn" href="@QueryUrl(page, "delete", drawer.FollowUpId)">Delete</a>
+            </div>
+        }
+    </aside>
+}
+
 <style>
-    .page-container {
-        max-width: 1500px;
-        margin: 0 auto;
-        padding: 28px 32px 40px;
-    }
-
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        gap: 24px;
-        margin-bottom: 24px;
-    }
-
-    .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 14px;
-        color: #8b93a7;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .breadcrumb a {
-        color: #6d5dfc;
-        text-decoration: none;
-    }
-
-    .breadcrumb a:hover {
-        text-decoration: underline;
-    }
-
-    .breadcrumb i {
-        font-size: 10px;
-    }
-
-    .page-title-row {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-
-    .title-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f0edff;
-        color: #6d5dfc;
-        font-size: 22px;
-        flex-shrink: 0;
-    }
-
-    .page-title-row h1 {
-        margin: 0;
-        color: #172033;
-        font-size: 28px;
-        font-weight: 700;
-        letter-spacing: -.4px;
-    }
-
-    .page-title-row p {
-        margin: 4px 0 0;
-        color: #7b8498;
-        font-size: 14px;
-    }
-
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 42px;
-        padding: 0 16px;
-        border-radius: 9px;
-        border: 1px solid transparent;
-        font-size: 13px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all .2s ease;
-        cursor: pointer;
-    }
-
-    .btn-primary {
-        background: #6d5dfc;
-        border-color: #6d5dfc;
-        color: #fff;
-    }
-
-    .btn-primary:hover {
-        background: #5d4ce8;
-        border-color: #5d4ce8;
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
-    .btn-light {
-        background: #fff;
-        border-color: #e5e8ef;
-        color: #465064;
-    }
-
-    .btn-light:hover {
-        background: #f8f9fc;
-        color: #293246;
-    }
-
-    .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .summary-card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        background: #fff;
-        border: 1px solid #e8eaf0;
-        border-radius: 12px;
-        padding: 17px 18px;
-        box-shadow: 0 2px 8px rgba(25, 32, 56, .03);
-    }
-
-    .summary-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        flex-shrink: 0;
-    }
-
-    .summary-icon.purple {
-        background: #f0edff;
-        color: #6d5dfc;
-    }
-
-    .summary-icon.orange {
-        background: #fff5df;
-        color: #c28314;
-    }
-
-    .summary-icon.green {
-        background: #eaf8f0;
-        color: #238653;
-    }
-
-    .summary-icon.blue {
-        background: #edf5ff;
-        color: #3d78c7;
-    }
-
-    .summary-label {
-        display: block;
-        color: #8c94a6;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .45px;
-        margin-bottom: 4px;
-    }
-
-    .summary-card strong {
-        display: block;
-        color: #20283a;
-        font-size: 21px;
-        line-height: 1;
-        font-weight: 700;
-    }
-
-    .filter-card {
-        background: #fff;
-        border: 1px solid #e8eaf0;
-        border-radius: 12px;
-        padding: 18px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(25, 32, 56, .03);
-    }
-
-    .filter-main {
-        display: grid;
-        grid-template-columns: minmax(250px, 1.7fr) minmax(150px, .8fr) minmax(180px, 1fr) auto;
-        align-items: end;
-        gap: 14px;
-    }
-
-    .search-box {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .search-box > i {
-        position: absolute;
-        left: 14px;
-        color: #9299aa;
-        font-size: 15px;
-        pointer-events: none;
-    }
-
-    .search-box input {
-        width: 100%;
-        height: 42px;
-        border: 1px solid #e1e4eb;
-        border-radius: 9px;
-        outline: none;
-        padding: 0 40px 0 40px;
-        color: #30394b;
-        font-size: 13px;
-        background: #fff;
-    }
-
-    .search-box input:focus {
-        border-color: #8d82ff;
-        box-shadow: 0 0 0 3px rgba(109, 93, 252, .09);
-    }
-
-    .clear-search {
-        position: absolute;
-        right: 12px;
-        color: #a1a7b5;
-        text-decoration: none;
-        font-size: 14px;
-    }
-
-    .clear-search:hover {
-        color: #6d5dfc;
-    }
-
-    .filter-field label {
-        display: block;
-        color: #697285;
-        font-size: 11px;
-        font-weight: 600;
-        margin-bottom: 6px;
-    }
-
-    .form-select {
-        width: 100%;
-        height: 42px;
-        border: 1px solid #e1e4eb;
-        border-radius: 9px;
-        padding: 0 34px 0 12px;
-        color: #30394b;
-        font-size: 13px;
-        background-color: #fff;
-        outline: none;
-    }
-
-    .form-select:focus {
-        border-color: #8d82ff;
-        box-shadow: 0 0 0 3px rgba(109, 93, 252, .09);
-    }
-
-    .filter-btn {
-        height: 42px;
-        white-space: nowrap;
-    }
-
-    .active-filters {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding-top: 14px;
-        margin-top: 14px;
-        border-top: 1px solid #f0f1f5;
-    }
-
-    .active-label {
-        color: #858d9e;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .active-label i {
-        color: #6d5dfc;
-        margin-right: 4px;
-    }
-
-    .filter-chip {
-        display: inline-flex;
-        align-items: center;
-        padding: 5px 9px;
-        border-radius: 6px;
-        background: #f3f1ff;
-        color: #6254df;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .clear-filters {
-        color: #d04c5b;
-        font-size: 12px;
-        font-weight: 600;
-        text-decoration: none;
-        margin-left: 4px;
-    }
-
-    .clear-filters:hover {
-        text-decoration: underline;
-    }
-
-    .table-card {
-        background: #fff;
-        border: 1px solid #e8eaf0;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(25, 32, 56, .03);
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        padding: 20px 22px;
-        border-bottom: 1px solid #eef0f4;
-    }
-
-    .table-header h2 {
-        margin: 0;
-        color: #20283a;
-        font-size: 15px;
-        font-weight: 700;
-    }
-
-    .table-header p {
-        margin: 4px 0 0;
-        color: #8a92a4;
-        font-size: 12px;
-    }
-
-    .table-header p strong {
-        color: #596276;
-    }
-
-    .table-header-action .btn {
-        min-height: 38px;
-    }
-
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .followup-table {
-        width: 100%;
-        min-width: 1050px;
-        border-collapse: collapse;
-    }
-
-    .followup-table th {
-        padding: 13px 18px;
-        background: #fafbfc;
-        color: #8b93a5;
-        border-bottom: 1px solid #eceef3;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .55px;
-        text-align: left;
-        white-space: nowrap;
-    }
-
-    .followup-table td {
-        padding: 15px 18px;
-        border-bottom: 1px solid #f0f1f5;
-        vertical-align: middle;
-    }
-
-    .followup-table tbody tr:last-child td {
-        border-bottom: 0;
-    }
-
-    .followup-table tbody tr {
-        transition: background .15s ease;
-    }
-
-    .followup-table tbody tr:hover {
-        background: #fcfcff;
-    }
-
-    .customer-cell,
-    .vehicle-cell {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        min-width: 190px;
-    }
-
-    .avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f0edff;
-        color: #6656e8;
-        font-size: 11px;
-        font-weight: 700;
-        flex-shrink: 0;
-    }
-
-    .vehicle-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 9px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f4f6fa;
-        color: #657086;
-        font-size: 15px;
-        flex-shrink: 0;
-    }
-
-    .cell-content {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-    .primary-text {
-        display: block;
-        color: #293244;
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .secondary-text {
-        display: block;
-        max-width: 210px;
-        color: #8b93a4;
-        font-size: 11px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .followup-cell {
-        min-width: 200px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-
-    .type-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 8px;
-        border-radius: 5px;
-        background: #f3f1ff;
-        color: #6656e8;
-        font-size: 10px;
-        font-weight: 600;
-    }
-
-    .subject-text {
-        color: #30394b;
-        font-size: 13px;
-        font-weight: 600;
-        max-width: 230px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .notes-preview {
-        max-width: 230px;
-    }
-
-    .schedule-cell {
-        min-width: 145px;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-    .schedule-date {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        color: #30394b;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .schedule-date i {
-        color: #6d5dfc;
-        font-size: 13px;
-    }
-
-    .next-date {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 3px;
-        color: #6b7285;
-        font-size: 10px;
-        font-weight: 600;
-    }
-
-    .next-date i {
-        color: #6d5dfc;
-        font-size: 9px;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 6px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .status-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: currentColor;
-    }
-
-    .status-pending {
-        background: #fff6df;
-        color: #b77900;
-    }
-
-    .status-completed {
-        background: #eaf8f0;
-        color: #238653;
-    }
-
-    .status-cancelled {
-        background: #fff0f2;
-        color: #cc4b5c;
-    }
-
-    .status-overdue {
-        background: #fff0f0;
-        color: #d63d3d;
-    }
-
-    .actions-column {
-        width: 120px;
-        text-align: right !important;
-    }
-
-    .action-buttons {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .action-btn {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #e5e8ef;
-        border-radius: 7px;
-        background: #fff;
-        color: #687286;
-        text-decoration: none;
-        font-size: 13px;
-        transition: all .18s ease;
-    }
-
-    .action-btn:hover {
-        border-color: #cfc9ff;
-        background: #f5f3ff;
-        color: #6656e8;
-    }
-
-    .action-btn.action-delete:hover {
-        border-color: #efc4ca;
-        background: #fff3f4;
-        color: #d04c5b;
-    }
-
-    .empty-state {
-        min-height: 340px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 40px 20px;
-    }
-
-    .empty-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f2f0ff;
-        color: #6d5dfc;
-        font-size: 27px;
-        margin-bottom: 16px;
-    }
-
-    .empty-state h3 {
-        margin: 0 0 7px;
-        color: #293244;
-        font-size: 17px;
-        font-weight: 700;
-    }
-
-    .empty-state p {
-        max-width: 450px;
-        margin: 0 0 18px;
-        color: #8a92a4;
-        font-size: 13px;
-        line-height: 1.6;
-    }
-
-    @@media (max-width: 1100px) {
-        .summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .filter-main {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .search-box {
-            grid-column: 1 / -1;
-        }
-
-        .filter-btn {
-            width: 100%;
-        }
-    }
-
-    @@media (max-width: 800px) {
-        .page-container {
-            padding: 22px 20px 35px;
-        }
-
-        .page-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .page-header > .btn {
-            width: 100%;
-        }
-
-        .summary-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .table-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .table-header-action {
-            width: 100%;
-        }
-
-        .table-header-action .btn {
-            width: 100%;
-        }
-    }
-
-    @@media (max-width: 560px) {
-        .page-container {
-            padding: 18px 15px 30px;
-        }
-
-        .page-title-row h1 {
-            font-size: 23px;
-        }
-
-        .page-title-row p {
-            font-size: 12px;
-        }
-
-        .summary-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .filter-main {
-            grid-template-columns: 1fr;
-        }
-
-        .search-box {
-            grid-column: auto;
-        }
-
-        .filter-card {
-            padding: 14px;
-        }
-
-        .active-filters {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .table-header {
-            padding: 17px;
-        }
-    }
+    body.crm-archive-open{overflow:hidden}
+
+    .crm-page{max-width:1440px;margin:0 auto;padding:28px 22px 42px;color:#182033}
+    .crm-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
+    .crm-breadcrumb{display:flex;gap:8px;align-items:center;color:#9aa2b3;font-size:12px;font-weight:500;margin-bottom:8px}.crm-breadcrumb a{color:#7258f5;text-decoration:none}.crm-header h1{font-size:26px;line-height:1.1;margin:0;font-weight:750;letter-spacing:-.55px}.crm-header p{margin:5px 0 0;color:#7d8799;font-size:12px}
+    .crm-primary-btn,.crm-secondary-btn,.crm-danger-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid #e2e5ed;background:#fff;color:#596174;text-decoration:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}.crm-primary-btn{border-color:#7654f6;background:#7654f6;color:#fff}.crm-primary-btn:hover{background:#6743ea;color:#fff}.crm-secondary-btn:hover{background:#f7f8fb;color:#343b4b}.crm-danger-btn{border-color:#e34b58;background:#e34b58;color:#fff}.crm-alert{display:flex;align-items:center;gap:9px;margin:-8px 0 18px;padding:10px 13px;border-radius:8px;font-size:11px}.crm-alert.error{background:#fff5f5;border:1px solid #ffd8dc;color:#c94c59}
+.crm-alert.success{background:#edf9f2;border:1px solid #cfeedd;color:#23834f}
+    .crm-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.crm-summary-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e8eaf0;border-radius:10px;padding:13px 15px;box-shadow:0 2px 7px rgba(24,32,51,.025)}.crm-summary-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}.crm-summary-icon.purple{background:#f0edff;color:#7457f4}.crm-summary-icon.green{background:#eaf9f0;color:#32a365}.crm-summary-icon.red{background:#fff0f1;color:#e15a64}.crm-summary-card span{display:block;color:#9098a8;text-transform:uppercase;letter-spacing:.5px;font-size:8px;font-weight:800}.crm-summary-card strong{font-size:19px;line-height:1.1;margin-right:4px}.crm-summary-card small{font-size:9px;color:#929aaa}
+    .crm-filter-card{background:#fff;border:1px solid #e8eaf0;border-radius:10px;padding:11px;margin-bottom:16px}.crm-filter-row{display:grid;grid-template-columns:minmax(260px,1fr) 170px 120px 75px auto;gap:8px;align-items:center}.crm-search{height:36px;display:flex;align-items:center;position:relative}.crm-search i{position:absolute;left:11px;color:#a0a7b5;font-size:12px}.crm-search input,.crm-select{width:100%;height:36px;border:1px solid #e1e5ec;border-radius:7px;background:#fff;color:#3c4557;font-size:10px;outline:none}.crm-search input{padding:0 10px 0 31px}.crm-select{padding:0 9px}.crm-search input:focus,.crm-select:focus,.crm-drawer-input:focus{border-color:#9a87f7;box-shadow:0 0 0 3px rgba(118,84,246,.08)}.crm-filter-btn{height:36px;border:0;border-radius:7px;background:#7654f6;color:#fff;font-size:10px;font-weight:700;cursor:pointer}.crm-clear{color:#7b6bea;font-size:10px;font-weight:700;text-decoration:none;padding-left:3px}
+    .crm-table-card{background:#fff;border:1px solid #e8eaf0;border-radius:10px;overflow:hidden;box-shadow:0 2px 7px rgba(24,32,51,.025)}.crm-table-heading{padding:14px 15px;border-bottom:1px solid #eef0f4}.crm-table-heading h2{margin:0;font-size:13px}.crm-table-heading p{margin:3px 0 0;color:#8e97a8;font-size:9px}.crm-table-scroll{overflow-x:auto}.crm-table{width:100%;min-width:1030px;border-collapse:collapse}.crm-table th{padding:9px 10px;text-align:left;background:#fbfcfd;color:#939baa;text-transform:uppercase;letter-spacing:.5px;font-size:7px;border-bottom:1px solid #eceef3;white-space:nowrap}.crm-table td{padding:11px 10px;border-bottom:1px solid #f0f1f5;vertical-align:middle}.crm-table tbody tr:hover{background:#fcfcff}.crm-person,.crm-vehicle{display:flex;align-items:center;gap:8px;min-width:135px}.crm-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#ede9fe;color:#7358ef;font-size:8px;font-weight:800;border:1px solid #e4ddfb}.crm-avatar img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;background:#fff}.crm-avatar.large{width:36px;height:36px;flex-basis:36px;font-size:10px}.crm-person strong,.crm-vehicle strong{display:block;color:#2b3446;font-size:10px;line-height:1.25}.crm-person span,.crm-vehicle span{display:block;color:#9aa2b1;font-size:8px;margin-top:2px}.crm-vehicle-icon{width:38px;height:32px;flex:0 0 38px;border-radius:8px;border:1px solid #e8ebf0;background:#f1f3f6;color:#667187;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px}.crm-vehicle-icon img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;background:#fff}.crm-type{display:inline-flex;padding:4px 6px;border-radius:5px;background:#f0edff;color:#7055ea;font-size:8px;font-weight:700;white-space:nowrap}.crm-subject{display:block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3b4455;font-size:9px;font-weight:600}.crm-date strong,.crm-date span{display:block}.crm-date strong{font-size:9px;color:#3b4455}.crm-date span{font-size:8px;color:#9aa2b1;margin-top:2px}.crm-status{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:10px;font-size:8px;font-weight:700;white-space:nowrap}.crm-status i{width:5px;height:5px;border-radius:50%;background:currentColor}.crm-status.pending{background:#fff4d9;color:#b97a00}.crm-status.completed{background:#eaf8f0;color:#278a55}.crm-status.cancelled{background:#fff0f2;color:#d24f5e}.crm-next-date{font-size:9px;color:#596274;font-weight:600}.crm-dash{color:#a1a8b5}.crm-actions-col{width:55px;text-align:center}.crm-menu{position:relative;display:inline-block}.crm-menu-btn{width:27px;height:27px;border:1px solid #e3e6ed;border-radius:7px;background:#fff;color:#737c8d;cursor:pointer}.crm-menu-btn:hover{background:#f7f5ff;color:#7654f6}.crm-menu-popover{display:none;position:absolute;z-index:20;right:0;top:31px;width:145px;padding:5px;background:#fff;border:1px solid #e4e6ed;border-radius:8px;box-shadow:0 12px 28px rgba(20,27,43,.12);text-align:left}.crm-menu-popover.open{display:block}.crm-menu-popover a{display:flex;gap:7px;align-items:center;padding:7px 8px;border-radius:5px;color:#50596a;text-decoration:none;font-size:9px;font-weight:600}.crm-menu-popover a:hover{background:#f6f4ff;color:#6f53ed}.crm-menu-popover a.danger:hover{background:#fff2f3;color:#d34f5c}.crm-empty{padding:65px 20px;text-align:center}.crm-empty-icon{width:50px;height:50px;margin:0 auto 10px;border-radius:13px;background:#f0edff;color:#7654f6;display:flex;align-items:center;justify-content:center;font-size:20px}.crm-empty h3{font-size:14px;margin:0 0 5px}.crm-empty p{font-size:10px;color:#8e97a8;margin:0 auto 14px;max-width:340px}.crm-pagination{display:flex;justify-content:flex-end;gap:5px;padding:10px 14px;border-top:1px solid #eef0f4}.crm-page-btn{width:27px;height:27px;border:1px solid #e5e7ed;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#667083;text-decoration:none;font-size:9px}.crm-page-btn.active{background:#7654f6;border-color:#7654f6;color:#fff}.crm-page-btn.disabled{opacity:.4;pointer-events:none}
+    .crm-drawer-backdrop{position:fixed;inset:0;background:rgba(16,23,36,.38);z-index:100}.crm-drawer{position:fixed;z-index:101;top:0;right:0;height:100vh;width:min(410px,94vw);background:#fff;box-shadow:-14px 0 35px rgba(17,24,39,.15);display:flex;flex-direction:column}.crm-drawer-head{display:flex;justify-content:space-between;gap:15px;padding:15px 16px;border-bottom:1px solid #e9ebf0}.crm-drawer-head h2{margin:0;color:#20283a;font-size:14px}.crm-drawer-head p{margin:3px 0 0;color:#9aa2b1;font-size:8px}.crm-drawer-close{color:#7a8494;text-decoration:none;font-size:12px;padding:3px}.crm-drawer-form,.crm-detail-body,.crm-delete-body{overflow-y:auto;padding:16px}.crm-drawer-section{margin-bottom:13px}.crm-drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}.crm-drawer-form label{display:block;color:#4b5567;font-size:9px;font-weight:700;margin-bottom:5px}.crm-drawer-form label b{color:#e14e5a}.crm-drawer-input{width:100%;min-height:34px;border:1px solid #e0e4eb;border-radius:7px;background:#fff;padding:7px 9px;color:#414b5c;font-family:inherit;font-size:9px;outline:none}.crm-drawer-textarea{min-height:78px;resize:vertical;line-height:1.45}.crm-drawer-form small{display:block;margin-top:4px;color:#9ba3b1;font-size:7.5px}.crm-drawer-footer{margin-top:auto;display:flex;justify-content:flex-end;gap:7px;padding:11px 16px;border-top:1px solid #e9ebf0;background:#fff}.crm-drawer-footer .crm-primary-btn,.crm-drawer-footer .crm-secondary-btn{min-height:35px;font-size:9px}.crm-context-card{display:flex;gap:10px;padding:11px;border:1px solid #e4e7ed;border-radius:8px;background:#fbfcfe;margin-bottom:15px}.crm-context-card strong{display:block;font-size:10px;color:#2d3648}.crm-context-card span{display:block;font-size:8px;color:#7f899a;margin-top:2px}.crm-context-card a{color:#7055e9;font-size:7.5px;text-decoration:none}.crm-linked-profiles{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.crm-linked-profile{display:flex;align-items:center;gap:7px;min-width:0;padding:7px;border:1px solid #e5e7ed;border-radius:8px;background:#fbfcfe}.crm-linked-profile>div:last-child{min-width:0}.crm-linked-profile span,.crm-linked-profile small{display:block;color:#9aa2b1;font-size:6.5px;font-weight:800;letter-spacing:.45px}.crm-linked-profile strong{display:block;margin-top:2px;color:#374052;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.crm-linked-avatar,.crm-linked-vehicle{width:28px;height:28px;flex:0 0 28px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#ede9fe;color:#7358ef;border:1px solid #e4ddfb}.crm-linked-avatar{border-radius:50%}.crm-linked-vehicle{border-radius:7px;background:#f1f3f6;color:#667187}.crm-linked-avatar img,.crm-linked-vehicle img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}.crm-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}.crm-detail-grid span,.crm-detail-notes>span,.crm-activity-head span{display:block;color:#9aa2b1;font-size:7px;font-weight:800;letter-spacing:.55px;margin-bottom:4px}.crm-detail-grid strong{display:block;color:#3b4455;font-size:9px;line-height:1.4}.crm-detail-notes{margin-top:16px;padding:11px;border:1px solid #e3e6ec;border-radius:8px;background:#fbfcfe}.crm-detail-notes p{margin:0;color:#687286;font-size:9px;line-height:1.55}.crm-activity{margin-top:17px}.crm-activity-item{display:flex;gap:8px;padding:9px 0;border-left:1px solid #ddd9ff;margin-left:4px;padding-left:13px;position:relative}.crm-activity-item .dot{position:absolute;left:-4px;top:13px;width:7px;height:7px;border-radius:50%;background:#7654f6}.crm-activity-item strong{display:block;font-size:8px;color:#485164}.crm-activity-item small{display:block;color:#919aaa;font-size:7.5px;margin-top:2px}.detail-footer{margin-top:auto}.crm-delete-warning{display:flex;gap:10px;padding:11px;border:1px solid #ffd4d8;border-radius:8px;background:#fff5f6;color:#cf4e5b;margin-bottom:17px}.crm-delete-warning i{font-size:15px}.crm-delete-warning strong{font-size:10px}.crm-delete-warning p{margin:3px 0 0;font-size:8px;line-height:1.4}.crm-detail-title{font-size:15px;font-weight:750;color:#20283a;margin-bottom:14px}.crm-delete-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.crm-delete-grid>div{padding:9px;border:1px solid #eceef2;border-radius:7px}.crm-delete-grid span{display:block;color:#9aa2b1;font-size:7px;text-transform:uppercase;font-weight:800}.crm-delete-grid strong{display:block;margin-top:3px;color:#3e4758;font-size:9px}.crm-delete-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:20px}
+    @@media(max-width:900px){.crm-filter-row{grid-template-columns:1fr 1fr}.crm-search{grid-column:1/-1}.crm-summary-grid{grid-template-columns:1fr}.crm-header{align-items:flex-start;flex-direction:column}.crm-header>.crm-primary-btn{align-self:stretch}.crm-page{padding:22px 15px 35px}}
+    @@media(max-width:560px){.crm-filter-row,.crm-drawer-grid{grid-template-columns:1fr}.crm-clear{grid-column:1}.crm-drawer{width:100%}}
+
+    .crm-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.crm-archive-btn{min-height:35px;border:1px solid #e1e4ea;border-radius:8px;background:#fff;color:#667083;padding:0 11px;display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:9px;font-weight:700;cursor:pointer}.crm-archive-btn i{font-size:11px}.crm-archive-btn span{min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#f0edff;color:#7055e9;display:inline-flex;align-items:center;justify-content:center;font-size:8px}.crm-archive-btn:hover{background:#faf9ff;border-color:#dcd5f6;color:#7055e9}
+    .crm-row-archived{background:#fbfbfc}.crm-row-archived:hover{background:#f8f8fa!important}.crm-archived-label{display:inline-flex!important;align-items:center;gap:4px;color:#8b919d!important;font-size:7px!important;font-weight:700!important;margin-top:3px}.crm-archived-label i{font-size:7px}.crm-status.archived{background:#f0f1f4;color:#777e8a}.crm-actions{display:flex;align-items:center;justify-content:center;gap:5px}.crm-action{width:31px;height:31px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:12px;cursor:pointer;transition:transform .12s ease,background .12s ease}.crm-action:hover{transform:translateY(-1px)}.crm-action.view{color:#69717e;border:1px solid #dfe2e8;background:#fff}.crm-action.edit{color:#7043c1;border:1px solid #ded2f5;background:#faf8ff}.crm-action.archive{color:#c03952;border:1px solid #f0cbd2;background:#fff8f9}.crm-action.restore{color:#1b9a70;border:1px solid #ccefe1;background:#f2fcf8}.crm-action.restore:hover{color:#14815d;background:#e9faf4}.crm-inline-form{display:inline-flex;margin:0}.crm-archive-backdrop{position:fixed;inset:0;background:rgba(16,23,36,.38);z-index:200;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility .16s ease}.crm-archive-backdrop.open{opacity:1;visibility:visible}.crm-archive-drawer{position:absolute;right:0;top:0;height:100%;width:min(430px,94vw);background:#fff;box-shadow:-14px 0 35px rgba(17,24,39,.15);transform:translateX(100%);transition:transform .18s ease}.crm-archive-backdrop.open .crm-archive-drawer{transform:translateX(0)}.crm-archive-drawer-shell{height:100%;display:flex;flex-direction:column;background:#fff}.crm-archive-drawer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 21px 18px;border-bottom:1px solid #eceef3}.crm-archive-kicker{color:#7043c1;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}.crm-archive-drawer-header h2{margin:0;color:#202431;font-size:17px;font-weight:800}.crm-archive-drawer-header p{margin:4px 0 0;color:#8a92a0;font-size:9px}.crm-archive-close{width:31px;height:31px;flex:0 0 31px;border:1px solid #e1e4ea;border-radius:8px;background:#fff;color:#707887;cursor:pointer}.crm-archive-drawer-body{padding:14px 16px 20px;overflow-y:auto}.crm-archived-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;border:1px solid #e5e7ec;border-radius:9px;background:#fbfbfc;margin-bottom:8px}.crm-archived-card-info{display:flex;align-items:center;gap:9px;min-width:0}.crm-archived-profile-pair{display:flex;align-items:center;gap:4px;flex:0 0 auto}.crm-archived-avatar,.crm-archived-vehicle{width:31px;height:31px;flex:0 0 31px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f0f1f4;color:#777e8a;border:1px solid #e3e5ea;font-size:8px;font-weight:800}.crm-archived-avatar{border-radius:50%}.crm-archived-vehicle{border-radius:8px}.crm-archived-avatar img,.crm-archived-vehicle img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}.crm-archived-card-info strong{display:block;color:#333b4b;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}.crm-archived-card-info span,.crm-archived-card-info small{display:block;color:#8d95a3;font-size:7.5px;margin-top:2px}.crm-archived-card-info em{display:inline-flex;align-items:center;gap:3px;margin-top:3px;color:#8a919e;font-size:6.5px;font-style:normal;font-weight:800}.crm-archived-card-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}.crm-archive-empty{text-align:center;padding:60px 20px}.crm-archive-empty-icon{width:48px;height:48px;margin:0 auto 9px;border-radius:13px;background:#f0f1f4;color:#777e8a;display:flex;align-items:center;justify-content:center;font-size:19px}.crm-archive-empty h3{margin:0 0 4px;color:#303747;font-size:12px}.crm-archive-empty p{margin:0;color:#8e97a8;font-size:9px}
+    .crm-archive-confirm-btn{border:0;border-radius:7px;background:#c03952;color:#fff;padding:8px 11px;font-family:inherit;font-size:9px;font-weight:700;cursor:pointer}.crm-archive-confirm-btn:hover{background:#a92f45}
 </style>
+
+<script>
+(function () {
+    window.toggleCrmMenu = function (button) {
+        document.querySelectorAll('.crm-menu-popover.open').forEach(function (menu) {
+            if (menu !== button.nextElementSibling) menu.classList.remove('open');
+        });
+        button.nextElementSibling.classList.toggle('open');
+    };
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.crm-menu')) {
+            document.querySelectorAll('.crm-menu-popover.open').forEach(function (menu) { menu.classList.remove('open'); });
+        }
+    });
+
+    window.closeCrmDrawer = function (event) {
+        if (event.target.classList.contains('crm-drawer-backdrop')) {
+            var close = document.querySelector('.crm-drawer-close');
+            if (close) close.click();
+        }
+    };
+
+    var customer = document.getElementById('drawerCustomer');
+    var vehicle = document.getElementById('drawerVehicle');
+    var linkedProfiles = document.getElementById('crmLinkedProfiles');
+    var linkedCustomerImage = document.getElementById('crmLinkedCustomerImage');
+    var linkedCustomerName = document.getElementById('crmLinkedCustomerName');
+    var linkedVehicleImage = document.getElementById('crmLinkedVehicleImage');
+    var linkedVehicleName = document.getElementById('crmLinkedVehicleName');
+    var linkedVehiclePlate = document.getElementById('crmLinkedVehiclePlate');
+
+    function setPreviewImage(container, url, fallbackClass) {
+        if (!container) return;
+        container.innerHTML = '';
+        if (url) {
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            container.appendChild(img);
+        } else {
+            var icon = document.createElement('i');
+            icon.className = fallbackClass;
+            container.appendChild(icon);
+        }
+    }
+
+    function updateLinkedPreview(vehicleItems) {
+        if (!linkedProfiles || !customer || !vehicle) return;
+        var customerId = customer.value;
+        var vehicleId = vehicle.value;
+        if (!customerId || !vehicleId) { linkedProfiles.hidden = true; return; }
+        var selectedVehicle = (vehicleItems || []).find(function (item) { return String(item.id) === String(vehicleId); });
+        var customerOption = customer.options[customer.selectedIndex];
+        linkedCustomerName.textContent = customerOption ? customerOption.textContent : '—';
+        linkedVehicleName.textContent = selectedVehicle ? (selectedVehicle.make + ' ' + selectedVehicle.model).trim() : '—';
+        linkedVehiclePlate.textContent = selectedVehicle ? selectedVehicle.plateNumber : '—';
+        setPreviewImage(linkedVehicleImage, selectedVehicle && selectedVehicle.imageUrl, 'bi bi-car-front-fill');
+        linkedProfiles.hidden = false;
+        fetch('@Url.Action("CustomerProfile", "CustomerFollowUps")?customerId=' + encodeURIComponent(customerId))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (profile) {
+                if (!profile) return;
+                linkedCustomerName.textContent = profile.name || linkedCustomerName.textContent;
+                setPreviewImage(linkedCustomerImage, profile.imageUrl, 'bi bi-person-fill');
+            })
+            .catch(function () { setPreviewImage(linkedCustomerImage, null, 'bi bi-person-fill'); });
+    }
+
+    function resetSelect(select, placeholder) {
+        if (!select) return;
+        select.innerHTML = '';
+        var option = document.createElement('option');
+        option.value = '';
+        option.textContent = placeholder;
+        select.appendChild(option);
+    }
+
+    function loadVehicles(customerId, selectedId) {
+        if (!vehicle) return;
+        resetSelect(vehicle, 'Select vehicle...');
+        if (!customerId) return;
+        fetch('@Url.Action("VehiclesForCustomer", "CustomerFollowUps")?customerId=' + encodeURIComponent(customerId))
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (items) {
+                items.forEach(function (item) {
+                    var option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.text;
+                    if (String(item.id) === String(selectedId || '')) option.selected = true;
+                    vehicle.appendChild(option);
+                });
+                updateLinkedPreview(items);
+            })
+            .catch(function () { resetSelect(vehicle, 'No active vehicles available'); updateLinkedPreview([]); });
+    }
+
+    if (customer && vehicle) {
+        customer.addEventListener('change', function () {
+            loadVehicles(customer.value, '');
+        });
+
+        vehicle.addEventListener('change', function () {
+            loadVehicles(customer.value, vehicle.value);
+        });
+
+        var selectedVehicle = vehicle.getAttribute('data-selected') || '';
+        if (customer.value) {
+            loadVehicles(customer.value, selectedVehicle);
+        }
+    }
+})();
+
+    function openArchivedFollowUpsDrawer() {
+        var backdrop = document.getElementById('archivedFollowUpsBackdrop');
+        if (!backdrop) return;
+        backdrop.classList.add('open');
+        backdrop.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('crm-archive-open');
+    }
+
+    function closeArchivedFollowUpsDrawer() {
+        var backdrop = document.getElementById('archivedFollowUpsBackdrop');
+        if (!backdrop) return;
+        backdrop.classList.remove('open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('crm-archive-open');
+    }
+
+    document.addEventListener('click', function (event) {
+        var backdrop = document.getElementById('archivedFollowUpsBackdrop');
+        if (backdrop && event.target === backdrop) closeArchivedFollowUpsDrawer();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeArchivedFollowUpsDrawer();
+        }
+    });
+</script>

@@ -14,6 +14,9 @@ public class Part
     [StringLength(50)]
     public string? PartNumber { get; set; }
 
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
+
     [Required]
     public decimal UnitPrice { get; set; }
 
@@ -24,6 +27,10 @@ public class Part
     // We'll add the FK/navigation when Supplier is built, not before.
     public int? SupplierId { get; set; }
     public Supplier? Supplier { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsArchived { get; set; } = false;
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

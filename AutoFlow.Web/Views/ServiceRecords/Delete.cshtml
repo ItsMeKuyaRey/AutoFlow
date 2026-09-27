@@ -1,7 +1,7 @@
 @model AutoFlow.Web.Models.ServiceRecord
 
 @{
-    ViewData["Title"] = "Delete Service Record";
+    ViewData["Title"] = "Archive Service Record";
 
     var vehicleName = Model.Vehicle == null
         ? "Vehicle unavailable"
@@ -162,7 +162,7 @@
 
         <div class="af-breadcrumb">
             <a asp-action="Index">Service History</a>
-            <span> / Delete Record</span>
+            <span> / Archive Record</span>
         </div>
 
         <div class="af-card">
@@ -174,11 +174,10 @@
                 </div>
 
                 <div>
-                    <h1>Delete Service Record?</h1>
+                    <h1>Archive Service Record?</h1>
 
                     <p>
-                        This action will permanently remove this service
-                        history record from AutoFlow.
+                        This action will keep this service history record in AutoFlow and mark it as archived.
                     </p>
                 </div>
 
@@ -271,8 +270,8 @@
 
                     <button type="submit"
                             class="af-btn af-btn-danger">
-                        <i class="bi bi-trash3 me-1"></i>
-                        Delete Record
+                        <i class="bi bi-archive me-1"></i>
+                        Archive Record
                     </button>
 
                 </form>

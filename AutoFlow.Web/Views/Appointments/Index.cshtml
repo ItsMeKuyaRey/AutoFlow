@@ -1,92 +1,326 @@
 @model IEnumerable<AutoFlow.Web.Models.Appointment>
-
 @{
-    ViewData["Title"] = "Appointments";
+    ViewData["Title"] = "Service Appointments";
+    var weekStartParam = ViewBag.WeekStart as DateTime?;
+    var today = DateTime.Today;
+    var anchor = weekStartParam?.Date ?? today;
+    var monthStart = new DateTime(anchor.Year, anchor.Month, 1);
+    var appointments = Model?.ToList() ?? new List<AutoFlow.Web.Models.Appointment>();
 }
 
-<div class="page-header">
-    <div>
-        <h1>Appointments</h1>
-        <p>Schedule and manage customer service appointments.</p>
-    </div>
-    <div class="page-header-actions">
-        <a asp-action="Create" class="af-button af-button-primary">
-            + New Appointment
-        </a>
-    </div>
-</div>
+<style>
+.af-cal-page{max-width:1400px;margin:0 auto}
+.af-cal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.af-cal-header h1{margin:0;font-size:26px;font-weight:750;letter-spacing:-.5px;color:#0f172a}
+.af-cal-header p{margin:6px 0 0;color:#64748b;font-size:13px}
+.af-cal-create-btn{
+    display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;
+    border:0;border-radius:10px;background:#7c3aed;color:#fff;
+    font-size:13px;font-weight:700;cursor:pointer;
+    box-shadow:0 8px 20px rgba(124,58,237,.28)
+}
+.af-cal-create-btn:hover{background:#6d28d9}
+.af-cal-create-btn span{font-size:18px;line-height:1}
+.af-cal-toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-bottom:14px;padding:12px 14px;background:#fff;border:1px solid #e8eaf0;border-radius:12px
+}
+.af-cal-nav{display:flex;align-items:center;gap:8px}
+.af-cal-nav-btn{
+    height:34px;min-width:34px;padding:0 12px;border:1px solid #e2e8f0;border-radius:8px;
+    background:#fff;color:#475569;font-size:12px;font-weight:650;cursor:pointer
+}
+.af-cal-nav-btn:hover{background:#f8fafc;border-color:#c4b5fd;color:#6d28d9}
+.af-cal-month-label{margin-left:6px;font-size:15px;font-weight:700;color:#0f172a}
+.af-cal-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#64748b;font-weight:600}
+.af-cal-leg{display:inline-flex;align-items:center;gap:6px}
+.af-cal-leg .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.af-cal-leg .dot.scheduled{background:#8b5cf6}
+.af-cal-leg .dot.confirmed{background:#10b981}
+.af-cal-leg .dot.progress{background:#f59e0b}
+.af-cal-leg .dot.completed{background:#3b82f6}
+.af-cal-leg .dot.cancelled{background:#ef4444}
+.af-cal-grid-wrap{
+    background:#fff;border:1px solid #e8eaf0;border-radius:14px;overflow:hidden;
+    box-shadow:0 4px 18px rgba(15,23,42,.04)
+}
+.af-cal-weekdays{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    background:#fafbfc;border-bottom:1px solid #eef0f4
+}
+.af-cal-weekdays div{
+    padding:12px 8px;text-align:center;font-size:11px;font-weight:700;
+    letter-spacing:.06em;color:#94a3b8
+}
+.af-cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.af-cal-cell{
+    min-height:110px;padding:8px;border-right:1px solid #f1f3f6;border-bottom:1px solid #f1f3f6;
+    vertical-align:top
+}
+.af-cal-cell:nth-child(7n){border-right:0}
+.af-cal-cell.muted{background:#fafbfc}
+.af-cal-cell.muted .af-cal-daynum{color:#cbd5e1}
+.af-cal-daynum{
+    width:28px;height:28px;margin-bottom:6px;display:grid;place-items:center;
+    border-radius:50%;font-size:12px;font-weight:700;color:#334155
+}
+.af-cal-daynum.is-today{background:#7c3aed;color:#fff}
+.af-cal-event{
+    display:block;width:100%;text-align:left;margin-bottom:4px;padding:5px 8px;
+    border:0;border-radius:8px;cursor:pointer;line-height:1.25
+}
+.af-cal-event-time{display:block;font-size:10px;font-weight:700;opacity:.9}
+.af-cal-event-name{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-cal-event-sub{display:block;font-size:9px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-cal-event.scheduled{background:#f5f3ff;color:#6d28d9}
+.af-cal-event.confirmed{background:#ecfdf5;color:#047857}
+.af-cal-event.progress{background:#fff7ed;color:#c2410c}
+.af-cal-event.completed{background:#eff6ff;color:#1d4ed8}
+.af-cal-event.cancelled{background:#fef2f2;color:#b91c1c}
+.af-cal-more{font-size:10px;font-weight:650;color:#94a3b8;padding:2px 4px}
+#appointmentOverlayHost{position:relative;z-index:10000}
+/* Appointment profile image frames */
+#appointmentOverlayHost .appointment-details-page img{
+    width:48px !important;
+    height:48px !important;
+    min-width:48px !important;
+    min-height:48px !important;
+    max-width:48px !important;
+    max-height:48px !important;
+    aspect-ratio:1 / 1 !important;
+    object-fit:cover !important;
+    object-position:center center !important;
+    display:block !important;
+    flex:0 0 48px !important;
+    border-radius:12px !important;
+    overflow:hidden !important;
+}
 
-<div class="af-card" style="padding: 20px;">
-    <div class="af-table-wrapper">
-        <table class="af-table">
-            <thead>
-                <tr>
-                    <th>Date & Time</th>
-                    <th>Vehicle</th>
-                    <th>Customer Concern</th>
-                    <th>Status</th>
-                    <th>Notes</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    var statusClass = item.Status switch
-                    {
-                        "Scheduled" => "badge-blue",
-                        "Confirmed" => "badge-green",
-                        "Completed" => "badge-green",
-                        "Cancelled" => "badge-red",
-                        _ => "badge-orange"
-                    };
+@@media(max-width:800px){
+    .af-cal-cell{min-height:88px}
+    .af-cal-event-sub{display:none}
+}
+</style>
 
-                    <tr>
-                        <td>
-                            <strong>@item.AppointmentDate.ToString("MMM dd, yyyy")</strong>
-                            <small>@item.AppointmentDate.ToString("hh:mm tt")</small>
-                        </td>
-                        <td>
-                            @if (item.Vehicle != null)
-                            {
-                                <strong>@item.Vehicle.PlateNumber</strong>
-                                <small>@item.Vehicle.Make @item.Vehicle.Model</small>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td>
-                            @(string.IsNullOrEmpty(item.CustomerConcern) ? "—" : item.CustomerConcern)
-                        </td>
-                        <td>
-                            <span class="af-badge @statusClass">@item.Status</span>
-                        </td>
-                        <td>
-                            @(string.IsNullOrEmpty(item.Notes) ? "—" : item.Notes)
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="d-flex gap-1 justify-content-end">
-                                <a asp-action="Details" asp-route-id="@item.AppointmentId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="View">👁</a>
-                                <a asp-action="Edit" asp-route-id="@item.AppointmentId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px;" title="Edit">✎</a>
-                                <a asp-action="Delete" asp-route-id="@item.AppointmentId"
-                                   class="af-button af-button-secondary" style="padding: 6px 10px; color:#dc2626;" title="Delete">🗑</a>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    @if (!Model.Any())
-    {
-        <div class="text-center py-5 text-muted">
-            <p class="mb-2">No appointments yet.</p>
-            <a asp-action="Create" class="af-button af-button-primary">Schedule first appointment</a>
+<div class="af-cal-page">
+    <div class="af-cal-header">
+        <div>
+            <h1>Service Appointments</h1>
+            <p>Schedule and manage automotive service appointments.</p>
         </div>
-    }
+        <button type="button" class="af-cal-create-btn" id="createAppointmentButton">
+            <span>+</span> Create Appointment
+        </button>
+    </div>
+
+    <div class="af-cal-toolbar">
+        <div class="af-cal-nav">
+            <button type="button" class="af-cal-nav-btn" id="calTodayBtn">Today</button>
+            <button type="button" class="af-cal-nav-btn" id="calPrevBtn">&lt;</button>
+            <button type="button" class="af-cal-nav-btn" id="calNextBtn">&gt;</button>
+            <span class="af-cal-month-label" id="calMonthLabel">@monthStart.ToString("MMMM yyyy")</span>
+        </div>
+        <div class="af-cal-legend">
+            <span class="af-cal-leg"><i class="dot scheduled"></i> Scheduled</span>
+            <span class="af-cal-leg"><i class="dot confirmed"></i> Confirmed</span>
+            <span class="af-cal-leg"><i class="dot progress"></i> In Progress</span>
+            <span class="af-cal-leg"><i class="dot completed"></i> Completed</span>
+            <span class="af-cal-leg"><i class="dot cancelled"></i> Cancelled</span>
+        </div>
+    </div>
+
+    <div class="af-cal-grid-wrap">
+        <div class="af-cal-weekdays">
+            <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+        </div>
+        <div class="af-cal-grid" id="afCalGrid"></div>
+    </div>
 </div>
+
+<div id="appointmentOverlayHost"></div>
+
+<script type="application/json" id="afAppointmentsJson">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    appointments.Select(a => {
+        string customer = "Customer";
+        if (a.Customer != null)
+            customer = ((a.Customer.FirstName ?? "") + " " + (a.Customer.LastName ?? "")).Trim();
+        string vehicle = "";
+        if (a.Vehicle != null) {
+            vehicle = ((a.Vehicle.Make ?? "") + " " + (a.Vehicle.Model ?? "")).Trim();
+            if (!string.IsNullOrWhiteSpace(a.Vehicle.PlateNumber))
+                vehicle += " (" + a.Vehicle.PlateNumber + ")";
+        }
+        return new {
+            id = a.AppointmentId,
+            date = a.AppointmentDate.ToString("yyyy-MM-dd"),
+            time = a.AppointmentDate.ToString("HH:mm"),
+            timeDisplay = a.AppointmentDate.ToString("h:mm tt"),
+            status = a.Status ?? "Scheduled",
+            customer = customer,
+            vehicle = vehicle,
+            reason = a.Reason ?? ""
+        };
+    }).ToList()
+))
+</script>
+
+<script>
+(function () {
+    const grid = document.getElementById("afCalGrid");
+    const monthLabel = document.getElementById("calMonthLabel");
+    const overlayHost = document.getElementById("appointmentOverlayHost");
+    const createBtn = document.getElementById("createAppointmentButton");
+
+    let events = [];
+    try {
+        events = JSON.parse(document.getElementById("afAppointmentsJson").textContent || "[]");
+    } catch (e) {
+        console.error("appointments parse failed", e);
+        events = [];
+    }
+
+    let viewYear = @monthStart.Year;
+    let viewMonth = @(monthStart.Month - 1);
+
+    function pad(n) { return String(n).padStart(2, "0"); }
+    function dateKey(y, m, d) { return y + "-" + pad(m + 1) + "-" + pad(d); }
+    function statusClass(s) {
+        const k = (s || "scheduled").toLowerCase().replace(/\s+/g, "-");
+        if (k.indexOf("confirm") >= 0) return "confirmed";
+        if (k.indexOf("progress") >= 0) return "progress";
+        if (k.indexOf("complete") >= 0) return "completed";
+        if (k.indexOf("cancel") >= 0) return "cancelled";
+        return "scheduled";
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function render() {
+        const first = new Date(viewYear, viewMonth, 1);
+        const start = new Date(first);
+        start.setDate(1 - first.getDay());
+        monthLabel.textContent = first.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+        const now = new Date();
+        const todayKey = dateKey(now.getFullYear(), now.getMonth(), now.getDate());
+
+        grid.innerHTML = "";
+        for (let i = 0; i < 42; i++) {
+            const cellDate = new Date(start);
+            cellDate.setDate(start.getDate() + i);
+            const y = cellDate.getFullYear(), m = cellDate.getMonth(), d = cellDate.getDate();
+            const key = dateKey(y, m, d);
+            const inMonth = m === viewMonth;
+
+            const cell = document.createElement("div");
+            cell.className = "af-cal-cell" + (inMonth ? "" : " muted");
+
+            const dayNum = document.createElement("div");
+            dayNum.className = "af-cal-daynum" + (key === todayKey ? " is-today" : "");
+            dayNum.textContent = d;
+            cell.appendChild(dayNum);
+
+            const dayEvents = events.filter(function (e) { return e.date === key; })
+                .sort(function (a, b) { return (a.time || "").localeCompare(b.time || ""); });
+
+            dayEvents.slice(0, 4).forEach(function (ev) {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "af-cal-event " + statusClass(ev.status);
+                card.title = (ev.timeDisplay || "") + " — " + (ev.customer || "");
+                card.innerHTML =
+                    '<span class="af-cal-event-time">' + (ev.timeDisplay || "") + '</span>' +
+                    '<span class="af-cal-event-name">' + escapeHtml(ev.customer || "Appointment") + '</span>' +
+                    (ev.vehicle ? '<span class="af-cal-event-sub">' + escapeHtml(ev.vehicle) + '</span>' : "");
+                card.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    openOverlay("@Url.Action("Details", "Appointments")/" + ev.id);
+                });
+                cell.appendChild(card);
+            });
+
+            if (dayEvents.length > 4) {
+                const more = document.createElement("div");
+                more.className = "af-cal-more";
+                more.textContent = "+" + (dayEvents.length - 4) + " more";
+                cell.appendChild(more);
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+
+    document.getElementById("calPrevBtn").onclick = function () {
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render();
+    };
+    document.getElementById("calNextBtn").onclick = function () {
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render();
+    };
+    document.getElementById("calTodayBtn").onclick = function () {
+        const n = new Date(); viewYear = n.getFullYear(); viewMonth = n.getMonth(); render();
+    };
+
+    function closeOverlay() {
+        overlayHost.innerHTML = "";
+        document.body.style.overflow = "";
+    }
+    function runScripts(doc) {
+        doc.querySelectorAll("script").forEach(function (old) {
+            if (old.type === "application/json") return;
+            var s = document.createElement("script");
+            if (old.src) s.src = old.src; else s.textContent = old.textContent;
+            document.body.appendChild(s);
+        });
+    }
+    function wireOverlay(root) {
+        if (!root) return;
+        root.querySelectorAll("[data-appointment-close],[data-appointment-cancel]").forEach(function (btn) {
+            btn.addEventListener("click", function (e) { e.preventDefault(); closeOverlay(); });
+        });
+        var backdrop = root.querySelector(".af-drawer-backdrop");
+        if (backdrop) backdrop.addEventListener("click", closeOverlay);
+        root.querySelectorAll('a[href*="/Appointments/Edit"]').forEach(function (a) {
+            a.addEventListener("click", function (e) { e.preventDefault(); openOverlay(a.getAttribute("href")); });
+        });
+    }
+    async function openOverlay(url) {
+        try {
+            var res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+            if (!res.ok) { window.location.href = url; return; }
+            var html = await res.text();
+            var parsed = new DOMParser().parseFromString(html, "text/html");
+            var root = parsed.querySelector(".appointment-create-page")
+                || parsed.querySelector(".appointment-details-page")
+                || parsed.querySelector(".appointment-edit-page")
+                || parsed.querySelector(".af-drawer-page");
+            if (!root) { window.location.href = url; return; }
+            overlayHost.innerHTML = "";
+            overlayHost.appendChild(document.importNode(root, true));
+
+            // Force appointment profile photos into the same fitted frames used by Vehicle Records.
+            const appointmentDetails = overlayHost.querySelector(".appointment-details-page");
+            if (appointmentDetails) {
+                appointmentDetails.querySelectorAll("img").forEach(function (img) {
+                    img.classList.add("af-appointment-profile-image");
+                });
+            }
+
+            document.body.style.overflow = "hidden";
+            wireOverlay(overlayHost.firstElementChild);
+            runScripts(parsed);
+        } catch (e) {
+            window.location.href = url;
+        }
+    }
+    if (createBtn) createBtn.onclick = function () {
+        openOverlay("@Url.Action("Create", "Appointments")");
+    };
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && overlayHost.children.length) closeOverlay();
+    });
+
+    render();
+})();
+</script>

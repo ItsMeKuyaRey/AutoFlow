@@ -14,3 +14,21 @@
 # macOS
 .AppleDouble
 .LSOverride
+
+# Local build/debug logs
+*.log
+build-errors.txt
+full-build.txt
+report-check-build.txt
+reports-build.txt
+
+# Local backup copies
+*.backup
+*.backup-*
+*.cshtml.backup
+*.cshtml.backup-*
+
+# Local uploaded files
+AutoFlow.Web/wwwroot/uploads/
+# Local archive backups
+_Archive/

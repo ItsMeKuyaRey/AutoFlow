@@ -2,105 +2,260 @@
 
 @{
     ViewData["Title"] = "Archive Vehicle";
+    var vehicleName = $"{Model.Make} {Model.Model}".Trim();
+    var ownerName = Model.Customer == null ? "No owner assigned" : $"{Model.Customer.FirstName} {Model.Customer.LastName}".Trim();
 }
 
-<div class="customer-archive-page">
+<style>
+    .vehicle-archive-modal-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        padding: 30px;
+        box-sizing: border-box;
+    }
 
-    <div class="customer-form-header">
-        <div>
-            <a asp-action="Index" class="customer-back-link">
-                ← Back to Vehicles
-            </a>
+    .vehicle-archive-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 24, 39, .34);
+        backdrop-filter: blur(5px);
+    }
 
-            <h1>Archive Vehicle</h1>
-            <p>Remove this vehicle from the active vehicle records.</p>
+    .vehicle-archive-modal {
+        position: relative;
+        z-index: 2;
+        width: min(410px, 100%);
+        background: #fff;
+        border: 1px solid rgba(255,255,255,.7);
+        border-radius: 15px;
+        box-shadow: 0 25px 70px rgba(15,23,42,.22);
+        padding: 26px;
+        text-align: center;
+    }
+
+    .vehicle-archive-modal-icon {
+        width: 45px;
+        height: 45px;
+        margin: 0 auto 15px;
+        border-radius: 11px;
+        background: #fff1f0;
+        color: #ef5b4d;
+        display: grid;
+        place-items: center;
+        font-size: 17px;
+    }
+
+    .vehicle-archive-modal h1 {
+        margin: 0;
+        color: #172033;
+        font-size: 17px;
+        font-weight: 850;
+    }
+
+    .vehicle-archive-modal-description {
+        margin: 8px auto 19px;
+        max-width: 320px;
+        color: #8b95a7;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .vehicle-archive-profile {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #e9edf2;
+        border-radius: 10px;
+        background: #fbfcfe;
+        text-align: left;
+    }
+
+    .vehicle-archive-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #eee7ff;
+        color: #7c3aed;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 850;
+        flex: 0 0 auto;
+    }
+
+    .vehicle-archive-profile strong {
+        display: block;
+        color: #172033;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .vehicle-archive-profile span {
+        display: block;
+        margin-top: 3px;
+        color: #9aa3b2;
+        font-size: 8px;
+    }
+
+    .vehicle-archive-warning {
+        padding: 11px 12px;
+        margin-bottom: 18px;
+        border: 1px solid #fde2df;
+        border-radius: 8px;
+        background: #fff9f8;
+        color: #9f4038;
+        font-size: 9px;
+        line-height: 1.55;
+        text-align: left;
+    }
+
+    .vehicle-archive-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .vehicle-archive-button {
+        height: 38px;
+        min-width: 112px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .vehicle-archive-cancel {
+        border: 1px solid #e1e5eb;
+        background: #fff;
+        color: #5f6b7c;
+    }
+
+    .vehicle-archive-confirm {
+        border: 1px solid #ed5b4d;
+        background: #ed5b4d;
+        color: #fff;
+        box-shadow: 0 7px 17px rgba(237,91,77,.17);
+    }
+
+    .vehicle-archive-confirm:hover {
+        background: #dc4f42;
+    }
+
+    @@media (max-width: 520px) {
+        .vehicle-archive-modal-page {
+            padding: 18px;
+        }
+
+        .vehicle-archive-modal {
+            padding: 22px;
+        }
+
+        .vehicle-archive-actions {
+            flex-direction: column-reverse;
+        }
+
+        .vehicle-archive-button {
+            width: 100%;
+        }
+    }
+
+    /* AutoFlow vehicle archive modal overlay */
+    .vehicle-archive-modal-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5100 !important;
+        display: grid !important;
+        place-items: center !important;
+    }
+
+    .vehicle-archive-overlay {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .36) !important;
+        backdrop-filter: blur(4px);
+    }
+
+    .vehicle-archive-modal {
+        animation: afVehicleModalIn .18s ease-out;
+    }
+
+    @@keyframes afVehicleModalIn {
+        from { transform: translateY(8px) scale(.985); opacity: .92; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+
+    .vehicle-archive-avatar { overflow:hidden; }
+    .vehicle-archive-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+</style>
+
+<div class="vehicle-archive-modal-page">
+    <div class="vehicle-archive-overlay"></div>
+
+    <div class="vehicle-archive-modal">
+        <div class="vehicle-archive-modal-icon">
+            <i class="bi bi-archive"></i>
         </div>
-    </div>
 
-    <div class="customer-archive-card">
+        <h1>Archive Vehicle?</h1>
+        <p class="vehicle-archive-modal-description">
+            This vehicle will be removed from the active vehicle list. Its record remains preserved in AutoFlow and can be restored later.
+        </p>
 
-        <div class="customer-archive-summary">
-
-            <div class="customer-large-avatar">
-                🚗
+        <div class="vehicle-archive-profile">
+            <div class="vehicle-archive-avatar">
+                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" alt="@vehicleName" />
+                }
+                else
+                {
+                    <i class="bi bi-car-front"></i>
+                }
             </div>
-
             <div>
-                <span class="customer-status-badge">
-                    Active
-                </span>
-
-                <h2>@Model.Make @Model.Model</h2>
-
-                <p>
-                    @Model.PlateNumber
-                    ·
-                    @(Model.Year?.ToString() ?? "Year unknown")
-                </p>
+                <strong>@vehicleName</strong>
+                <span>@Model.PlateNumber · @ownerName</span>
             </div>
-
         </div>
 
-        <div class="alert alert-warning mt-4">
-            <strong>Archive this vehicle?</strong>
-            <br />
-            This vehicle will no longer appear in the active vehicle list.
-            Its record will remain stored and can be restored later.
+        <div class="vehicle-archive-warning">
+            <strong>Archive only.</strong>
+            This does not permanently delete the vehicle record. The archived record remains available through Archived Vehicles.
         </div>
 
-        <div class="customer-information-grid mt-4">
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Owner</span>
-
-                <strong>
-                    @if (Model.Customer != null)
-                    {
-                        @($"{Model.Customer.FirstName} {Model.Customer.LastName}")
-                    }
-                    else
-                    {
-                        <span>Not assigned</span>
-                    }
-                </strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Plate Number</span>
-                <strong>@Model.PlateNumber</strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">VIN</span>
-                <strong>
-                    @(string.IsNullOrWhiteSpace(Model.VIN) ? "Not recorded" : Model.VIN)
-                </strong>
-            </div>
-
-            <div class="customer-info-card">
-                <span class="customer-info-label">Mileage</span>
-                <strong>
-                    @(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "—")
-                </strong>
-            </div>
-
+        <div class="vehicle-archive-facts">
+            <div><span>Vehicle ID</span><strong>#@Model.VehicleId</strong></div>
+            <div><span>VIN</span><strong>@(string.IsNullOrWhiteSpace(Model.VIN) ? "Not recorded" : Model.VIN)</strong></div>
+            <div><span>Mileage</span><strong>@(Model.Mileage.HasValue ? $"{Model.Mileage:N0} km" : "—")</strong></div>
         </div>
 
-        <form asp-action="Delete" method="post" class="customer-form-footer">
-
-            <input type="hidden" asp-for="VehicleId" />
-
-            <a asp-action="Index"
-               class="af-button af-button-secondary">
-                Cancel
-            </a>
-
-            <button type="submit"
-                    class="af-button customer-danger-button">
-                Archive Vehicle
-            </button>
-
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.VehicleId" />
+            <div class="vehicle-archive-actions">
+                <a asp-action="Index" class="vehicle-archive-button vehicle-archive-cancel">Cancel</a>
+                <button type="submit" class="vehicle-archive-button vehicle-archive-confirm">Archive Vehicle</button>
+            </div>
         </form>
-
     </div>
 </div>

@@ -169,6 +169,17 @@
         font-weight: 750;
     }
 
+    .standalone-part-image-picker { display:flex; align-items:center; gap:12px; padding:11px; border:1px solid #e5e8ee; border-radius:10px; background:#fbfbfd; }
+    .standalone-part-image-preview { width:62px; height:62px; flex:0 0 62px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:10px; background:#f0ebff; color:#7544f5; font-size:20px; }
+    .standalone-part-image-preview img { width:100%; height:100%; object-fit:contain; background:#fff; }
+    .standalone-part-image-copy { flex:1; min-width:0; }
+    .standalone-part-image-copy strong { display:block; color:#343b4a; font-size:11px; font-weight:800; }
+    .standalone-part-image-copy small { display:block; margin-top:3px; color:#9299a8; font-size:9px; }
+    .standalone-part-image-message { display:none; align-items:center; gap:5px; margin-top:6px; color:#17835f; font-size:9px; font-weight:750; }
+    .standalone-part-image-message.show { display:inline-flex; }
+    .standalone-part-image-input { display:none; }
+    .standalone-part-image-button { height:34px; padding:0 11px; border:0; border-radius:8px; background:#7544f5; color:#fff; font-size:10px; font-weight:750; cursor:pointer; white-space:nowrap; }
+
     @@media (max-width: 720px) {
         .part-form-footer {
             justify-content: stretch;
@@ -224,7 +235,7 @@
 
         </div>
 
-        <form asp-action="Create">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
 
             <div class="part-form-body">
 
@@ -345,6 +356,23 @@
 
                 </div>
 
+                <div class="part-field">
+                    <label class="part-field-label">
+                        <i class="bi bi-image"></i>
+                        Part Image
+                    </label>
+                    <div class="standalone-part-image-picker">
+                        <div id="standaloneCreatePreview" class="standalone-part-image-preview"><i class="bi bi-image"></i></div>
+                        <div class="standalone-part-image-copy">
+                            <strong id="standaloneCreateName">No image selected</strong>
+                            <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                            <span id="standaloneCreateMessage" class="standalone-part-image-message"><i class="bi bi-check-circle-fill"></i> Image changed</span>
+                        </div>
+                        <input id="standaloneCreateImage" name="profileImage" class="standalone-part-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                        <button type="button" class="standalone-part-image-button" onclick="document.getElementById('standaloneCreateImage').click()"><i class="bi bi-image"></i> Choose Image</button>
+                    </div>
+                </div>
+
             </div>
 
             <div class="part-form-footer">
@@ -366,6 +394,25 @@
     </section>
 
 </div>
+
+<script>
+    document.getElementById("standaloneCreateImage")?.addEventListener("change", function () {
+        const file = this.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            this.value = "";
+            alert("Part image must be 5 MB or smaller.");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById("standaloneCreatePreview").innerHTML = `<img src="${e.target.result}" alt="Part image" />`;
+            document.getElementById("standaloneCreateName").textContent = file.name;
+            document.getElementById("standaloneCreateMessage").classList.add("show");
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
 
 @section Scripts {
     @{

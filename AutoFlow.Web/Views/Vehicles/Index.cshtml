@@ -2,1020 +2,2127 @@
 
 @{
     ViewData["Title"] = "Vehicle Records";
+    var vehicles = Model.ToList();
+    var activeCount = vehicles.Count(v => !v.IsArchived);
+    var archivedCount = vehicles.Count(v => v.IsArchived);
 }
 
-<div class="vehicle-page">
+<div class="vehicle-page vehicle-page-premium">
 
     <div class="vehicle-page-header">
         <div>
+            <div class="vehicle-eyebrow">
+                <span class="vehicle-eyebrow-dot"></span>
+                VEHICLE RECORDS
+            </div>
             <h1>Vehicle Records</h1>
-            <p>Manage customer vehicles and service history</p>
+            <p>Manage customer vehicles, ownership information, and service-ready records.</p>
         </div>
 
-        <button type="button"
-                class="vehicle-primary-button"
-                onclick="openVehicleDrawer('add')">
-            <span>+</span>
-            Add Vehicle
+        <div class="vehicle-header-actions">
+            <a asp-action="Archived" class="vehicle-secondary-button vehicle-archive-link">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16v13H4z" />
+                    <path d="M3 4h18v3H3z" />
+                    <path d="M9 11h6" />
+                </svg>
+                Archived
+                <span class="vehicle-header-count">@archivedCount</span>
+            </a>
+
+            <a asp-action="Create" class="vehicle-primary-button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Vehicle
+            </a>
+        </div>
+    </div>
+
+    <div class="vehicle-summary-strip">
+        <div class="vehicle-summary-item">
+            <span class="vehicle-summary-icon vehicle-summary-icon-purple">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 16.5h14l-1.2-5.2a2 2 0 0 0-1.9-1.5H8.1a2 2 0 0 0-1.9 1.5L5 16.5Z" />
+                    <path d="M4 16.5v2.2M20 16.5v2.2M7 16.5h10" />
+                    <circle cx="8" cy="16.5" r="1" />
+                    <circle cx="16" cy="16.5" r="1" />
+                </svg>
+            </span>
+            <span><strong>@activeCount</strong> Active Vehicles</span>
+        </div>
+
+        <div class="vehicle-summary-divider"></div>
+
+        <div class="vehicle-summary-item">
+            <span class="vehicle-summary-icon vehicle-summary-icon-green">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16v13H4z" />
+                    <path d="M3 4h18v3H3z" />
+                    <path d="M9 11h6" />
+                </svg>
+            </span>
+            <span><strong>@archivedCount</strong> Archived Records</span>
+        </div>
+
+        <div class="vehicle-summary-divider"></div>
+
+        <div class="vehicle-summary-item vehicle-summary-item-muted">
+            <span class="vehicle-summary-icon vehicle-summary-icon-blue">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M12 8v4l2.5 2.5" />
+                </svg>
+            </span>
+            <span>Database-synced vehicle records</span>
+        </div>
+    </div>
+
+    <div class="vehicle-toolbar vehicle-toolbar-premium">
+
+        <div class="vehicle-search">
+            <span class="vehicle-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </svg>
+            </span>
+            <input type="search"
+                   id="vehicleSearch"
+                   autocomplete="off"
+                   placeholder="Search by plate, VIN, customer, make, or model..."
+                   aria-label="Search vehicles" />
+        </div>
+
+        <div class="vehicle-filter vehicle-filter-select">
+            <span class="vehicle-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 8h12M8 12h8M10 16h4" />
+                </svg>
+            </span>
+            <label for="vehicleStatusFilter">Status</label>
+            <select id="vehicleStatusFilter" aria-label="Filter vehicles by status">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+            </select>
+            <svg class="vehicle-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 9 5 5 5-5" />
+            </svg>
+        </div>
+
+        <div class="vehicle-filter vehicle-filter-select">
+            <span class="vehicle-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M5 6h14M8 12h8M10 18h4" />
+                </svg>
+            </span>
+            <label for="vehicleMakeFilter">Make</label>
+            <select id="vehicleMakeFilter" aria-label="Filter vehicles by make">
+                <option value="all">All Makes</option>
+                @foreach (var make in vehicles.Select(v => v.Make).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(m => m))
+                {
+                    <option value="@make">@make</option>
+                }
+            </select>
+            <svg class="vehicle-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 9 5 5 5-5" />
+            </svg>
+        </div>
+
+        <div class="vehicle-filter-popover-wrap">
+            <button type="button"
+                    class="vehicle-filter-button vehicle-filter-toggle"
+                    id="vehicleAdvancedToggle"
+                    aria-expanded="false"
+                    aria-controls="vehicleAdvancedFilters"
+                    title="More vehicle filters">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+                <span class="vehicle-filter-triangle" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="m7 9 5 5 5-5" />
+                    </svg>
+                </span>
+                <span class="vehicle-filter-count" id="vehicleFilterCount">0</span>
+            </button>
+
+            <div class="vehicle-advanced-filters" id="vehicleAdvancedFilters" hidden>
+                <div class="vehicle-advanced-head">
+                    <div>
+                        <strong>More Filters</strong>
+                        <span>Refine the vehicle list</span>
+                    </div>
+                    <button type="button" id="vehicleAdvancedClose" class="vehicle-popover-close" aria-label="Close filters">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m7 7 10 10M17 7 7 17" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="vehicle-advanced-field">
+                    <label for="vehicleSortFilter">Sort By</label>
+                    <select id="vehicleSortFilter">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="makeAsc">Make A–Z</option>
+                        <option value="makeDesc">Make Z–A</option>
+                        <option value="mileageHigh">Mileage high to low</option>
+                        <option value="mileageLow">Mileage low to high</option>
+                    </select>
+                </div>
+
+                <div class="vehicle-advanced-field">
+                    <label for="vehicleImageFilter">Vehicle Image</label>
+                    <select id="vehicleImageFilter">
+                        <option value="all">Any image status</option>
+                        <option value="hasImage">Has vehicle image</option>
+                        <option value="noImage">No vehicle image</option>
+                    </select>
+                </div>
+
+                <div class="vehicle-advanced-footer">
+                    <span id="vehicleAdvancedSummary">No additional filters</span>
+                    <button type="button" id="vehicleApplyAdvanced" class="vehicle-small-primary">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="vehicle-clear-button" id="clearVehicleFilters">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M9 11v6M15 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" />
+            </svg>
+            Clear
         </button>
     </div>
 
-    <div class="vehicle-card">
-
-        <div class="vehicle-toolbar">
-
-            <div class="vehicle-search">
-                <span>⌕</span>
-
-                <input type="text"
-                       id="vehicleSearch"
-                       placeholder="Search by plate number, VIN, customer, make, or model..." />
-            </div>
-
-            <button type="button"
-                    class="vehicle-filter-button"
-                    onclick="toggleVehicleFilters()">
-                Status Filter
-                <span>⌄</span>
-            </button>
-
-            <button type="button"
-                    class="vehicle-filter-button"
-                    onclick="toggleVehicleFilters()">
-                Make/Brand Filter
-                <span>⌄</span>
-            </button>
-
-            <button type="button"
-                    class="vehicle-filter-primary"
-                    onclick="applyVehicleFilters()">
-                Filter
-            </button>
-
-            <button type="button"
-                    class="vehicle-clear-button"
-                    onclick="clearVehicleFilters()">
-                Clear
-            </button>
-
+    <div class="vehicle-result-bar">
+        <div>
+            <strong id="vehicleResultCount">@vehicles.Count</strong>
+            <span>records shown</span>
         </div>
-
-        <div id="vehicleFilterPanel" class="vehicle-filter-panel">
-
-            <div class="vehicle-filter-field">
-                <label>Status</label>
-
-                <select id="vehicleStatusFilter">
-                    <option value="">All</option>
-                    <option value="active">Active</option>
-                </select>
-            </div>
-
-            <div class="vehicle-filter-field">
-                <label>Make / Brand</label>
-
-                <input type="text"
-                       id="vehicleMakeFilter"
-                       placeholder="e.g. Toyota" />
-            </div>
-
+        <div class="vehicle-result-state" id="vehicleResultState">
+            Showing all vehicle records
         </div>
+    </div>
+
+    <div class="vehicle-table-card vehicle-table-card-premium">
 
         <div class="vehicle-table-wrapper">
-
-            <table class="vehicle-table" id="vehicleTable">
-
+            <table class="vehicle-table">
                 <thead>
                     <tr>
-                        <th>VEHICLE</th>
-                        <th>OWNER</th>
-                        <th>REGISTRATION</th>
-                        <th>DETAILS</th>
-                        <th>MILEAGE</th>
-                        <th>STATUS</th>
-                        <th>actions</th>
+                        <th>Vehicle</th>
+                        <th>Owner</th>
+                        <th>Registration</th>
+                        <th>Details</th>
+                        <th>Mileage</th>
+                        <th>Status</th>
+                        <th class="vehicle-actions-heading">Actions</th>
                     </tr>
                 </thead>
 
-                <tbody>
-
-                    @foreach (var item in Model)
+                <tbody id="vehicleTableBody">
+                    @foreach (var item in vehicles)
                     {
-                        var ownerName = item.Customer != null
-                            ? $"{item.Customer.FirstName} {item.Customer.LastName}"
-                            : "No owner";
-
-                        var searchText =
-                            $"{item.Make} {item.Model} {item.PlateNumber} {item.VIN} {ownerName}";
+                        var ownerName = item.Customer == null
+                            ? "No owner assigned"
+                            : $"{item.Customer.FirstName} {item.Customer.LastName}".Trim();
+                        var firstInitial = item.Customer == null || string.IsNullOrWhiteSpace(item.Customer.FirstName)
+                            ? "?"
+                            : item.Customer.FirstName.Substring(0, 1);
+                        var ownerImageUrl = item.Customer?.ImageUrl;
+                        var hasOwnerImage = !string.IsNullOrWhiteSpace(ownerImageUrl);
+                        var vehicleName = $"{item.Make} {item.Model}".Trim();
+                        var searchText = $"{vehicleName} {item.PlateNumber} {item.VIN} {ownerName} {item.Make} {item.Model} {item.Year} {item.Color}".ToLowerInvariant();
+                        var status = item.IsArchived ? "archived" : "active";
+                        var hasImage = !string.IsNullOrWhiteSpace(item.ImageUrl);
 
                         <tr class="vehicle-row"
-                            data-search="@searchText"
-                            data-make="@item.Make"
-                            data-status="active"
-                            data-id="@item.VehicleId"
-                            data-customer-id="@item.CustomerId"
-                            data-customer="@ownerName"
-                            data-plate="@item.PlateNumber"
-                            data-vin="@item.VIN"
-                            data-make-value="@item.Make"
-                            data-model="@item.Model"
-                            data-year="@item.Year"
-                            data-color="@item.Color"
-                            data-mileage="@item.Mileage"
-                            data-image="@item.ImageUrl"
-                            data-created="@item.CreatedAt.ToString("MMM dd, yyyy HH:mm")"
-                            data-updated="@item.UpdatedAt.ToString("MMM dd, yyyy HH:mm")">
+                            data-vehicle-search="@searchText"
+                            data-vehicle-name="@vehicleName.ToLowerInvariant()"
+                            data-vehicle-make="@(item.Make ?? string.Empty).ToLowerInvariant()"
+                            data-vehicle-status="@status"
+                            data-vehicle-created="@item.CreatedAt.ToString("O")"
+                            data-vehicle-mileage="@(item.Mileage?.ToString() ?? "0")"
+                            data-has-image="@hasImage.ToString().ToLowerInvariant()">
 
                             <td>
-                                <div class="vehicle-main-cell">
-
-                                    <div class="vehicle-thumbnail">
-                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                <div class="vehicle-identity">
+                                    <div class="vehicle-avatar @(item.IsArchived ? "vehicle-avatar-archived" : "")">
+                                        @if (hasImage)
                                         {
-                                            <img src="@item.ImageUrl"
-                                                 alt="@item.Make @item.Model" />
+                                            <img src="@item.ImageUrl" alt="@vehicleName" />
                                         }
                                         else
                                         {
-                                            <span>🚗</span>
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M5 16.5h14l-1.2-5.2a2 2 0 0 0-1.9-1.5H8.1a2 2 0 0 0-1.9 1.5L5 16.5Z" />
+                                                <path d="M4 16.5v2.2M20 16.5v2.2M7 16.5h10" />
+                                                <circle cx="8" cy="16.5" r="1" />
+                                                <circle cx="16" cy="16.5" r="1" />
+                                            </svg>
                                         }
                                     </div>
-
-                                    <div>
-                                        <strong>@item.Make @item.Model</strong>
-
+                                    <div class="vehicle-identity-text">
+                                        <strong>@vehicleName</strong>
                                         <small>
                                             @(item.Year?.ToString() ?? "Year unknown")
                                             ·
-                                            @(string.IsNullOrWhiteSpace(item.Color)
-                                                ? "Color not recorded"
-                                                : item.Color)
+                                            @(string.IsNullOrWhiteSpace(item.Color) ? "Color not recorded" : item.Color)
                                         </small>
                                     </div>
-
                                 </div>
                             </td>
 
                             <td>
-                                <div class="vehicle-owner-cell">
-
-                                    <div class="vehicle-owner-avatar">
-                                        @if (item.Customer != null)
+                                <div class="vehicle-contact">
+                                    <span class="vehicle-owner-avatar">
+                                        @if (hasOwnerImage)
                                         {
-                                            @item.Customer.FirstName.Substring(0, 1)
+                                            <img src="@ownerImageUrl" alt="@ownerName" />
                                         }
                                         else
                                         {
-                                            <span>?</span>
+                                            @firstInitial
                                         }
-                                    </div>
-
+                                    </span>
                                     <div>
-                                        <strong>
-                                            @(item.Customer != null
-                                                ? $"{item.Customer.FirstName} {item.Customer.LastName}"
-                                                : "No owner")
-                                        </strong>
-
-                                        <small>
-                                            Customer
-                                        </small>
+                                        <strong>@ownerName</strong>
+                                        <small>Customer</small>
                                     </div>
-
                                 </div>
                             </td>
 
                             <td>
                                 <div class="vehicle-registration">
                                     <strong>@item.PlateNumber</strong>
-
                                     <small>
                                         VIN:
-                                        @(string.IsNullOrWhiteSpace(item.VIN)
-                                            ? "Not recorded"
-                                            : item.VIN)
+                                        @(string.IsNullOrWhiteSpace(item.VIN) ? "Not recorded" : item.VIN)
                                     </small>
                                 </div>
                             </td>
 
                             <td>
                                 <div class="vehicle-detail-cell">
-
-                                    <strong>
-                                        @item.Make @item.Model
-                                    </strong>
-
+                                    <strong>@item.Make @item.Model</strong>
                                     <small>
                                         @(item.Year?.ToString() ?? "Year unknown")
                                         ·
-                                        @(string.IsNullOrWhiteSpace(item.Color)
-                                            ? "Color not recorded"
-                                            : item.Color)
+                                        @(string.IsNullOrWhiteSpace(item.Color) ? "Color not recorded" : item.Color)
                                     </small>
-
                                 </div>
                             </td>
 
                             <td>
-                                @(item.Mileage.HasValue
-                                    ? $"{item.Mileage:N0} km"
-                                    : "—")
-                            </td>
-
-                            <td>
-                                <span class="vehicle-status active">
-                                    ACTIVE
+                                <span class="vehicle-mileage">
+                                    @(item.Mileage.HasValue ? $"{item.Mileage:N0} km" : "—")
                                 </span>
                             </td>
 
                             <td>
-                                <div class="vehicle-actions">
-
-                                    <button type="button"
-                                            class="vehicle-icon-button"
-                                            title="View"
-                                            onclick="openVehicleDrawer('details', this)">
-                                        ◉
-                                    </button>
-
-                                    <button type="button"
-                                            class="vehicle-icon-button"
-                                            title="Edit"
-                                            onclick="openVehicleDrawer('edit', this)">
-                                        ✎
-                                    </button>
-
-                                    <button type="button"
-                                            class="vehicle-icon-button archive"
-                                            title="Archive"
-                                            onclick="openArchiveModal(this)">
-                                        ▣
-                                    </button>
-
-                                </div>
+                                @if (item.IsArchived)
+                                {
+                                    <span class="vehicle-status-badge archived">
+                                        <span></span>
+                                        ARCHIVED
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="vehicle-status-badge active">
+                                        <span></span>
+                                        ACTIVE
+                                    </span>
+                                }
                             </td>
 
+                            <td>
+                                <div class="vehicle-row-actions">
+                                    <a asp-action="Details"
+                                       asp-route-id="@item.VehicleId"
+                                       class="vehicle-icon-button"
+                                       title="View vehicle"
+                                       aria-label="View vehicle">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                                            <circle cx="12" cy="12" r="2.5" />
+                                        </svg>
+                                    </a>
+
+                                    @if (!item.IsArchived)
+                                    {
+                                        <a asp-action="Edit"
+                                           asp-route-id="@item.VehicleId"
+                                           class="vehicle-icon-button"
+                                           title="Edit vehicle"
+                                           aria-label="Edit vehicle">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="m4 16-.8 4.8L8 20l10.8-10.8a2.2 2.2 0 0 0-3.1-3.1L4 16Z" />
+                                                <path d="m14.8 7.2 2 2" />
+                                            </svg>
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@item.VehicleId"
+                                           class="vehicle-icon-button vehicle-delete-action"
+                                           title="Archive vehicle"
+                                           aria-label="Archive vehicle">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16v13H4z" />
+                                                <path d="M3 4h18v3H3z" />
+                                                <path d="M9 11h6" />
+                                            </svg>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Restore" method="post" class="vehicle-inline-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.VehicleId" />
+                                            <button type="submit"
+                                                    class="vehicle-icon-button vehicle-restore-action"
+                                                    title="Restore vehicle"
+                                                    aria-label="Restore vehicle">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M4 12a8 8 0 1 0 3-6" />
+                                                    <path d="M4 5v5h5" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
-
                 </tbody>
-
             </table>
-
         </div>
+
+        <div class="vehicle-filtered-empty" id="vehicleFilteredEmpty" hidden>
+            <div class="vehicle-empty-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                </svg>
+            </div>
+            <strong>No matching vehicles</strong>
+            <span>Try changing your search or filters.</span>
+            <button type="button" class="vehicle-secondary-button" id="vehicleEmptyClear">Clear Filters</button>
+        </div>
+
+        @if (!vehicles.Any())
+        {
+            <div class="vehicle-empty-state">
+                <div class="vehicle-empty-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 16.5h14l-1.2-5.2a2 2 0 0 0-1.9-1.5H8.1a2 2 0 0 0-1.9 1.5L5 16.5Z" />
+                        <path d="M4 16.5v2.2M20 16.5v2.2M7 16.5h10" />
+                        <circle cx="8" cy="16.5" r="1" />
+                        <circle cx="16" cy="16.5" r="1" />
+                    </svg>
+                </div>
+                <strong>No vehicle records found</strong>
+                <span>Register your first customer vehicle to get started.</span>
+                <a asp-action="Create" class="vehicle-primary-button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Add Vehicle
+                </a>
+            </div>
+        }
 
         <div class="vehicle-table-footer">
-
             <span>
-                Showing
-                <strong id="vehicleVisibleCount">@Model.Count()</strong>
-                vehicles
+                Showing <strong id="vehicleShowingRange">0–0</strong>
+                of <strong id="vehicleTotalFiltered">0</strong> vehicles
             </span>
-
-            <div class="vehicle-pagination">
-
-                <button type="button">‹</button>
-
-                <button type="button" class="active">1</button>
-
-                <button type="button">2</button>
-
-                <button type="button">3</button>
-
-                <span>...</span>
-
-                <button type="button">›</button>
-
-            </div>
-
+            <div class="vehicle-pagination" id="vehiclePagination" aria-label="Vehicle pagination"></div>
         </div>
-
     </div>
 </div>
 
-
-<!-- ADD / EDIT DRAWER -->
-
-<div id="vehicleDrawerOverlay"
-     class="vehicle-drawer-overlay"
-     onclick="closeVehicleDrawer(event)">
-
-    <aside id="vehicleDrawer"
-           class="vehicle-drawer"
-           onclick="event.stopPropagation()">
-
-        <div class="vehicle-drawer-header">
-
-            <div>
-                <h2 id="vehicleDrawerTitle">Add New Vehicle</h2>
-
-                <span id="vehicleDrawerSubtitle">
-                    FLEET REGISTRATION
-                </span>
-            </div>
-
-            <button type="button"
-                    class="vehicle-drawer-close"
-                    onclick="closeVehicleDrawer()">
-                ×
-            </button>
-
-        </div>
-
-        <div class="vehicle-drawer-body">
-
-            <form id="vehicleForm"
-                  method="post"
-                  action="/Vehicles/Create">
-
-                @Html.AntiForgeryToken()
-
-                <input type="hidden"
-                       id="formVehicleId"
-                       name="VehicleId" />
-
-                <div class="vehicle-form-grid">
-
-                    <div class="vehicle-form-field">
-                        <label>MAKE</label>
-
-                        <input id="formMake"
-                               name="Make"
-                               required
-                               placeholder="e.g. Toyota" />
-                    </div>
-
-                    <div class="vehicle-form-field">
-                        <label>MODEL</label>
-
-                        <input id="formModel"
-                               name="Model"
-                               required
-                               placeholder="e.g. Model 3" />
-                    </div>
-
-                    <div class="vehicle-form-field">
-                        <label>YEAR</label>
-
-                        <input id="formYear"
-                               name="Year"
-                               type="number"
-                               placeholder="2024" />
-                    </div>
-
-                    <div class="vehicle-form-field">
-                        <label>COLOR</label>
-
-                        <input id="formColor"
-                               name="Color"
-                               placeholder="e.g. Midnight Silver" />
-                    </div>
-
-                </div>
-
-                <div class="vehicle-form-field full">
-                    <label>LICENSE PLATE</label>
-
-                    <input id="formPlate"
-                           name="PlateNumber"
-                           required
-                           placeholder="ENTER PLATE NUMBER" />
-                </div>
-
-                <div class="vehicle-form-field full">
-                    <label>VIN</label>
-
-                    <input id="formVin"
-                           name="VIN"
-                           placeholder="ENTER VEHICLE IDENTIFICATION NUMBER" />
-                </div>
-
-                <div class="vehicle-form-field full">
-                    <label>OWNER</label>
-
-                    <select id="formCustomer"
-                            name="CustomerId"
-                            required>
-
-                        <option value="">
-                            Search & Select Customer...
-                        </option>
-
-                        @foreach (var customer in (SelectList)ViewBag.CustomerId)
-                        {
-                            <option value="@customer.Value">
-                                @customer.Text
-                            </option>
-                        }
-
-                    </select>
-                </div>
-
-                <div class="vehicle-form-field full">
-                    <label>MILEAGE</label>
-
-                    <input id="formMileage"
-                           name="Mileage"
-                           type="number"
-                           placeholder="Current mileage" />
-                </div>
-
-                <div class="vehicle-form-field full">
-                    <label>IMAGE URL</label>
-
-                    <input id="formImage"
-                           name="ImageUrl"
-                           placeholder="Optional vehicle image URL" />
-                </div>
-
-                <div class="vehicle-drawer-footer">
-
-                    <button type="button"
-                            class="vehicle-cancel-button"
-                            onclick="closeVehicleDrawer()">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                            id="vehicleSubmitButton"
-                            class="vehicle-save-button">
-                        Register Vehicle
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    </aside>
-
-</div>
-
-
-<!-- VEHICLE SUMMARY DRAWER -->
-
-<div id="vehicleDetailsOverlay"
-     class="vehicle-drawer-overlay"
-     onclick="closeVehicleDetails(event)">
-
-    <aside id="vehicleDetailsDrawer"
-           class="vehicle-drawer vehicle-summary-drawer"
-           onclick="event.stopPropagation()">
-
-        <div class="vehicle-drawer-header">
-
-            <div>
-                <h2>Vehicle Summary</h2>
-
-                <span>VEHICLE RECORD</span>
-            </div>
-
-            <button type="button"
-                    class="vehicle-drawer-close"
-                    onclick="closeVehicleDetails()">
-                ×
-            </button>
-
-        </div>
-
-        <div class="vehicle-summary-body">
-
-            <div id="summaryImage"
-                 class="vehicle-summary-image">
-                🚗
-            </div>
-
-            <div class="vehicle-summary-title">
-
-                <div>
-                    <h2 id="summaryName">Vehicle</h2>
-
-                    <p id="summarySubtitle">
-                        Vehicle information
-                    </p>
-                </div>
-
-                <span class="vehicle-status active">
-                    ACTIVE
-                </span>
-
-            </div>
-
-            <div class="vehicle-summary-stats">
-
-                <div>
-                    <span>PLATE NUMBER</span>
-                    <strong id="summaryPlate">—</strong>
-                </div>
-
-                <div>
-                    <span>ODOMETER</span>
-                    <strong id="summaryMileage">—</strong>
-                </div>
-
-            </div>
-
-            <div class="vehicle-summary-section">
-
-                <span class="vehicle-summary-label">
-                    VEHICLE INFORMATION
-                </span>
-
-                <div class="vehicle-summary-grid">
-
-                    <div>
-                        <span>Make</span>
-                        <strong id="summaryMake">—</strong>
-                    </div>
-
-                    <div>
-                        <span>Model</span>
-                        <strong id="summaryModel">—</strong>
-                    </div>
-
-                    <div>
-                        <span>Year</span>
-                        <strong id="summaryYear">—</strong>
-                    </div>
-
-                    <div>
-                        <span>Color</span>
-                        <strong id="summaryColor">—</strong>
-                    </div>
-
-                    <div>
-                        <span>VIN</span>
-                        <strong id="summaryVin">—</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="vehicle-summary-section">
-
-                <span class="vehicle-summary-label">
-                    OWNER INFORMATION
-                </span>
-
-                <div class="vehicle-owner-card">
-
-                    <div class="vehicle-owner-avatar large">
-                        <span id="summaryOwnerInitial">?</span>
-                    </div>
-
-                    <div>
-                        <strong id="summaryOwner">
-                            No owner
-                        </strong>
-
-                        <small>
-                            AutoFlow Customer
-                        </small>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="vehicle-summary-section">
-
-                <span class="vehicle-summary-label">
-                    RECORD INFORMATION
-                </span>
-
-                <div class="vehicle-summary-record">
-
-                    <div>
-                        <span>Created</span>
-                        <strong id="summaryCreated">—</strong>
-                    </div>
-
-                    <div>
-                        <span>Last Updated</span>
-                        <strong id="summaryUpdated">—</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="vehicle-summary-footer">
-
-                <button type="button"
-                        class="vehicle-secondary-large"
-                        onclick="closeVehicleDetails()">
-                    Close
-                </button>
-
-                <button type="button"
-                        class="vehicle-save-button"
-                        onclick="editFromSummary()">
-                    Edit Vehicle
-                </button>
-
-            </div>
-
-        </div>
-
-    </aside>
-
-</div>
-
-
-<!-- ARCHIVE MODAL -->
-
-<div id="vehicleArchiveModal"
-     class="vehicle-modal-overlay"
-     onclick="closeArchiveModal(event)">
-
-    <div class="vehicle-archive-modal"
-         onclick="event.stopPropagation()">
-
-        <div class="vehicle-archive-icon">
-            ▰
-        </div>
-
-        <h2>Archive Vehicle?</h2>
-
-        <p>
-            This will remove
-            <strong id="archiveVehicleName">this vehicle</strong>
-            from the active records.
-            You can restore it later from Archived Vehicles.
-        </p>
-
-        <form id="archiveForm"
-              method="post"
-              action="/Vehicles/Delete">
-
-            @Html.AntiForgeryToken()
-
-            <input type="hidden"
-                   id="archiveVehicleId"
-                   name="id" />
-
-            <button type="submit"
-                    class="vehicle-archive-confirm">
-                Yes, Archive Vehicle
-            </button>
-
-        </form>
-
-        <button type="button"
-                class="vehicle-archive-cancel"
-                onclick="closeArchiveModal()">
-            No, Keep Active
-        </button>
-
-    </div>
-
-</div>
-
+<div id="vehicleOverlayHost" class="vehicle-overlay-host" aria-live="polite"></div>
+
+<style>
+@@keyframes vehicleOverlaySpin {
+    to { transform: rotate(360deg); }
+}
+
+.vehicle-overlay-host {
+    position: relative;
+    z-index: 5000;
+}
+
+body.vehicle-overlay-open {
+    overflow: hidden;
+}
+
+.vehicle-overlay-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 5200;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 23, 42, .18);
+    backdrop-filter: blur(2px);
+}
+
+.vehicle-overlay-loading-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    border: 1px solid #e7eaf0;
+    border-radius: 10px;
+    background: #fff;
+    color: #5f6b7c;
+    font-size: 10px;
+    font-weight: 800;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, .12);
+}
+
+.vehicle-overlay-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #7c3aed;
+    border-radius: 50%;
+    animation: vehicleOverlaySpin .65s linear infinite;
+}
+
+/* AutoFlow Customer Management - Premium Functional UI */
+.vehicle-page-premium {
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.vehicle-page-premium .vehicle-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 7px;
+    color: #7c3aed;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+
+.vehicle-eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7c3aed;
+    box-shadow: 0 0 0 4px rgba(124,58,237,.08);
+}
+
+.vehicle-page-premium .vehicle-page-header {
+    align-items: flex-end;
+    margin-bottom: 18px;
+}
+
+.vehicle-page-premium .vehicle-page-header h1 {
+    margin: 0;
+    font-size: 27px;
+    font-weight: 760;
+    letter-spacing: -.7px;
+    color: #111827;
+}
+
+.vehicle-page-premium .vehicle-page-header p {
+    margin-top: 5px;
+    color: #7b8494;
+}
+
+.vehicle-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.vehicle-header-actions .vehicle-secondary-button,
+.vehicle-header-actions .vehicle-primary-button {
+    min-height: 38px;
+}
+
+.vehicle-secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid #e2e5eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+    transition: .18s ease;
+}
+
+.vehicle-secondary-button:hover {
+    color: #6d28d9;
+    border-color: #d9ccfa;
+    background: #faf8ff;
+}
+
+.vehicle-secondary-button svg,
+.vehicle-primary-button svg,
+.vehicle-clear-button svg,
+.vehicle-filter-button svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-header-count {
+    min-width: 20px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #64748b;
+    font-size: 9px;
+    text-align: center;
+}
+
+.vehicle-summary-strip {
+    display: flex;
+    align-items: center;
+    min-height: 58px;
+    margin-bottom: 14px;
+    padding: 0 15px;
+    border: 1px solid #e7e9ef;
+    border-radius: 11px;
+    background: linear-gradient(180deg,#fff 0%,#fbfbfd 100%);
+    box-shadow: 0 4px 16px rgba(15,23,42,.025);
+}
+
+.vehicle-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #64748b;
+    font-size: 10px;
+}
+
+.vehicle-summary-item strong {
+    margin-right: 3px;
+    color: #111827;
+    font-size: 13px;
+}
+
+.vehicle-summary-item-muted {
+    color: #94a3b8;
+}
+
+.vehicle-summary-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+.vehicle-summary-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-summary-icon-purple { background:#f3efff; color:#7c3aed; }
+.vehicle-summary-icon-green { background:#ecfdf5; color:#059669; }
+.vehicle-summary-icon-blue { background:#eff6ff; color:#2563eb; }
+
+.vehicle-summary-divider {
+    width: 1px;
+    height: 24px;
+    margin: 0 20px;
+    background: #edf0f4;
+}
+
+.vehicle-toolbar-premium {
+    position: relative;
+    gap: 8px;
+    padding: 10px;
+    margin-bottom: 7px;
+    border-radius: 11px;
+    box-shadow: 0 3px 12px rgba(15,23,42,.025);
+}
+
+.vehicle-toolbar-premium .vehicle-search {
+    min-width: 280px;
+}
+
+.vehicle-toolbar-premium .vehicle-search-icon {
+    display: inline-flex;
+    width: 15px;
+    height: 15px;
+}
+
+.vehicle-toolbar-premium .vehicle-search-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+.vehicle-toolbar-premium .vehicle-filter-select {
+    position: relative;
+    min-width: 150px;
+    gap: 6px;
+    padding-right: 27px;
+}
+
+.vehicle-toolbar-premium .vehicle-filter-select label {
+    color: #9ca3af;
+    font-size: 9px;
+    font-weight: 650;
+}
+
+.vehicle-toolbar-premium .vehicle-filter-select select {
+    min-width: 75px;
+    max-width: 130px;
+    color: #374151;
+    font-size: 10px;
+    font-weight: 600;
+    appearance: none;
+    cursor: pointer;
+}
+
+.vehicle-control-icon {
+    display: inline-flex;
+    color: #8b5cf6;
+}
+
+.vehicle-control-icon svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-select-chevron {
+    position: absolute;
+    right: 9px;
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: #94a3b8;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.vehicle-filter-popover-wrap {
+    position: relative;
+}
+
+.vehicle-filter-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    min-width: 55px;
+    padding: 0 9px;
+    transition: .18s ease;
+}
+
+.vehicle-filter-toggle.is-open,
+.vehicle-filter-toggle:hover {
+    border-color: #cfc2f7;
+    color: #6d28d9;
+    background: #faf8ff;
+}
+
+.vehicle-filter-triangle {
+    display: inline-flex;
+    transition: transform .18s ease;
+}
+
+.vehicle-filter-triangle svg {
+    width: 12px;
+    height: 12px;
+    stroke-width: 2;
+}
+
+.vehicle-filter-toggle.is-open .vehicle-filter-triangle {
+    transform: rotate(180deg);
+}
+
+.vehicle-filter-count {
+    display: none;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 17px;
+    text-align: center;
+}
+
+.vehicle-filter-count.has-filters {
+    display: inline-block;
+}
+
+.vehicle-advanced-filters {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 285px;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 45px rgba(15,23,42,.14);
+}
+
+.vehicle-advanced-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 11px;
+    border-bottom: 1px solid #f1f3f6;
+}
+
+.vehicle-advanced-head strong,
+.vehicle-advanced-head span {
+    display: block;
+}
+
+.vehicle-advanced-head strong {
+    color: #111827;
+    font-size: 12px;
+}
+
+.vehicle-advanced-head span {
+    margin-top: 3px;
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+.vehicle-popover-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.vehicle-popover-close:hover {
+    color: #7c3aed;
+    background: #faf8ff;
+}
+
+.vehicle-popover-close svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+.vehicle-advanced-field {
+    margin-top: 12px;
+}
+
+.vehicle-advanced-field label {
+    display: block;
+    margin-bottom: 5px;
+    color: #475569;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.vehicle-advanced-field select {
+    width: 100%;
+    height: 34px;
+    padding: 0 9px;
+    border: 1px solid #e2e5eb;
+    border-radius: 7px;
+    background: #fff;
+    color: #334155;
+    font-size: 10px;
+    outline: none;
+}
+
+.vehicle-advanced-field select:focus {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(139,92,246,.09);
+}
+
+.vehicle-advanced-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 11px;
+    border-top: 1px solid #f1f3f6;
+}
+
+.vehicle-advanced-footer span {
+    color: #94a3b8;
+    font-size: 8px;
+}
+
+.vehicle-small-primary {
+    height: 31px;
+    padding: 0 11px;
+    border: 0;
+    border-radius: 7px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.vehicle-small-primary:hover {
+    background: #6d28d9;
+}
+
+.vehicle-clear-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vehicle-result-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 28px;
+    padding: 0 4px 7px;
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+.vehicle-result-bar strong {
+    color: #374151;
+    font-size: 10px;
+}
+
+.vehicle-result-state {
+    color: #94a3b8;
+}
+
+.vehicle-table-card-premium {
+    border-radius: 11px;
+    box-shadow: 0 5px 20px rgba(15,23,42,.035);
+}
+
+.vehicle-table-card-premium .vehicle-table th {
+    height: 44px;
+}
+
+.vehicle-table-card-premium .vehicle-table td {
+    height: 58px;
+}
+
+.vehicle-identity-text {
+    min-width: 0;
+}
+
+.vehicle-identity-text strong,
+.vehicle-identity-text small {
+    display: block;
+}
+
+.vehicle-identity-text strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vehicle-identity-text small {
+    margin-top: 3px;
+}
+
+.vehicle-avatar-archived {
+    background: #eef2f7 !important;
+    color: #64748b !important;
+}
+
+.vehicle-contact-link,
+.vehicle-phone-link {
+    display: block;
+    width: fit-content;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #475569;
+    text-decoration: none;
+}
+
+.vehicle-contact-link:hover,
+.vehicle-phone-link:hover {
+    color: #7c3aed;
+    text-decoration: underline;
+}
+
+.vehicle-phone-link {
+    margin-top: 3px;
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.vehicle-no-contact {
+    color: #a3aab5 !important;
+}
+
+.vehicle-status-badge {
+    gap: 6px;
+}
+
+.vehicle-status-badge span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+
+.vehicle-status-badge.active span {
+    background: #10b981;
+}
+
+.vehicle-status-badge.archived span {
+    background: #94a3b8;
+}
+
+.vehicle-row-actions {
+    gap: 4px;
+}
+
+.vehicle-icon-button {
+    transition: transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.vehicle-icon-button svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-icon-button:hover {
+    transform: translateY(-1px);
+}
+
+.vehicle-restore-action {
+    border: 1px solid #d1fae5;
+    color: #059669;
+    background: #f0fdf4;
+}
+
+.vehicle-restore-action:hover {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.vehicle-inline-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.vehicle-filtered-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.vehicle-filtered-empty strong {
+    color: #374151;
+    font-size: 13px;
+}
+
+.vehicle-filtered-empty span {
+    margin-bottom: 7px;
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.vehicle-filtered-empty .vehicle-empty-icon {
+    margin-bottom: 5px;
+}
+
+.vehicle-empty-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-table-footer {
+    min-height: 53px;
+}
+
+.vehicle-pagination {
+    flex-wrap: wrap;
+}
+
+.vehicle-pagination button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.vehicle-page-nav {
+    min-width: 62px !important;
+}
+
+@@media (max-width: 900px) {
+    .vehicle-summary-strip {
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        padding: 10px 13px;
+    }
+
+    .vehicle-summary-divider {
+        display: none;
+    }
+
+    .vehicle-toolbar-premium .vehicle-search {
+        min-width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+@@media (max-width: 700px) {
+    .vehicle-page-premium .vehicle-page-header {
+        align-items: stretch;
+    }
+
+    .vehicle-header-actions {
+        width: 100%;
+    }
+
+    .vehicle-header-actions > * {
+        flex: 1;
+    }
+
+    .vehicle-toolbar-premium .vehicle-filter-select,
+    .vehicle-filter-popover-wrap,
+    .vehicle-toolbar-premium .vehicle-filter-toggle,
+    .vehicle-toolbar-premium .vehicle-clear-button {
+        flex: 1;
+    }
+
+    .vehicle-toolbar-premium .vehicle-filter-select {
+        min-width: 0;
+    }
+
+    .vehicle-advanced-filters {
+        left: 0;
+        right: auto;
+        width: min(285px, calc(100vw - 40px));
+    }
+
+    .vehicle-result-bar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+    }
+}
+
+@@media (max-width: 520px) {
+    .vehicle-header-actions {
+        flex-direction: column;
+    }
+
+    .vehicle-header-actions > * {
+        width: 100%;
+    }
+
+    .vehicle-summary-item-muted {
+        display: none;
+    }
+
+    .vehicle-toolbar-premium .vehicle-filter-select,
+    .vehicle-filter-popover-wrap,
+    .vehicle-toolbar-premium .vehicle-filter-toggle,
+    .vehicle-toolbar-premium .vehicle-clear-button {
+        width: 100%;
+        flex-basis: 100%;
+    }
+
+    .vehicle-table-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .vehicle-pagination {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+}
+
+
+/* AutoFlow Vehicle Records - Customer Management alignment */
+.vehicle-page-premium .vehicle-table-card,
+.vehicle-page-premium .vehicle-table-card-premium {
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 11px;
+}
+
+.vehicle-page-premium .vehicle-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.vehicle-page-premium .vehicle-table {
+    width: 100%;
+    min-width: 980px;
+    border-collapse: collapse;
+}
+
+.vehicle-page-premium .vehicle-table th {
+    height: 42px;
+    padding: 0 14px;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.vehicle-page-premium .vehicle-table td {
+    height: 58px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f3f5;
+    color: #374151;
+    font-size: 11px;
+    vertical-align: middle;
+}
+
+.vehicle-page-premium .vehicle-table tbody tr:hover {
+    background: #faf9ff;
+}
+
+.vehicle-page-premium .vehicle-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 185px;
+}
+
+.vehicle-page-premium .vehicle-avatar {
+    width: 38px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 38px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #e8ebf0;
+    background: #f1f3f6;
+    color: #7c3aed;
+}
+
+.vehicle-page-premium .vehicle-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vehicle-page-premium .vehicle-avatar svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-page-premium .vehicle-identity-text {
+    min-width: 0;
+}
+
+.vehicle-page-premium .vehicle-identity-text strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #111827;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.vehicle-page-premium .vehicle-identity-text small {
+    display: block;
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #9ca3af;
+    font-size: 9px;
+}
+
+.vehicle-page-premium .vehicle-contact {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 145px;
+}
+
+.vehicle-page-premium .vehicle-owner-avatar {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 10px;
+    font-weight: 750;
+    border: 1px solid #e4ddfb;
+}
+
+.vehicle-page-premium .vehicle-owner-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    background: #ffffff;
+}
+
+.vehicle-page-premium .vehicle-contact strong,
+.vehicle-page-premium .vehicle-contact small {
+    display: block;
+}
+
+.vehicle-page-premium .vehicle-contact strong {
+    color: #111827;
+    font-size: 10px;
+    font-weight: 650;
+}
+
+.vehicle-page-premium .vehicle-contact small {
+    margin-top: 3px;
+    color: #9ca3af;
+    font-size: 9px;
+}
+
+.vehicle-page-premium .vehicle-registration strong,
+.vehicle-page-premium .vehicle-detail-cell strong {
+    display: block;
+    color: #374151;
+    font-size: 10px;
+    font-weight: 650;
+}
+
+.vehicle-page-premium .vehicle-registration small,
+.vehicle-page-premium .vehicle-detail-cell small {
+    display: block;
+    margin-top: 3px;
+    color: #9ca3af;
+    font-size: 9px;
+}
+
+.vehicle-page-premium .vehicle-registration strong {
+    color: #111827;
+}
+
+.vehicle-page-premium .vehicle-mileage {
+    color: #4b5563;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.vehicle-page-premium .vehicle-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 8px;
+    font-weight: 750;
+    letter-spacing: .04em;
+}
+
+.vehicle-page-premium .vehicle-status-badge.active {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.vehicle-page-premium .vehicle-status-badge.archived {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.vehicle-page-premium .vehicle-status-badge span {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 5px;
+    border-radius: 50%;
+}
+
+.vehicle-page-premium .vehicle-status-badge.active span {
+    background: #10b981;
+}
+
+.vehicle-page-premium .vehicle-status-badge.archived span {
+    background: #94a3b8;
+}
+
+.vehicle-page-premium .vehicle-actions-heading {
+    text-align: right;
+}
+
+.vehicle-page-premium .vehicle-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.vehicle-page-premium .vehicle-icon-button {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #6b7280;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.vehicle-page-premium .vehicle-icon-button:hover {
+    border-color: #ede9fe;
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.vehicle-page-premium .vehicle-delete-action:hover {
+    border-color: #fee2e2;
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.vehicle-page-premium .vehicle-restore-action {
+    border-color: #d1fae5;
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.vehicle-page-premium .vehicle-icon-button svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vehicle-page-premium .vehicle-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    min-height: 53px;
+    padding: 12px 14px;
+    color: #9ca3af;
+    font-size: 9px;
+}
+
+.vehicle-page-premium .vehicle-table-footer strong {
+    color: #374151;
+}
+
+.vehicle-page-premium .vehicle-pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vehicle-page-premium .vehicle-pagination button {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.vehicle-page-premium .vehicle-pagination button:hover,
+.vehicle-page-premium .vehicle-pagination button.active {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #fff;
+}
+
+.vehicle-page-premium .vehicle-pagination button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+@@media (max-width: 900px) {
+    .vehicle-page-premium .vehicle-table {
+        min-width: 900px;
+    }
+}
+
+    .vehicle-avatar { overflow:hidden; }
+    .vehicle-avatar img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; background:#fff; }
+</style>
 
 @section Scripts {
-
 <script>
-    let selectedVehicle = null;
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("vehicleSearch");
+        const statusFilter = document.getElementById("vehicleStatusFilter");
+        const makeFilter = document.getElementById("vehicleMakeFilter");
+        const sortFilter = document.getElementById("vehicleSortFilter");
+        const imageFilter = document.getElementById("vehicleImageFilter");
+        const clearButton = document.getElementById("clearVehicleFilters");
+        const emptyClearButton = document.getElementById("vehicleEmptyClear");
+        const advancedToggle = document.getElementById("vehicleAdvancedToggle");
+        const advancedFilters = document.getElementById("vehicleAdvancedFilters");
+        const advancedClose = document.getElementById("vehicleAdvancedClose");
+        const advancedApply = document.getElementById("vehicleApplyAdvanced");
+        const filterCount = document.getElementById("vehicleFilterCount");
+        const advancedSummary = document.getElementById("vehicleAdvancedSummary");
+        const resultCount = document.getElementById("vehicleResultCount");
+        const resultState = document.getElementById("vehicleResultState");
+        const showingRange = document.getElementById("vehicleShowingRange");
+        const totalFiltered = document.getElementById("vehicleTotalFiltered");
+        const pagination = document.getElementById("vehiclePagination");
+        const filteredEmpty = document.getElementById("vehicleFilteredEmpty");
+        const tableBody = document.getElementById("vehicleTableBody");
+        const rows = Array.from(document.querySelectorAll(".vehicle-row"));
+        const pageSize = 14;
+        let currentPage = 1;
 
-    const drawerOverlay = document.getElementById("vehicleDrawerOverlay");
-    const detailsOverlay = document.getElementById("vehicleDetailsOverlay");
-    const archiveModal = document.getElementById("vehicleArchiveModal");
-
-    function getVehicleData(button) {
-        const row = button.closest(".vehicle-row");
-
-        return {
-            row: row,
-            id: row.dataset.id,
-            customerId: row.dataset.customerId,
-            customer: row.dataset.customer,
-            plate: row.dataset.plate,
-            vin: row.dataset.vin,
-            make: row.dataset.makeValue,
-            model: row.dataset.model,
-            year: row.dataset.year,
-            color: row.dataset.color,
-            mileage: row.dataset.mileage,
-            image: row.dataset.image,
-            created: row.dataset.created,
-            updated: row.dataset.updated
-        };
-    }
-
-    function openVehicleDrawer(mode, button) {
-
-        const form = document.getElementById("vehicleForm");
-
-        if (mode === "add") {
-
-            document.getElementById("vehicleDrawerTitle").textContent =
-                "Add New Vehicle";
-
-            document.getElementById("vehicleDrawerSubtitle").textContent =
-                "FLEET REGISTRATION";
-
-            document.getElementById("vehicleSubmitButton").textContent =
-                "Register Vehicle";
-
-            form.action = "/Vehicles/Create";
-
-            document.getElementById("formVehicleId").value = "";
-            document.getElementById("formMake").value = "";
-            document.getElementById("formModel").value = "";
-            document.getElementById("formYear").value = "";
-            document.getElementById("formColor").value = "";
-            document.getElementById("formPlate").value = "";
-            document.getElementById("formVin").value = "";
-            document.getElementById("formMileage").value = "";
-            document.getElementById("formImage").value = "";
-            document.getElementById("formCustomer").value = "";
-
-        } else if (mode === "edit") {
-
-            selectedVehicle = getVehicleData(button);
-
-            document.getElementById("vehicleDrawerTitle").textContent =
-                "Edit Vehicle";
-
-            document.getElementById("vehicleDrawerSubtitle").textContent =
-                "UPDATE FLEET RECORD";
-
-            document.getElementById("vehicleSubmitButton").textContent =
-                "Save Changes";
-
-            form.action = "/Vehicles/Edit/" + selectedVehicle.id;
-
-            document.getElementById("formVehicleId").value =
-                selectedVehicle.id;
-
-            document.getElementById("formMake").value =
-                selectedVehicle.make;
-
-            document.getElementById("formModel").value =
-                selectedVehicle.model;
-
-            document.getElementById("formYear").value =
-                selectedVehicle.year;
-
-            document.getElementById("formColor").value =
-                selectedVehicle.color;
-
-            document.getElementById("formPlate").value =
-                selectedVehicle.plate;
-
-            document.getElementById("formVin").value =
-                selectedVehicle.vin;
-
-            document.getElementById("formMileage").value =
-                selectedVehicle.mileage;
-
-            document.getElementById("formImage").value =
-                selectedVehicle.image;
-
-            document.getElementById("formCustomer").value =
-                selectedVehicle.customerId;
+        function closeAdvanced() {
+            advancedFilters.hidden = true;
+            advancedToggle.setAttribute("aria-expanded", "false");
+            advancedToggle.classList.remove("is-open");
         }
 
-        drawerOverlay.classList.add("open");
-        document.body.classList.add("drawer-open");
-    }
-
-    function closeVehicleDrawer(event) {
-
-        if (event && event.target !== drawerOverlay) {
-            return;
+        function openAdvanced() {
+            advancedFilters.hidden = false;
+            advancedToggle.setAttribute("aria-expanded", "true");
+            advancedToggle.classList.add("is-open");
         }
 
-        drawerOverlay.classList.remove("open");
-        document.body.classList.remove("drawer-open");
-    }
+        function sortRows(list) {
+            return list.sort((a, b) => {
+                const sort = sortFilter.value;
+                const makeA = a.dataset.vehicleMake || "";
+                const makeB = b.dataset.vehicleMake || "";
+                const dateA = new Date(a.dataset.vehicleCreated || 0).getTime();
+                const dateB = new Date(b.dataset.vehicleCreated || 0).getTime();
+                const mileageA = Number(a.dataset.vehicleMileage || 0);
+                const mileageB = Number(b.dataset.vehicleMileage || 0);
 
-    function openVehicleDetails(button) {
-
-        selectedVehicle = getVehicleData(button);
-
-        document.getElementById("summaryName").textContent =
-            selectedVehicle.make + " " + selectedVehicle.model;
-
-        document.getElementById("summarySubtitle").textContent =
-            (selectedVehicle.year || "Year unknown") +
-            " · " +
-            selectedVehicle.color;
-
-        document.getElementById("summaryPlate").textContent =
-            selectedVehicle.plate || "—";
-
-        document.getElementById("summaryMileage").textContent =
-            selectedVehicle.mileage
-                ? Number(selectedVehicle.mileage).toLocaleString() + " km"
-                : "—";
-
-        document.getElementById("summaryMake").textContent =
-            selectedVehicle.make || "—";
-
-        document.getElementById("summaryModel").textContent =
-            selectedVehicle.model || "—";
-
-        document.getElementById("summaryYear").textContent =
-            selectedVehicle.year || "—";
-
-        document.getElementById("summaryColor").textContent =
-            selectedVehicle.color || "—";
-
-        document.getElementById("summaryVin").textContent =
-            selectedVehicle.vin || "Not recorded";
-
-        document.getElementById("summaryOwner").textContent =
-            selectedVehicle.customer || "No owner";
-
-        document.getElementById("summaryOwnerInitial").textContent =
-            selectedVehicle.customer &&
-            selectedVehicle.customer !== "No owner"
-                ? selectedVehicle.customer.charAt(0).toUpperCase()
-                : "?";
-
-        document.getElementById("summaryCreated").textContent =
-            selectedVehicle.created || "—";
-
-        document.getElementById("summaryUpdated").textContent =
-            selectedVehicle.updated || "—";
-
-        const imageContainer =
-            document.getElementById("summaryImage");
-
-        if (selectedVehicle.image) {
-
-            imageContainer.innerHTML =
-                '<img src="' +
-                selectedVehicle.image +
-                '" alt="Vehicle image">';
-
-        } else {
-
-            imageContainer.innerHTML = "🚗";
+                if (sort === "oldest") return dateA - dateB;
+                if (sort === "makeAsc") return makeA.localeCompare(makeB);
+                if (sort === "makeDesc") return makeB.localeCompare(makeA);
+                if (sort === "mileageHigh") return mileageB - mileageA;
+                if (sort === "mileageLow") return mileageA - mileageB;
+                return dateB - dateA;
+            });
         }
 
-        detailsOverlay.classList.add("open");
-        document.body.classList.add("drawer-open");
-    }
+        function updateFilterCount() {
+            let count = 0;
+            if (statusFilter.value !== "all") count++;
+            if (makeFilter.value !== "all") count++;
+            if (sortFilter.value !== "newest") count++;
+            if (imageFilter.value !== "all") count++;
+            if (searchInput.value.trim()) count++;
 
-    function closeVehicleDetails(event) {
+            filterCount.textContent = count;
+            filterCount.classList.toggle("has-filters", count > 0);
 
-        if (event && event.target !== detailsOverlay) {
-            return;
+            const labels = [];
+            if (sortFilter.value !== "newest") labels.push("custom sort");
+            if (imageFilter.value !== "all") labels.push(imageFilter.options[imageFilter.selectedIndex].text.toLowerCase());
+            advancedSummary.textContent = labels.length ? labels.join(" • ") : "No additional filters";
         }
 
-        detailsOverlay.classList.remove("open");
-        document.body.classList.remove("drawer-open");
-    }
+        function updatePagination(totalPages) {
+            pagination.innerHTML = "";
+            if (totalPages <= 1) return;
 
-    function editFromSummary() {
+            const previous = document.createElement("button");
+            previous.type = "button";
+            previous.className = "vehicle-page-nav";
+            previous.textContent = "Previous";
+            previous.disabled = currentPage === 1;
+            previous.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    filterVehicles(false);
+                }
+            });
+            pagination.appendChild(previous);
 
-        detailsOverlay.classList.remove("open");
+            const start = Math.max(1, currentPage - 2);
+            const end = Math.min(totalPages, start + 4);
 
-        if (!selectedVehicle) {
-            return;
-        }
-
-        const row = selectedVehicle.row;
-
-        setTimeout(function () {
-            openVehicleDrawer("edit", row.querySelector('[title="Edit"]'));
-        }, 150);
-    }
-
-    function openArchiveModal(button) {
-
-        selectedVehicle = getVehicleData(button);
-
-        document.getElementById("archiveVehicleId").value =
-            selectedVehicle.id;
-
-        document.getElementById("archiveVehicleName").textContent =
-            selectedVehicle.make +
-            " " +
-            selectedVehicle.model +
-            " (" +
-            selectedVehicle.plate +
-            ")";
-
-        archiveModal.classList.add("open");
-        document.body.classList.add("drawer-open");
-    }
-
-    function closeArchiveModal(event) {
-
-        if (event && event.target !== archiveModal) {
-            return;
-        }
-
-        archiveModal.classList.remove("open");
-        document.body.classList.remove("drawer-open");
-    }
-
-    function toggleVehicleFilters() {
-
-        const panel =
-            document.getElementById("vehicleFilterPanel");
-
-        panel.classList.toggle("open");
-    }
-
-    function applyVehicleFilters() {
-
-        const search =
-            document.getElementById("vehicleSearch")
-                .value
-                .toLowerCase()
-                .trim();
-
-        const make =
-            document.getElementById("vehicleMakeFilter")
-                .value
-                .toLowerCase()
-                .trim();
-
-        const rows =
-            document.querySelectorAll(".vehicle-row");
-
-        let visible = 0;
-
-        rows.forEach(function (row) {
-
-            const rowSearch =
-                row.dataset.search.toLowerCase();
-
-            const rowMake =
-                row.dataset.make.toLowerCase();
-
-            const matchesSearch =
-                !search ||
-                rowSearch.includes(search);
-
-            const matchesMake =
-                !make ||
-                rowMake.includes(make);
-
-            const show =
-                matchesSearch &&
-                matchesMake;
-
-            row.style.display = show ? "" : "none";
-
-            if (show) {
-                visible++;
+            for (let page = start; page <= end; page++) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = page === currentPage ? "active" : "";
+                button.textContent = page;
+                button.setAttribute("aria-label", `Go to page ${page}`);
+                button.addEventListener("click", () => {
+                    currentPage = page;
+                    filterVehicles(false);
+                });
+                pagination.appendChild(button);
             }
-        });
 
-        document.getElementById("vehicleVisibleCount")
-            .textContent = visible;
-    }
+            const next = document.createElement("button");
+            next.type = "button";
+            next.className = "vehicle-page-nav";
+            next.textContent = "Next";
+            next.disabled = currentPage === totalPages;
+            next.addEventListener("click", () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    filterVehicles(false);
+                }
+            });
+            pagination.appendChild(next);
+        }
 
-    function clearVehicleFilters() {
+        function filterVehicles(resetPage = true) {
+            if (resetPage) currentPage = 1;
 
-        document.getElementById("vehicleSearch").value = "";
-        document.getElementById("vehicleMakeFilter").value = "";
-        document.getElementById("vehicleStatusFilter").value = "";
+            const searchValue = searchInput.value.toLowerCase().trim();
+            const statusValue = statusFilter.value;
+            const makeValue = makeFilter.value.toLowerCase();
+            const imageValue = imageFilter.value;
 
-        document.querySelectorAll(".vehicle-row")
-            .forEach(function (row) {
-                row.style.display = "";
+            let matchingRows = rows.filter(row => {
+                const searchableText = row.dataset.vehicleSearch || "";
+                const rowMake = row.dataset.vehicleMake || "";
+                const rowStatus = row.dataset.vehicleStatus || "";
+                const hasImage = row.dataset.hasImage === "true";
+
+                const matchesSearch = searchableText.includes(searchValue);
+                const matchesStatus = statusValue === "all" || rowStatus === statusValue;
+                const matchesMake = makeValue === "all" || rowMake === makeValue;
+                const matchesImage = imageValue === "all"
+                    || (imageValue === "hasImage" && hasImage)
+                    || (imageValue === "noImage" && !hasImage);
+
+                return matchesSearch && matchesStatus && matchesMake && matchesImage;
             });
 
-        document.getElementById("vehicleVisibleCount")
-            .textContent =
-                document.querySelectorAll(".vehicle-row").length;
-    }
+            matchingRows = sortRows(matchingRows);
 
-    document.getElementById("vehicleSearch")
-        .addEventListener("input", applyVehicleFilters);
+            rows.forEach(row => {
+                row.style.display = "none";
+                row.classList.remove("vehicle-row-visible");
+            });
 
-    document.querySelectorAll(".vehicle-row").forEach(function (row) {
+            const total = matchingRows.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
 
-        row.addEventListener("dblclick", function () {
+            const startIndex = (currentPage - 1) * pageSize;
+            const visibleRows = matchingRows.slice(startIndex, startIndex + pageSize);
 
-            const button =
-                row.querySelector('[title="View"]');
+            visibleRows.forEach(row => {
+                row.style.display = "table-row";
+                row.classList.add("vehicle-row-visible");
+                tableBody.appendChild(row);
+            });
 
-            openVehicleDetails(button);
-        });
+            resultCount.textContent = total;
+            totalFiltered.textContent = total;
 
-    });
+            if (total === 0) {
+                showingRange.textContent = "0–0";
+                filteredEmpty.hidden = rows.length === 0;
+                resultState.textContent = rows.length === 0
+                    ? "No vehicle records in the database"
+                    : "No records match the current filters";
+            } else {
+                filteredEmpty.hidden = true;
+                const first = startIndex + 1;
+                const last = Math.min(startIndex + pageSize, total);
+                showingRange.textContent = `${first}–${last}`;
+                resultState.textContent = total === rows.length
+                    ? "Showing all vehicle records"
+                    : `${total} record${total === 1 ? "" : "s"} match your filters`;
+            }
 
-    document.addEventListener("keydown", function (event) {
-
-        if (event.key === "Escape") {
-
-            drawerOverlay.classList.remove("open");
-            detailsOverlay.classList.remove("open");
-            archiveModal.classList.remove("open");
-
-            document.body.classList.remove("drawer-open");
+            updatePagination(totalPages);
+            updateFilterCount();
         }
 
+        function clearFilters() {
+            searchInput.value = "";
+            statusFilter.value = "all";
+            makeFilter.value = "all";
+            sortFilter.value = "newest";
+            imageFilter.value = "all";
+            closeAdvanced();
+            filterVehicles(true);
+        }
+
+        searchInput.addEventListener("input", () => filterVehicles(true));
+        statusFilter.addEventListener("change", () => filterVehicles(true));
+        makeFilter.addEventListener("change", () => filterVehicles(true));
+        sortFilter.addEventListener("change", () => filterVehicles(true));
+        imageFilter.addEventListener("change", () => filterVehicles(true));
+        clearButton.addEventListener("click", clearFilters);
+        emptyClearButton.addEventListener("click", clearFilters);
+
+        advancedToggle.addEventListener("click", function () {
+            if (advancedFilters.hidden) openAdvanced();
+            else closeAdvanced();
+        });
+
+        advancedClose.addEventListener("click", closeAdvanced);
+        advancedApply.addEventListener("click", function () {
+            closeAdvanced();
+            filterVehicles(true);
+        });
+
+        document.addEventListener("click", function (event) {
+            const wrapper = document.querySelector(".vehicle-filter-popover-wrap");
+            if (wrapper && !wrapper.contains(event.target)) closeAdvanced();
+        });
+
+        filterVehicles(true);
+
+        const vehicleOverlayHost = document.getElementById("vehicleOverlayHost");
+        const vehicleOverlaySelectors = {
+            create: ".vehicle-create-drawer-page",
+            edit: ".vehicle-edit-page",
+            details: ".vehicle-details-page",
+            delete: ".vehicle-archive-modal-page",
+            archived: ".vehicle-archive-history-page",
+            archivedDetails: ".vehicle-archived-details-page"
+        };
+        const vehicleOverlayStyleIds = new Set();
+
+        function vehicleRouteKey(url) {
+            const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "").toLowerCase();
+            if (path === "/vehicles/create") return "create";
+            if (/^\/vehicles\/edit\/\d+$/.test(path)) return "edit";
+            if (/^\/vehicles\/details\/\d+$/.test(path)) return "details";
+            if (/^\/vehicles\/delete\/\d+$/.test(path)) return "delete";
+            if (path === "/vehicles/archived") return "archived";
+            if (/^\/vehicles\/archiveddetails\/\d+$/.test(path)) return "archivedDetails";
+            return null;
+        }
+
+        function isVehicleIndexUrl(url) {
+            const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "").toLowerCase();
+            return path === "/vehicles" || path === "/vehicles/index";
+        }
+
+        function closeVehicleOverlay() {
+            vehicleOverlayHost.innerHTML = "";
+            document.body.classList.remove("vehicle-overlay-open");
+        }
+
+        function appendVehicleOverlayStyles(doc, routeKey) {
+            if (vehicleOverlayStyleIds.has(routeKey)) return;
+            const selector = vehicleOverlaySelectors[routeKey];
+            const styleSignature = selector ? selector.replace(/^\./, "") : "";
+            const style = Array.from(doc.querySelectorAll("style")).find(item => (item.textContent || "").includes(styleSignature));
+            if (!style) return;
+            const clone = document.createElement("style");
+            clone.setAttribute("data-vehicle-overlay-style", routeKey);
+            clone.textContent = style.textContent || "";
+            document.head.appendChild(clone);
+            vehicleOverlayStyleIds.add(routeKey);
+        }
+
+        function getVehicleOverlayRoot(doc, routeKey) {
+            const selector = vehicleOverlaySelectors[routeKey];
+            return selector ? doc.querySelector(selector) : null;
+        }
+
+        function showVehicleOverlayLoading() {
+            vehicleOverlayHost.innerHTML = `
+                <div class="vehicle-overlay-loading">
+                    <div class="vehicle-overlay-loading-card">
+                        <span class="vehicle-overlay-spinner"></span>
+                        Loading vehicle workspace...
+                    </div>
+                </div>`;
+            document.body.classList.add("vehicle-overlay-open");
+        }
+
+        async function openVehicleOverlay(url) {
+            const routeKey = vehicleRouteKey(url);
+            if (!routeKey) {
+                window.location.href = url;
+                return;
+            }
+
+            showVehicleOverlayLoading();
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    credentials: "same-origin",
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+
+                if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, "text/html");
+                const root = getVehicleOverlayRoot(doc, routeKey);
+
+                if (!root) {
+                    window.location.href = url;
+                    return;
+                }
+
+                appendVehicleOverlayStyles(doc, routeKey);
+                vehicleOverlayHost.innerHTML = "";
+                root.setAttribute("data-vehicle-overlay-root", "true");
+                vehicleOverlayHost.appendChild(root);
+                document.body.classList.add("vehicle-overlay-open");
+
+                const firstField = root.querySelector("input:not([type='hidden']), textarea, select");
+                if (firstField) window.setTimeout(() => firstField.focus(), 120);
+            } catch (error) {
+                console.error("AutoFlow vehicle overlay error:", error);
+                window.location.href = url;
+            }
+        }
+
+        document.addEventListener("click", function (event) {
+            const link = event.target.closest("a[href]");
+            if (!link) return;
+
+            const overlayRoot = link.closest("[data-vehicle-overlay-root]");
+            const href = link.href;
+            const routeKey = vehicleRouteKey(href);
+
+            if (overlayRoot) {
+                if (isVehicleIndexUrl(href)) {
+                    event.preventDefault();
+                    closeVehicleOverlay();
+                    return;
+                }
+                if (routeKey) {
+                    event.preventDefault();
+                    openVehicleOverlay(href);
+                }
+                return;
+            }
+
+            if (!routeKey) return;
+            event.preventDefault();
+            openVehicleOverlay(href);
+        }, true);
+
+        document.addEventListener("click", function (event) {
+            const backdrop = event.target.closest(
+                ".vehicle-create-drawer-backdrop, " +
+                ".vehicle-drawer-backdrop, " +
+                ".vehicle-edit-backdrop, " +
+                ".vehicle-details-backdrop, " +
+                ".vehicle-archive-history-backdrop, " +
+                ".vehicle-archived-details-backdrop"
+            );
+            if (!backdrop) return;
+            const root = backdrop.closest("[data-vehicle-overlay-root]");
+            if (!root) return;
+            event.preventDefault();
+            closeVehicleOverlay();
+        }, true);
+
+        // Live vehicle image preview for dynamically loaded drawers.
+        document.addEventListener("change", function (event) {
+            const input = event.target.closest("#vehicleCreateProfileImage, #vehicleEditProfileImage");
+            if (!input) return;
+
+            const root = input.closest("[data-vehicle-overlay-root]") || document;
+            const preview = root.querySelector(
+                input.id === "vehicleEditProfileImage"
+                    ? "#vehicleEditImagePreview"
+                    : "#vehicleCreateImagePreview"
+            );
+            const status = root.querySelector(
+                input.id === "vehicleEditProfileImage"
+                    ? "#vehicleEditImageStatus"
+                    : "#vehicleCreateImageStatus"
+            );
+            const file = input.files && input.files[0];
+
+            if (!preview || !status) return;
+
+            if (!file) {
+                status.classList.remove("is-selected", "is-changed");
+                status.innerHTML = input.id === "vehicleEditProfileImage"
+                    ? "Current image saved"
+                    : "No image selected";
+                return;
+            }
+
+            if (!file.type.startsWith("image/")) {
+                input.value = "";
+                status.classList.remove("is-selected", "is-changed");
+                status.textContent = "Please choose an image file";
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                input.value = "";
+                status.classList.remove("is-selected", "is-changed");
+                status.textContent = "Image must be 5 MB or smaller";
+                return;
+            }
+
+            const message = input.id === "vehicleEditProfileImage"
+                ? "Image changed"
+                : "Image selected";
+
+            status.classList.add(input.id === "vehicleEditProfileImage" ? "is-changed" : "is-selected");
+            status.innerHTML =
+                '<span class="af-image-check"><i class="bi bi-check-lg"></i></span>' +
+                '<span>' + message + '</span>' +
+                '<span class="af-image-file-name">' + escapeVehicleImageText(file.name) + '</span>';
+
+            const reader = new FileReader();
+            reader.onload = function (loadEvent) {
+                preview.innerHTML =
+                    '<img src="' + loadEvent.target.result + '" alt="Selected vehicle image" />';
+            };
+            reader.readAsDataURL(file);
+        }, true);
+
+        function escapeVehicleImageText(value) {
+            return String(value || "").replace(/[&<>"']/g, function (character) {
+                return {
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#039;"
+                }[character];
+            });
+        }
+
+        document.addEventListener("submit", async function (event) {
+            const form = event.target.closest("[data-vehicle-overlay-root] form");
+            if (!form) return;
+
+            event.preventDefault();
+            const submitButton = form.querySelector("button[type='submit']");
+            const originalText = submitButton ? submitButton.innerHTML : "";
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = "Saving...";
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: (form.method || "POST").toUpperCase(),
+                    credentials: "same-origin",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+
+                if (response.redirected && isVehicleIndexUrl(response.url)) {
+                    closeVehicleOverlay();
+                    window.location.reload();
+                    return;
+                }
+
+                if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+                const html = await response.text();
+                const finalUrl = response.url;
+                const routeKey = vehicleRouteKey(finalUrl);
+
+                if (isVehicleIndexUrl(finalUrl)) {
+                    closeVehicleOverlay();
+                    window.location.reload();
+                    return;
+                }
+
+                if (!routeKey) {
+                    window.location.href = finalUrl;
+                    return;
+                }
+
+                const doc = new DOMParser().parseFromString(html, "text/html");
+                const root = getVehicleOverlayRoot(doc, routeKey);
+                if (!root) {
+                    window.location.href = finalUrl;
+                    return;
+                }
+
+                appendVehicleOverlayStyles(doc, routeKey);
+                vehicleOverlayHost.innerHTML = "";
+                root.setAttribute("data-vehicle-overlay-root", "true");
+                vehicleOverlayHost.appendChild(root);
+                document.body.classList.add("vehicle-overlay-open");
+            } catch (error) {
+                console.error("AutoFlow vehicle form error:", error);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            }
+        }, true);
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key !== "Escape") return;
+            if (!vehicleOverlayHost.querySelector("[data-vehicle-overlay-root]")) return;
+            closeVehicleOverlay();
+        });
     });
 </script>
-
 }
+
+
+<style>
+/* AutoFlow Vehicle Records permanent button + empty-state fix */
+
+/* Add Vehicle matches Customer Management primary action */
+.vehicle-primary-button {
+    background: #7544f5 !important;
+    background-color: #7544f5 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border: 1px solid #7544f5 !important;
+    box-shadow: 0 8px 18px rgba(117,68,245,.18) !important;
+    opacity: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+}
+
+/* Keep the plus icon and every child centered and white */
+.vehicle-primary-button *,
+.vehicle-primary-button svg,
+.vehicle-primary-button svg path {
+    color: #ffffff !important;
+    fill: none !important;
+    stroke: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* Hover/focus keep the same primary treatment */
+.vehicle-primary-button:hover,
+.vehicle-primary-button:focus,
+.vehicle-primary-button:active {
+    background: #6336d8 !important;
+    background-color: #6336d8 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border-color: #6336d8 !important;
+    box-shadow: 0 10px 22px rgba(99,54,216,.22) !important;
+}
+
+.vehicle-primary-button:hover *,
+.vehicle-primary-button:focus *,
+.vehicle-primary-button:active * {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Vehicle empty/filter state: center the message in the available area */
+.vehicle-empty-state {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 260px !important;
+    padding: 40px 20px !important;
+    box-sizing: border-box !important;
+}
+
+.vehicle-empty-state .vehicle-empty-icon {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.vehicle-empty-state strong,
+.vehicle-empty-state span {
+    text-align: center !important;
+}
+
+.vehicle-empty-state .vehicle-primary-button {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    align-self: center !important;
+}
+
+/* AutoFlow vehicle image picker feedback */
+.af-image-selected.is-selected,
+.af-image-selected.is-changed { display:flex !important; align-items:center; gap:6px; color:#16803a !important; font-weight:800 !important; }
+.af-image-check { width:17px; height:17px; flex:0 0 17px; border-radius:50%; background:#dcfce7; color:#16803a; display:inline-grid; place-items:center; font-size:10px; font-weight:900; }
+.af-image-file-name { max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#667085; font-weight:650; }
+</style>
+

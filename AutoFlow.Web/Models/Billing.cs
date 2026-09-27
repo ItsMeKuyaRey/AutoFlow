@@ -37,6 +37,8 @@ public class Billing
     [StringLength(30)]
     public string Status { get; set; } = "Unpaid";
 
+    public bool IsArchived { get; set; } = false;
+
     [Required]
     public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
 

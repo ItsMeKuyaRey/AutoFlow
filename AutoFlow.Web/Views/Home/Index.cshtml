@@ -6,6 +6,19 @@
 
     var today = DateTime.Now;
 
+    // Philippines local time controls the dashboard greeting.
+    var philippinesTime =
+        TimeZoneInfo.ConvertTimeBySystemTimeZoneId(
+            DateTimeOffset.UtcNow,
+            "Asia/Manila");
+
+    var dashboardGreeting =
+        philippinesTime.Hour < 12
+            ? "Good morning"
+            : philippinesTime.Hour < 18
+                ? "Good afternoon"
+                : "Good evening";
+
     var maxTrendCount = Model.AppointmentTrend.Any()
         ? Math.Max(1, Model.AppointmentTrend.Max(x => x.Count))
         : 1;
@@ -1419,7 +1432,7 @@
                 AutoFlow Operations Command Center
             </div>
 
-            <h1>Good morning, Administrator.</h1>
+            <h1>@dashboardGreeting, Administrator.</h1>
 
             <p>
                 Monitor appointments, repairs, inventory, billing and customer care from one live automotive workspace.

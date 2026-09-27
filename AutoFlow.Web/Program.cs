@@ -1,4 +1,5 @@
 using AutoFlow.Web.Data;
+using AutoFlow.Web.Services;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication;
@@ -71,6 +72,7 @@ builder.Services
 
 // MVC
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient<XenditPaymentService>();
 
 // Reverse proxy
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -222,30 +224,28 @@ app.Use(async (context, next) =>
         return;
     }
 
-    // All four authorized roles can access the dashboard.
+    // Only the Administrator can access the dashboard. Other roles land on their primary module.
     if (controller.Equals(
             "Home",
             StringComparison.OrdinalIgnoreCase))
     {
-        var validRoles = new[]
-        {
-            "Administrator",
-            "ServiceAdvisor",
-            "Technician",
-            "Cashier"
-        };
-
-        if (validRoles.Any(
-                role => string.Equals(
-                    role,
-                    userRole,
-                    StringComparison.OrdinalIgnoreCase)))
+        if (userRole.Equals(
+                "Administrator",
+                StringComparison.OrdinalIgnoreCase))
         {
             await next();
             return;
         }
 
-        context.Response.Redirect("/Auth/AccessDenied");
+        var landingPath = userRole switch
+        {
+            "ServiceAdvisor" => "/Appointments/Index",
+            "Technician" => "/JobOrders/Index",
+            "Cashier" => "/Billings/Index",
+            _ => "/Auth/AccessDenied"
+        };
+
+        context.Response.Redirect(landingPath);
         return;
     }
 
@@ -313,7 +313,6 @@ app.Use(async (context, next) =>
                 new Dictionary<string, string>(
                     StringComparer.OrdinalIgnoreCase)
                 {
-                    ["ServiceAdvisor"] = "F",
                     ["Cashier"] = "F"
                 },
 

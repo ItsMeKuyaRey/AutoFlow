@@ -4,140 +4,540 @@
     ViewData["Title"] = "Edit Customer";
 }
 
-<div class="customer-form-page">
+<style>
+    .customer-edit-page {
+        position: relative;
+        min-height: calc(100vh - 120px);
+        margin: -20px -24px;
+        background: #f5f7fb;
+        overflow: hidden;
+    }
 
-    <div class="customer-form-header">
+    .customer-edit-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(245, 247, 251, .78);
+    }
 
-        <div>
-            <a asp-action="Index" class="customer-back-link">
-                <span>←</span> Back to Customers
-            </a>
+    .customer-edit-drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(560px, 100%);
+        min-height: calc(100vh - 120px);
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -18px 0 45px rgba(15, 23, 42, .10);
+        display: flex;
+        flex-direction: column;
+        z-index: 2;
+    }
 
-            <h1>Edit Customer</h1>
-            <p>Update the customer's information below.</p>
-        </div>
+    .customer-edit-header {
+        padding: 25px 28px 22px;
+        border-bottom: 1px solid #edf0f4;
+    }
 
-    </div>
+    .customer-edit-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+    }
 
-    <form asp-action="Edit"
-          asp-route-id="@Model.CustomerId"
-          method="post"
-          class="customer-form-card">
+    .customer-edit-title {
+        margin: 0;
+        color: #111827;
+        font-size: 20px;
+        font-weight: 850;
+        letter-spacing: -.02em;
+    }
 
-        @Html.AntiForgeryToken()
+    .customer-edit-subtitle {
+        margin: 7px 0 0;
+        color: #8b95a7;
+        font-size: 11px;
+    }
 
-        <input type="hidden"
-               asp-for="CustomerId" />
+    .customer-edit-cancel-top {
+        color: #8b95a7;
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 750;
+    }
 
-        <div asp-validation-summary="ModelOnly"
-             class="customer-validation">
-        </div>
+    .customer-edit-cancel-top:hover {
+        color: #7c3aed;
+    }
 
-        <div class="customer-form-section">
-            <div class="customer-form-section-heading">
-                <h2>Basic Information</h2>
-                <p>Enter the customer's name.</p>
-            </div>
+    .customer-edit-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 27px 28px;
+    }
 
-            <div class="customer-form-row">
+    .customer-edit-profile {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 28px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid #edf0f4;
+    }
 
-                <div class="customer-field">
-                    <label asp-for="FirstName">
-                        First Name
-                    </label>
+    .customer-edit-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 13px;
+        background: #eee7ff;
+        color: #7c3aed;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 850;
+    }
 
-                    <input asp-for="FirstName"
-                           placeholder="Enter first name" />
+    .customer-edit-profile strong {
+        display: block;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 850;
+    }
 
-                    <span asp-validation-for="FirstName"
-                          class="customer-field-error">
-                    </span>
+    .customer-edit-profile span {
+        display: block;
+        margin-top: 4px;
+        color: #9aa3b2;
+        font-size: 9px;
+    }
+
+    .customer-edit-section {
+        margin-bottom: 27px;
+    }
+
+    .customer-edit-section-heading {
+        margin-bottom: 14px;
+    }
+
+    .customer-edit-section-heading h2 {
+        margin: 0;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .customer-edit-section-heading p {
+        margin: 4px 0 0;
+        color: #9aa3b2;
+        font-size: 10px;
+    }
+
+    .customer-edit-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .customer-edit-field {
+        margin-bottom: 13px;
+    }
+
+    .customer-edit-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .customer-edit-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #697386;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .customer-edit-field input,
+    .customer-edit-field textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #e2e6ed;
+        border-radius: 8px;
+        background: #fff;
+        color: #172033;
+        font-size: 11px;
+        outline: none;
+        transition: .18s ease;
+    }
+
+    .customer-edit-field input {
+        height: 40px;
+        padding: 0 12px;
+    }
+
+    .customer-edit-field textarea {
+        min-height: 92px;
+        padding: 11px 12px;
+        resize: vertical;
+    }
+
+    .customer-edit-field input:focus,
+    .customer-edit-field textarea:focus {
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, .08);
+    }
+
+    .customer-edit-error {
+        display: block;
+        margin-top: 5px;
+        color: #dc2626;
+        font-size: 9px;
+    }
+
+    .customer-edit-validation {
+        margin-bottom: 20px;
+        padding: 11px 13px;
+        border-radius: 8px;
+        border: 1px solid #fecaca;
+        background: #fff7f7;
+        color: #b91c1c;
+        font-size: 10px;
+    }
+
+    .customer-edit-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        padding: 17px 28px;
+        border-top: 1px solid #edf0f4;
+    }
+
+    .customer-edit-button {
+        min-width: 112px;
+        height: 38px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .customer-edit-button-secondary {
+        border: 1px solid #e1e5eb;
+        background: #fff;
+        color: #5f6b7c;
+    }
+
+    .customer-edit-button-primary {
+        border: 1px solid #7c3aed;
+        background: #7c3aed;
+        color: #fff;
+        box-shadow: 0 7px 18px rgba(124, 58, 237, .18);
+    }
+
+    .customer-edit-button-primary:hover {
+        background: #6d28d9;
+    }
+
+    @@media (max-width: 700px) {
+        .customer-edit-drawer {
+            width: 100%;
+            border-left: 0;
+        }
+
+        .customer-edit-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .customer-edit-field.full {
+            grid-column: auto;
+        }
+
+        .customer-edit-header,
+        .customer-edit-body,
+        .customer-edit-footer {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+    }
+
+    /* AutoFlow customer overlay */
+    .customer-edit-page {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        background: transparent !important;
+        overflow: hidden !important;
+        z-index: 5000 !important;
+    }
+
+    .customer-edit-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .22) !important;
+        backdrop-filter: blur(2px);
+    }
+
+    .customer-edit-drawer {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+        animation: afCustomerDrawerIn .20s ease-out;
+    }
+
+    .af-image-picker { display:flex; align-items:center; gap:16px; padding:14px; border:1px solid #e8eaf0; border-radius:14px; background:#fafbfc; }
+    .af-image-picker-edit { margin-top:10px; }
+    .af-image-preview { width:76px; height:76px; flex:0 0 76px; border-radius:16px; overflow:hidden; background:#f1eaff; display:grid; place-items:center; border:1px solid #e6defe; }
+    .af-image-preview img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+    .af-image-preview-empty { color:#7c3aed; font-size:24px; display:grid; place-items:center; width:100%; height:100%; }
+    .af-image-picker-controls { min-width:0; display:flex; flex-direction:column; gap:5px; }
+    .af-image-picker-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; width:max-content; padding:8px 11px; border-radius:8px; background:#7c3aed; color:#fff; font-size:11px; font-weight:800; cursor:pointer; }
+    .af-image-picker-button:hover { background:#6d28d9; }
+    .af-image-selected { color:#344054; font-size:11px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
+    .af-image-picker-controls small { color:#98a1b2; font-size:10px; }
+    .customer-edit-avatar { overflow:hidden; }
+    .customer-edit-avatar img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+
+</style>
+
+<div class="customer-edit-page">
+
+    <div class="customer-edit-backdrop"></div>
+
+    <aside class="customer-edit-drawer">
+
+        <div class="customer-edit-header">
+
+            <div class="customer-edit-header-row">
+
+                <div>
+                    <h1 class="customer-edit-title">Edit Customer</h1>
+
+                    <p class="customer-edit-subtitle">
+                        Modify the customer's AutoFlow record.
+                    </p>
                 </div>
 
-                <div class="customer-field">
-                    <label asp-for="LastName">
-                        Last Name
-                    </label>
+                <a asp-action="Index"
+                   class="customer-edit-cancel-top">
+                    Cancel
+                </a>
 
-                    <input asp-for="LastName"
-                           placeholder="Enter last name" />
-
-                    <span asp-validation-for="LastName"
-                          class="customer-field-error">
-                    </span>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="customer-form-section">
-
-            <div class="customer-form-section-heading">
-                <h2>Contact Information</h2>
-                <p>Keep the customer's contact details up to date.</p>
-            </div>
-
-            <div class="customer-form-row">
-
-                <div class="customer-field">
-                    <label asp-for="Phone">
-                        Phone
-                    </label>
-
-                    <input asp-for="Phone"
-                           placeholder="Enter phone number" />
-
-                    <span asp-validation-for="Phone"
-                          class="customer-field-error">
-                    </span>
-                </div>
-
-                <div class="customer-field">
-                    <label asp-for="Email">
-                        Email
-                    </label>
-
-                    <input asp-for="Email"
-                           placeholder="Enter email address" />
-
-                    <span asp-validation-for="Email"
-                          class="customer-field-error">
-                    </span>
-                </div>
-
-            </div>
-
-            <div class="customer-field">
-                <label asp-for="Address">
-                    Address
-                </label>
-
-                <textarea asp-for="Address"
-                          rows="4"
-                          placeholder="Enter customer address"></textarea>
-
-                <span asp-validation-for="Address"
-                      class="customer-field-error">
-                </span>
             </div>
 
         </div>
 
-        <div class="customer-form-footer">
+        <form asp-action="Edit"
+              asp-route-id="@Model.CustomerId"
+              method="post"
+              enctype="multipart/form-data"
+              class="d-flex flex-column flex-grow-1">
 
-            <a asp-action="Index"
-               class="customer-cancel-button">
-                Cancel
-            </a>
+            @Html.AntiForgeryToken()
 
-            <button type="submit"
-                    class="customer-primary-button">
-                Save Changes
-            </button>
+            <input type="hidden"
+                   asp-for="CustomerId" />
 
-        </div>
+            <div class="customer-edit-body">
 
-    </form>
+                <div asp-validation-summary="ModelOnly"
+                     class="customer-edit-validation">
+                </div>
+
+                @{
+                    var firstInitial =
+                        string.IsNullOrWhiteSpace(Model.FirstName)
+                            ? "?"
+                            : Model.FirstName.Substring(0, 1);
+
+                    var lastInitial =
+                        string.IsNullOrWhiteSpace(Model.LastName)
+                            ? ""
+                            : Model.LastName.Substring(0, 1);
+                }
+
+                <div class="customer-edit-profile">
+
+                    <div class="customer-edit-avatar" id="customerEditAvatar">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@Model.FirstName @Model.LastName" />
+                        }
+                        else
+                        {
+                            @firstInitial@lastInitial
+                        }
+                    </div>
+
+                    <div>
+                        <strong>
+                            @Model.FirstName @Model.LastName
+                        </strong>
+
+                        <span>
+                            Customer ID #@Model.CustomerId
+                        </span>
+                    </div>
+
+                </div>
+
+                <section class="customer-edit-section">
+
+                    <div class="customer-edit-section-heading">
+                        <h2>Profile Image</h2>
+                        <p>Choose a new image or keep the current profile image.</p>
+                    </div>
+                    <div class="af-image-picker af-image-picker-edit">
+                        <div class="af-image-preview" id="customerEditImagePreview">
+                            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                            {
+                                <img src="@Model.ImageUrl" alt="@Model.FirstName @Model.LastName" />
+                            }
+                            else
+                            {
+                                <div class="af-image-preview-empty"><i class="bi bi-person"></i></div>
+                            }
+                        </div>
+                        <div class="af-image-picker-controls">
+                            <label for="customerEditProfileImage" class="af-image-picker-button"><i class="bi bi-image"></i> Choose Image</label>
+                            <input id="customerEditProfileImage" name="profileImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                            <div class="af-image-selected" id="customerEditImageStatus">@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "No image selected" : "Current image saved")</div>
+                            <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="customer-edit-section">
+
+                    <div class="customer-edit-section-heading">
+                        <h2>Personal Information</h2>
+                        <p>Update the customer's identity information.</p>
+                    </div>
+
+                    <div class="customer-edit-grid">
+
+                        <div class="customer-edit-field">
+
+                            <label asp-for="FirstName">
+                                First Name
+                            </label>
+
+                            <input asp-for="FirstName"
+                                   placeholder="Enter first name" />
+
+                            <span asp-validation-for="FirstName"
+                                  class="customer-edit-error">
+                            </span>
+
+                        </div>
+
+                        <div class="customer-edit-field">
+
+                            <label asp-for="LastName">
+                                Last Name
+                            </label>
+
+                            <input asp-for="LastName"
+                                   placeholder="Enter last name" />
+
+                            <span asp-validation-for="LastName"
+                                  class="customer-edit-error">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <section class="customer-edit-section">
+
+                    <div class="customer-edit-section-heading">
+                        <h2>Contact Information</h2>
+                        <p>Keep the customer's contact details current.</p>
+                    </div>
+
+                    <div class="customer-edit-grid">
+
+                        <div class="customer-edit-field">
+
+                            <label asp-for="Phone">
+                                Phone Number
+                            </label>
+
+                            <input asp-for="Phone"
+                                   placeholder="Enter phone number" />
+
+                            <span asp-validation-for="Phone"
+                                  class="customer-edit-error">
+                            </span>
+
+                        </div>
+
+                        <div class="customer-edit-field">
+
+                            <label asp-for="Email">
+                                Email Address
+                            </label>
+
+                            <input asp-for="Email"
+                                   type="email"
+                                   placeholder="customer@example.com" />
+
+                            <span asp-validation-for="Email"
+                                  class="customer-edit-error">
+                            </span>
+
+                        </div>
+
+                        <div class="customer-edit-field full">
+
+                            <label asp-for="Address">
+                                Home Address
+                            </label>
+
+                            <textarea asp-for="Address"
+                                      rows="4"
+                                      placeholder="Enter customer address"></textarea>
+
+                            <span asp-validation-for="Address"
+                                  class="customer-edit-error">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+            <div class="customer-edit-footer">
+
+                <a asp-action="Index"
+                   class="customer-edit-button customer-edit-button-secondary">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="customer-edit-button customer-edit-button-primary">
+                    Save Changes
+                </button>
+
+            </div>
+
+        </form>
+
+    </aside>
 
 </div>
 
@@ -146,3 +546,10 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
+<script>
+(function(){
+ const input=document.getElementById('customerEditProfileImage'), preview=document.getElementById('customerEditImagePreview'), status=document.getElementById('customerEditImageStatus');
+ if(!input||!preview||!status)return;
+ input.addEventListener('change',function(){const file=this.files&&this.files[0];if(!file){status.textContent='No new image selected';return;}status.textContent=file.name;const r=new FileReader();r.onload=e=>preview.innerHTML='<img src="'+e.target.result+'" alt="Selected customer image" />';r.readAsDataURL(file);});
+})();
+</script>
