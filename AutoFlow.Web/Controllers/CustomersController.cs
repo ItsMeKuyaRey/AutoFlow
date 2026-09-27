@@ -1,4 +1,3 @@
-using AutoFlow.Web.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,16 +14,13 @@ namespace AutoFlow.Web.Controllers
     {
         private readonly AutoFlowDbContext _context;
         private readonly IWebHostEnvironment _environment;
-        private readonly SupabaseStorageService _supabaseStorage;
 
         public CustomersController(
             AutoFlowDbContext context,
-            IWebHostEnvironment environment,
-            SupabaseStorageService supabaseStorage)
+            IWebHostEnvironment environment)
         {
             _context = context;
             _environment = environment;
-            _supabaseStorage = supabaseStorage;
         }
 
         public async Task<IActionResult> Index()
@@ -165,7 +161,7 @@ namespace AutoFlow.Web.Controllers
                         return View(customer);
                     }
 
-                    await DeleteStoredImage(existingCustomer.ImageUrl);
+                    DeleteStoredImage(existingCustomer.ImageUrl);
                     existingCustomer.ImageUrl = imagePath;
                 }
 
@@ -277,19 +273,87 @@ namespace AutoFlow.Web.Controllers
             IFormFile file,
             string folder)
         {
-            return await _supabaseStorage.UploadAsync(
-                file,
+            var allowedExtensions = new[]
+            {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".gif"
+            };
+
+            var extension = Path.GetExtension(file.FileName);
+
+            if (file.Length > 5 * 1024 * 1024 ||
+                !allowedExtensions.Contains(
+                    extension,
+                    StringComparer.OrdinalIgnoreCase) ||
+                !file.ContentType.StartsWith(
+                    "image/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var uploadsPath = Path.Combine(
+                _environment.WebRootPath,
+                "uploads",
                 folder);
+
+            Directory.CreateDirectory(uploadsPath);
+
+            var fileName =
+                $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+
+            var physicalPath = Path.Combine(
+                uploadsPath,
+                fileName);
+
+            await using var stream =
+                new FileStream(
+                    physicalPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None);
+
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/{folder}/{fileName}";
         }
 
-        private async Task DeleteStoredImage(string? imageUrl)
+        private void DeleteStoredImage(string? imageUrl)
         {
-            await _supabaseStorage.DeleteAsync(imageUrl);
+            if (string.IsNullOrWhiteSpace(imageUrl) ||
+                !imageUrl.StartsWith(
+                    "/uploads/customers/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var fileName = Path.GetFileName(imageUrl);
+
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return;
+            }
+
+            var physicalPath = Path.Combine(
+                _environment.WebRootPath,
+                "uploads",
+                "customers",
+                fileName);
+
+            if (System.IO.File.Exists(physicalPath))
+            {
+                System.IO.File.Delete(physicalPath);
+            }
         }
 
         private bool CustomerExists(int id)
         {
-            return _context.Customers.Any(e => e.CustomerId == id);
+            return _context.Customers
+                .Any(c => c.CustomerId == id);
         }
     }
 }
