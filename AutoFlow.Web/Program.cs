@@ -72,6 +72,8 @@ builder.Services
 
 // MVC
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<SupabaseStorageService>();
 builder.Services.AddHttpClient<XenditPaymentService>();
 
 // Reverse proxy

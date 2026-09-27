@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using AutoFlow.Web.Data;
+using AutoFlow.Web.Services;
 using AutoFlow.Web.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,11 +14,16 @@ namespace AutoFlow.Web.Controllers
     {
         private readonly AutoFlowDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly SupabaseStorageService _supabaseStorage;
 
-        public VehiclesController(AutoFlowDbContext context, IWebHostEnvironment environment)
+        public VehiclesController(
+            AutoFlowDbContext context,
+            IWebHostEnvironment environment,
+            SupabaseStorageService supabaseStorage)
         {
             _context = context;
             _environment = environment;
+            _supabaseStorage = supabaseStorage;
         }
 
         public async Task<IActionResult> Index()
@@ -200,7 +206,7 @@ namespace AutoFlow.Web.Controllers
                         ViewBag.CustomerProfilesJson = BuildCustomerProfilesJson(vehicle.CustomerId);
                         return View(vehicle);
                     }
-                    DeleteStoredImage(existingVehicle.ImageUrl);
+                    await DeleteStoredImage(existingVehicle.ImageUrl);
                     existingVehicle.ImageUrl = imagePath;
                 }
 
@@ -369,31 +375,14 @@ namespace AutoFlow.Web.Controllers
 
         private async Task<string?> SaveImageAsync(IFormFile file)
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-            var extension = Path.GetExtension(file.FileName);
-            if (file.Length > 5 * 1024 * 1024 ||
-                !allowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) ||
-                !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "vehicles");
-            Directory.CreateDirectory(uploadsPath);
-            var fileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-            var physicalPath = Path.Combine(uploadsPath, fileName);
-            await using var stream = new FileStream(physicalPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            await file.CopyToAsync(stream);
-            return $"/uploads/vehicles/{fileName}";
+            return await _supabaseStorage.UploadAsync(
+                file,
+                "vehicles");
         }
 
-        private void DeleteStoredImage(string? imageUrl)
+        private async Task DeleteStoredImage(string? imageUrl)
         {
-            if (string.IsNullOrWhiteSpace(imageUrl) || !imageUrl.StartsWith("/uploads/vehicles/", StringComparison.OrdinalIgnoreCase)) return;
-            var fileName = Path.GetFileName(imageUrl);
-            if (string.IsNullOrWhiteSpace(fileName)) return;
-            var physicalPath = Path.Combine(_environment.WebRootPath, "uploads", "vehicles", fileName);
-            if (System.IO.File.Exists(physicalPath)) System.IO.File.Delete(physicalPath);
+            await _supabaseStorage.DeleteAsync(imageUrl);
         }
 
         private bool VehicleExists(int id)
